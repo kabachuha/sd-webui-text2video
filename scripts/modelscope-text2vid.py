@@ -20,32 +20,36 @@ def setup_pipeline():
     return pipe
 
 def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
-    latents=None
+    try:
+        latents=None
 
-    # FIXME sd unload
-    lowvram.send_everything_to_cpu()
-    #sd_hijack.model_hijack.undo_hijack(sd_model)
-    devices.torch_gc()
+        # FIXME sd unload
+        lowvram.send_everything_to_cpu()
+        #sd_hijack.model_hijack.undo_hijack(sd_model)
+        devices.torch_gc()
 
-    print('Starting text2video')
-    print('Pipeline setup')
-    pipe = setup_pipeline()
-    print('Starting text2video')
-    #print(pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents))
-    samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents)
-    outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
-    print('text2video finished, saving frames')
-    os.makedirs(outdir_current, exist_ok=True) # just deleted the folder so we need to make it again
-    for i in range(len(samples)):
-        cv2.imwrite(outdir_current + os.path.sep + f"{i:09}.png", samples[i])
-    
-    # TODO: add params to the GUI
+        print('Starting text2video')
+        print('Pipeline setup')
+        pipe = setup_pipeline()
+        print('Starting text2video')
+        #print(pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents))
+        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents)
+        outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
+        print('text2video finished, saving frames')
+        os.makedirs(outdir_current, exist_ok=True) # just deleted the folder so we need to make it again
+        for i in range(len(samples)):
+            cv2.imwrite(outdir_current + os.path.sep + f"{i:09}.png", samples[i])
+        
+        # TODO: add params to the GUI
 
-    ffmpeg_stitch_video('ffmpeg', 24, outdir_current + os.path.sep + f"vid.mp4", 0, None, outdir_current)# add timestring
-    print(f't2v complete, result saved at {outdir_current}')
-
-    devices.torch_gc()
-    lowvram.setup_for_low_vram(sd_model, cmd_opts.medvram)
+        ffmpeg_stitch_video('ffmpeg', 24, outdir_current + os.path.sep + f"vid.mp4", 0, None, outdir_current)# add timestring
+        print(f't2v complete, result saved at {outdir_current}')
+    except Exception as e:
+        print('Exception occured')
+        print(e)
+    finally:
+        devices.torch_gc()
+        lowvram.setup_for_low_vram(sd_model, cmd_opts.medvram)
     #sd_hijack.model_hijack.hijack(sd_model)
     return outdir_current + os.path.sep + f"vid.mp4"
 
