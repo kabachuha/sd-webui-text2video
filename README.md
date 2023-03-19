@@ -4,7 +4,7 @@
 
 Auto1111 extension consisting of implementation of ModelScope text2video using only Auto1111 webui dependencies.
 
-8gbs vram should be enough to run on GPU with low vram vae on at 256x256. (some opts are not working properly rn) But, 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti.
+8gbs vram should be enough to run on GPU with low vram vae on at 256x256. (some opts are not working properly rn) But, 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
 
 Prompt: `flowers turning into lava`
 
@@ -13,13 +13,13 @@ Test example:
 https://user-images.githubusercontent.com/14872007/226214023-2d3892d8-64d4-4312-baab-575aafedae09.mp4
 
 
----
+## Where to get the weights
 
 All the parts of the model at HuggingFace (download your weights from there and put into `stable-diffusion-webui/models/ModelScope/t2v`):
 
 https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main
 
----
+## Dev resources
 
 HuggingFace space:
 
