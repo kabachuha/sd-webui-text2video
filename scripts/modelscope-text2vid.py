@@ -90,15 +90,15 @@ def on_ui_tabs():
                 run_button = gr.Button('Generate')
             with gr.Row():
                 result = gr.PlayableVideo(label='Result')
-    dummy_component = gr.Label(visible=False)
-    run_button.click(
-        fn=wrap_gradio_gpu_call(process, extra_outputs=[None, '', '']),
-        #_js="submit_deforum",
-        inputs=[prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae],#[dummy_component, dummy_component] + 
-        outputs=[
-                result,
-        ],
-    )
+        dummy_component = gr.Label(visible=False)
+        run_button.click(
+            fn=wrap_gradio_gpu_call(process, extra_outputs=[None, '', '']),
+            #_js="submit_deforum",
+            inputs=[prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae],#[dummy_component, dummy_component] + 
+            outputs=[
+                    result,
+            ],
+        )
 
     return [(deforum_interface, "ModelScope text2video", "t2v_interface")]
 
