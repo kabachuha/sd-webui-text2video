@@ -89,14 +89,14 @@ def on_ui_tabs():
                     minimum=64,
                     maximum=1024,
                     step=64,
-                    value=512,
+                    value=256,
                     info='If set to -1, a different seed will be used each time.')
                 height = gr.Slider(
                     label='height',
                     minimum=64,
                     maximum=1024,
                     step=64,
-                    value=512,
+                    value=256,
                     info='If set to -1, a different seed will be used each time.')
             with gr.Row():
                 eta = gr.Number(label="eta", value=0, interactive=True)
