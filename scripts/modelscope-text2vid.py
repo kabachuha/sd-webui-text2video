@@ -25,6 +25,8 @@ def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, e
     print('Pipeline setup')
     pipe = setup_pipeline()
     print('Starting text2video')
+    print(pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents))
+    raise 'd'
     video_path, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents)
     print(f't2v complete, result saved at {video_path}')
     print(video_path)
