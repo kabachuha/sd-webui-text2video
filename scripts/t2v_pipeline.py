@@ -12,7 +12,7 @@ import torch
 import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
-from .t2v_model import UNetSD, AutoencoderKL, FrozenOpenCLIPEmbedder, GaussianDiffusion, beta_schedule
+from scripts.t2v_model import UNetSD, AutoencoderKL, FrozenOpenCLIPEmbedder, GaussianDiffusion, beta_schedule
 
 
 __all__ = ['TextToVideoSynthesis']

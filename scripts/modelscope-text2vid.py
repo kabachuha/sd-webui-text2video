@@ -7,7 +7,7 @@ import random
 import modules.paths as ph
 from modules import lowvram, devices, sd_hijack
 from modules.shared import opts, cmd_opts, state, sd_model
-from .t2v_pipeline import TextToVideoSynthesis, tensor2vid
+from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from webui import wrap_gradio_gpu_call
 
 def setup_pipeline():
