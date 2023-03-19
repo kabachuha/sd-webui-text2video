@@ -11,7 +11,8 @@ from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from webui import wrap_gradio_gpu_call
 import cv2, os
 
-outdir = os.path.join(opts.outdir_samples or opts.outdir_img2img_samples, 'text2video-modelscope')
+outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
+outdir = os.path.join(os.getcwd(), outdir)
 
 def setup_pipeline():
     pipe = TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
@@ -31,6 +32,8 @@ def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, e
     print('Starting text2video')
     #print(pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents))
     samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents)
+    print('text2video finished, saving frames')
+    os.mkdir(outdir)
     for i in range(len(samples)):
         cv2.imwrite(outdir + os.path.sep + f"{i:09}.png", samples[i])
     
@@ -42,12 +45,13 @@ def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, e
     devices.torch_gc()
     #lowvram.setup_for_low_vram(sd_model, cmd_opts.medvram)
     #sd_hijack.model_hijack.hijack(sd_model)
+    return outdir + os.path.sep + f"vid.mp4"
 
 def on_ui_tabs():
     # Uses only SD-requirements
     
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
-        gr.Markdown('Put your models from https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main to stable-diffusion-webui/models/ModelScope/t2v/. 8gbs of VRAM on top of SD (TODO: unload SD on launch) should be enough to launch.\n\n Btw, This is all going to be HACKABLE at some point. Join the development https://github.com/deforum-art/sd-webui-modelscope-text2video')
+        gr.Markdown('Put your models from https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main to stable-diffusion-webui/models/ModelScope/t2v/. 8gbs of VRAM on top of SD (TODO: unload SD on launch) should be enough to launch.\n\n Btw, This is all going to be HACKABLE at some point. Join the development https://github.com/deforum-art/sd-webui-modelscope-text2video \n\n')
         with gr.Column(scale=1, variant='panel'):
             with gr.Row():
                 prompt = gr.Text(label='Prompt', max_lines=1)
