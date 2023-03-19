@@ -74,7 +74,7 @@ class TextToVideoSynthesis():
         self.model_dir = model_dir
         self.device = torch.device('cpu')
         # Load the configuration from a file
-        with open(model_dir+'/t2v/configuration.json', 'r') as f:
+        with open(model_dir+'/configuration.json', 'r') as f:
             config_dict = json.load(f)
 
         # Convert the dictionary to a namespace object
