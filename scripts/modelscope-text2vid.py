@@ -16,9 +16,10 @@ def setup_pipeline():
 
 def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
     latents=None
-    lowvram.send_everything_to_cpu()
-    sd_hijack.model_hijack.undo_hijack(sd_model)
-    devices.torch_gc()
+    # FIXME
+    #lowvram.send_everything_to_cpu()
+    #sd_hijack.model_hijack.undo_hijack(sd_model)
+    #devices.torch_gc()
 
     print('Starting text2video')
     print('Pipeline setup')
@@ -28,9 +29,9 @@ def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, e
     print(f't2v complete, result saved at {video_path}')
     print(video_path)
 
-    devices.torch_gc()
-    lowvram.setup_for_low_vram(sd_model, cmd_opts.medvram)
-    sd_hijack.model_hijack.hijack(sd_model)
+    #devices.torch_gc()
+    #lowvram.setup_for_low_vram(sd_model, cmd_opts.medvram)
+    #sd_hijack.model_hijack.hijack(sd_model)
 
 def on_ui_tabs():
     # Uses only SD-requirements
@@ -85,9 +86,9 @@ def on_ui_tabs():
                 eta = gr.Number(label="eta", value=0, interactive=True)
             with gr.Row():
                 cpu_vae = gr.Checkbox(label='Low VRAM VAE', value=False)
-        with gr.Column():
+        with gr.Column(scale=1, variant='compact'):
             with gr.Row():
-                run_button = gr.Button('Generate')
+                run_button = gr.Button('Generate', variant='primary')
             with gr.Row():
                 result = gr.PlayableVideo(label='Result')
         dummy_component = gr.Label(visible=False)
