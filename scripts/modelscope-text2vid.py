@@ -11,7 +11,7 @@ from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from webui import wrap_gradio_gpu_call
 
 def setup_pipeline():
-    pipe = TextToVideoSynthesis(ph.models_path+'/ModelScope')
+    pipe = TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
     return pipe
 
 def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
