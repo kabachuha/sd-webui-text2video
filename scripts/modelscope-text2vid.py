@@ -23,9 +23,9 @@ def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, e
     latents=None
 
     # FIXME sd unload
-    #lowvram.send_everything_to_cpu()
+    lowvram.send_everything_to_cpu()
     #sd_hijack.model_hijack.undo_hijack(sd_model)
-    #devices.torch_gc()
+    devices.torch_gc()
 
     print('Starting text2video')
     print('Pipeline setup')
@@ -45,7 +45,7 @@ def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, e
     print(f't2v complete, result saved at {outdir_current}')
 
     devices.torch_gc()
-    #lowvram.setup_for_low_vram(sd_model, cmd_opts.medvram)
+    lowvram.setup_for_low_vram(sd_model, cmd_opts.medvram)
     #sd_hijack.model_hijack.hijack(sd_model)
     return outdir_current + os.path.sep + f"vid.mp4"
 
