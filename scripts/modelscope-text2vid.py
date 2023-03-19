@@ -9,7 +9,7 @@ from modules import lowvram, devices, sd_hijack
 from modules.shared import opts, cmd_opts, state, sd_model
 from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from webui import wrap_gradio_gpu_call
-import cv2
+import cv2, os
 
 outdir = os.path.join(opts.outdir_samples or opts.outdir_img2img_samples, 'text2video-modelscope')
 
