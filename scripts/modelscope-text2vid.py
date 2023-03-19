@@ -9,7 +9,8 @@ from modules import lowvram, devices, sd_hijack
 from modules.shared import opts, cmd_opts, state, sd_model
 from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from webui import wrap_gradio_gpu_call
-import cv2, os
+import cv2
+import os, subprocess, time
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
@@ -32,20 +33,21 @@ def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, e
     print('Starting text2video')
     #print(pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents))
     samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents)
+    outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
     print('text2video finished, saving frames')
-    os.mkdir(outdir)
+    os.makedirs(outdir_current, exist_ok=True) # just deleted the folder so we need to make it again
     for i in range(len(samples)):
-        cv2.imwrite(outdir + os.path.sep + f"{i:09}.png", samples[i])
+        cv2.imwrite(outdir_current + os.path.sep + f"{i:09}.png", samples[i])
     
     # TODO: add params to the GUI
 
-    ffmpeg_stitch_video('ffmpeg', 24, outdir + os.path.sep + f"vid.mp4", 0, None, outdir)# add timestring
-    print(f't2v complete, result saved at {outdir}')
+    ffmpeg_stitch_video('ffmpeg', 24, outdir_current + os.path.sep + f"vid.mp4", 0, None, outdir_current)# add timestring
+    print(f't2v complete, result saved at {outdir_current}')
 
     devices.torch_gc()
     #lowvram.setup_for_low_vram(sd_model, cmd_opts.medvram)
     #sd_hijack.model_hijack.hijack(sd_model)
-    return outdir + os.path.sep + f"vid.mp4"
+    return outdir_current + os.path.sep + f"vid.mp4"
 
 def on_ui_tabs():
     # Uses only SD-requirements
@@ -118,8 +120,6 @@ def on_ui_tabs():
     return [(deforum_interface, "ModelScope text2video", "t2v_interface")]
 
 script_callbacks.on_ui_tabs(on_ui_tabs)
-
-import os, subprocess, time
 
 # Stitch images to a h264 mp4 video using ffmpeg
 def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
