@@ -15,13 +15,15 @@ https://user-images.githubusercontent.com/14872007/226214023-2d3892d8-64d4-4312-
 
 ---
 
+All the parts of the model at HuggingFace (download your weights from there and put into `stable-diffusion-webui/models/ModelScope/t2v`):
+
+https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main
+
+---
+
 HuggingFace space:
 
 https://huggingface.co/spaces/damo-vilab/modelscope-text-to-video-synthesis
-
-All the parts of the model at HuggingFace:
-
-https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main
 
 The model PyTorch implementation from ModelScope:
 
