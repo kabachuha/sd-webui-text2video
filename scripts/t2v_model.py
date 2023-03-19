@@ -1,6 +1,8 @@
 # Part of the implementation is borrowed and modified from stable-diffusion,
 # publicly avaialbe at https://github.com/Stability-AI/stablediffusion.
 # Copyright 2021-2022 The Alibaba Fundamental Vision Team Authors. All rights reserved.
+
+# https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
 import importlib
 import math
 from typing import Optional

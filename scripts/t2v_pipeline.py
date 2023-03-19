@@ -1,3 +1,4 @@
+# https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal Apache 2.0
 # Copyright 2021-2022 The Alibaba Fundamental Vision Team Authors. All rights reserved.
 import datetime
 import json

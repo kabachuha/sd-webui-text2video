@@ -1,3 +1,5 @@
+# See https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
+
 from modules import script_callbacks
 import gradio as gr
 import torch
