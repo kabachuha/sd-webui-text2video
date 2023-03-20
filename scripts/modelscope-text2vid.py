@@ -66,23 +66,23 @@ def on_ui_tabs():
                 with gr.Tabs():
                     with gr.Tab('text2video'):
                         with gr.Row():
-                            prompt = gr.Text(label='Prompt', max_lines=1)
+                            prompt = gr.Text(label='Prompt', max_lines=1, interactive=True)
                         with gr.Row():
-                            n_prompt = gr.Text(label='Negative prompt', max_lines=1)
+                            n_prompt = gr.Text(label='Negative prompt', max_lines=1, interactive=True, value='text, watermark, copyright, blurry')
                         with gr.Row():
                             steps = gr.Slider(
                                 label='Steps',
                                 minimum=1,
                                 maximum=100,
                                 step=1,
-                                value=20,
+                                value=30,
                                 info='Steps')
                             cfg_scale = gr.Slider(
                                 label='cfg_scale',
                                 minimum=1,
                                 maximum=100,
                                 step=1,
-                                value=7,
+                                value=12.5,
                                 info='Steps')
                         with gr.Row():
                             frames = gr.Number(label="frames", value=24, interactive=True, precision=0)
