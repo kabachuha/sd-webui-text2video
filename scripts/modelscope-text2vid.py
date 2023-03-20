@@ -142,6 +142,7 @@ def on_ui_tabs():
                     run_button = gr.Button('Generate', variant='primary')
                 with gr.Row():
                     i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
+                with gr.Row():
                     result = gr.Label("")
                 with gr.Row(variant='compact'):
                     btn = gr.Button("Click here after the generation to show the video")
