@@ -7,6 +7,8 @@ import torch
 import random
 import modules.paths as ph
 from modules import lowvram, devices, sd_hijack
+from modules import shared
+import gc
 from modules.shared import opts, cmd_opts, state, sd_model
 from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from webui import wrap_gradio_gpu_call
@@ -24,9 +26,9 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     try:
         latents=None
 
-        # FIXME sd unload
-        lowvram.send_everything_to_cpu()
-        #sd_hijack.model_hijack.undo_hijack(sd_model)
+        sd_hijack.model_hijack.undo_hijack(shared.sd_model)
+        shared.sd_model = None
+        gc.collect()
         devices.torch_gc()
 
         print('Starting text2video')
@@ -50,8 +52,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print(e)
     finally:
         devices.torch_gc()
-        lowvram.setup_for_low_vram(sd_model, cmd_opts.medvram)
-    #sd_hijack.model_hijack.hijack(sd_model)
+        gc.collect()
+        devices.torch_gc()
     return outdir_current + os.path.sep + f"vid.mp4"
 
 def on_ui_tabs():
