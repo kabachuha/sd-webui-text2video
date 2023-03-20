@@ -1462,7 +1462,6 @@ class GaussianDiffusion(object):
         del b
         del eps
         del x0
-        torch_gc()
         return xt_1
 
     @torch.no_grad()
@@ -1492,7 +1491,6 @@ class GaussianDiffusion(object):
                                      ddim_timesteps, eta)
             t.cpu()
             t = None
-            torch_gc()
             pbar.set_description(f"DDIM sampling {str(step)}")
         pbar.close()
         return xt
