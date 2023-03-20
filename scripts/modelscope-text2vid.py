@@ -45,7 +45,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         
         # TODO: add params to the GUI
         if not skip_video_creation:
-            ffmpeg_stitch_video(ffmpeg_location, fps, outdir_current + os.path.sep + f"vid.mp4", stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
+            ffmpeg_stitch_video(ffmpeg_location, fps, outdir_current + f"vid.mp4", stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
     except Exception as e:
         print('Exception occured')
