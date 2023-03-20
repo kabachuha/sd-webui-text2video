@@ -140,6 +140,35 @@ def find_ffmpeg_binary():
         except:
             return 'ffmpeg'
           
+def DeforumOutputArgs():
+    skip_video_creation = False
+    fps = 15 
+    make_gif = False
+    delete_imgs = False # True will delete all imgs after a successful mp4 creation
+    image_path = "C:/SD/20230124234916_%09d.png" 
+    mp4_path = "testvidmanualsettings.mp4" 
+    ffmpeg_location = find_ffmpeg_binary()
+    ffmpeg_crf = '17'
+    ffmpeg_preset = 'slow'
+    add_soundtrack = 'None' # ["File","Init Video"]
+    soundtrack_path = "https://deforum.github.io/a1/A1.mp3"
+    # End-Run upscaling
+    r_upscale_video = False
+    r_upscale_factor = 'x2' # ['2x', 'x3', 'x4']
+    r_upscale_model = 'realesr-animevideov3' # 'realesr-animevideov3' (default of realesrgan engine, does 2-4x), the rest do only 4x: 'realesrgan-x4plus', 'realesrgan-x4plus-anime'
+    r_upscale_keep_imgs = True
+    
+    render_steps = False
+    path_name_modifier = "x0_pred" #["x0_pred","x"]
+    store_frames_in_ram = False
+    #**Interpolate Video Settings**
+    frame_interpolation_engine = "None" # ["None", "RIFE v4.6", "FILM"]
+    frame_interpolation_x_amount = 2 # [2 to 1000 depends on the engine]
+    frame_interpolation_slow_mo_enabled = False
+    frame_interpolation_slow_mo_amount = 2 #[2 to 10]
+    frame_interpolation_keep_imgs = False
+    return locals()
+
 
 # Stitch images to a h264 mp4 video using ffmpeg
 def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
