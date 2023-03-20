@@ -150,7 +150,7 @@ class TextToVideoSynthesis():
         self.clip_encoder.to("cpu")
 
     #@torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae=False, latents=None):
+    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', latents=None):
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
@@ -207,12 +207,12 @@ class TextToVideoSynthesis():
                 torch_gc()
                 scale_factor = 0.18215
                 bs_vd = x0.shape[0]
-                if cpu_vae == True:
+                if 'CPU' in cpu_vae:
                     vd = x0.cpu()
                     x0 = None
                     del x0
                     vd = rearrange(vd, 'b c f h w -> (b f) c h w')
-                    print("CREATING FRAME")
+                    print("DECODING FRAMES")
                     print(vd.shape)
                     #self.autoencoder.to(self.device)
                     vd.float()
@@ -240,13 +240,17 @@ class TextToVideoSynthesis():
                     chunks = x0.chunk(x0.size(0) // chunk_size)
                     x0.cpu()
                     del x0
-                    print("CREATING FRAME")
-                    #print(x0.shape)
+
+                    print(f"STARTING VAE ON GPU. {len(chunks)} CHUNKS TO PROCESS")
                     self.autoencoder.to(self.device)
+                    if 'half precision' in cpu_vae:
+                        self.autoencoder.half()
+                        print(f"VAE HALVED")
+                    print("DECODING FRAMES")
+
                     # Split the tensor into chunks along the first dimension
                     # Apply the autoencoder to each chunk
                     output_chunks = []
-                    print(f"STARTING VAE ON GPU {len(chunks)}")
                     torch_gc()
                     x = 0
                     for chunk in chunks:
@@ -258,7 +262,7 @@ class TextToVideoSynthesis():
                         del output_chunk
                         output_chunks.append(cpu_chunk)
                         x += 1
-                print("FINISHED VAE ON CPU")
+                print("VAE FINISHED")
                 torch_gc()
                 # Concatenate the output chunks back into a single tensor
                 vd_out = torch.cat(output_chunks, dim=0)

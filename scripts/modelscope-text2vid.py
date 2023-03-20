@@ -35,7 +35,7 @@ Join the development or report issues and feature requests here <a style="color:
 
 '''
 
-def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
+def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)'):
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
     global i1_store_t2v
@@ -135,7 +135,7 @@ def on_ui_tabs():
                         with gr.Row():
                             eta = gr.Number(label="eta", value=0, interactive=True)
                         with gr.Row():
-                            cpu_vae = gr.Checkbox(label='Low VRAM VAE', value=False)
+                            cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=['GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
                             fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
