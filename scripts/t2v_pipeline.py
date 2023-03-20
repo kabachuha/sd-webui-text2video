@@ -150,7 +150,7 @@ class TextToVideoSynthesis():
         self.clip_encoder.to("cpu")
 
     #@torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', latents=None):
+    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device = torch.device('cpu'), latents=None):
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
@@ -164,7 +164,7 @@ class TextToVideoSynthesis():
         """
         print(self.sd_model.use_fps_condition)
         self.sd_model.use_fps_condition = False
-        self.device = torch.device('cuda')
+        self.device = device
         self.clip_encoder.to(self.device)
         y, zero_y = self.preprocess(prompt, n_prompt)
         self.clip_encoder.to("cpu")

@@ -17,6 +17,7 @@ from webui import wrap_gradio_gpu_call
 import cv2
 from base64 import b64encode
 import os, subprocess, time
+from modules import devices
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
@@ -57,7 +58,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         pipe = setup_pipeline()
         print('Starting text2video')
 
-        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents)
+        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, devices.get_optimal_device(), latents)
 
         print(f'text2video finished, saving frames to {outdir_current}')
 
