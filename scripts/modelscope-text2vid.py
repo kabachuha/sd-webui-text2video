@@ -42,11 +42,11 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print(f'text2video finished, saving frames to {outdir_current}')
         os.makedirs(outdir_current, exist_ok=True) # just deleted the folder so we need to make it again
         for i in range(len(samples)):
-            cv2.imwrite(outdir_current + os.path.sep + f"{i:09}.png", samples[i])
+            cv2.imwrite(outdir_current + os.path.sep + f"{i:06}.png", samples[i])
         
         # TODO: add params to the GUI
         if not skip_video_creation:
-            ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=outdir_current, stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
+            ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current, "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
     except Exception as e:
         print('Exception occured')
