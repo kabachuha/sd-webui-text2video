@@ -86,7 +86,7 @@ def on_ui_tabs():
                                 value=12.5,
                                 info='Steps')
                         with gr.Row():
-                            frames = gr.Number(label="frames", value=24, interactive=True, precision=0)
+                            frames = gr.Slider(label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
                             seed = gr.Slider(
                                 label='Seed',
                                 minimum=-1,
