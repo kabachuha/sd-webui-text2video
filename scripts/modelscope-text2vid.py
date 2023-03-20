@@ -28,6 +28,8 @@ def setup_pipeline():
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
 
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
+    print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
+    print(f"Git commit: {get_t2v_version()}")
     global i1_store_t2v
     outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
     dataurl = get_error()
@@ -190,6 +192,16 @@ def find_ffmpeg_binary():
             return files[0] if files else 'ffmpeg'
         except:
             return 'ffmpeg'
+
+def get_t2v_version():
+    from modules import extensions as mext
+    try:
+        for ext in mext.extensions:
+            if ext.name in ["sd-webui-modelscope-text2video"] and ext.enabled:
+                return ext.version
+        return "Unknown"
+    except:
+        return "Unknown"
           
 def DeforumOutputArgs():
     skip_video_creation = False
