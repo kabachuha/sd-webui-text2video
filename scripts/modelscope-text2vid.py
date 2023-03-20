@@ -50,15 +50,18 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current, "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4",'rb').read()
+        dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
     except Exception as e:
         print('Exception occured')
         print(e)
         mp4 = open(os.path.join(os.getcwd(), 'extensions/sd-webui-modelscope-text2video/error.mp4'),'rb').read()
+        dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
     finally:
         devices.torch_gc()
         gc.collect()
         devices.torch_gc()
-    return "data:video/mp4;base64," + b64encode(mp4).decode()
+        i1_store = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
+    return i1_store
 
 def on_ui_tabs():
     # Uses only SD-requirements + ffmpeg
@@ -134,7 +137,8 @@ def on_ui_tabs():
                 with gr.Row():
                     run_button = gr.Button('Generate', variant='primary')
                 with gr.Row():
-                    result = gr.PlayableVideo(label='Result')
+                    i1_store = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
+                    result = gr.HTML(i1_store, elem_id='deforum_header')
             dummy_component = gr.Label(visible=False)
             run_button.click(
                 fn=wrap_gradio_gpu_call(process),#, extra_outputs=[None, '', '']),
