@@ -14,6 +14,7 @@ from modules.shared import opts, cmd_opts, state, sd_model
 from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from webui import wrap_gradio_gpu_call
 import cv2
+from base64 import b64encode
 import os, subprocess, time
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
@@ -48,14 +49,16 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         if not skip_video_creation:
             ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current, "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
+        mp4 = open(outdir_current + os.path.sep + f"vid.mp4",'rb').read()
     except Exception as e:
         print('Exception occured')
         print(e)
+        mp4 = open(os.path.join(os.getcwd(), 'extensions/sd-webui-modelscope-text2video/error.mp4'),'rb').read()
     finally:
         devices.torch_gc()
         gc.collect()
         devices.torch_gc()
-    return outdir_current + os.path.sep + f"vid.mp4"
+    return "data:video/mp4;base64," + b64encode(mp4).decode()
 
 def on_ui_tabs():
     # Uses only SD-requirements + ffmpeg
