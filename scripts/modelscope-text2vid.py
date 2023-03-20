@@ -137,7 +137,7 @@ def on_ui_tabs():
                     result = gr.PlayableVideo(label='Result')
             dummy_component = gr.Label(visible=False)
             run_button.click(
-                fn=wrap_gradio_gpu_call(process, extra_outputs=[None, '', '']),
+                fn=wrap_gradio_gpu_call(process),#, extra_outputs=[None, '', '']),
                 #_js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae],#[dummy_component, dummy_component] + 
                 outputs=[
