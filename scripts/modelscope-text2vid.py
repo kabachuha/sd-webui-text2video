@@ -144,6 +144,7 @@ def on_ui_tabs():
                     i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
                 with gr.Row():
                     result = gr.Label("")
+                    result2 = gr.Label("")
                 with gr.Row(variant='compact'):
                     btn = gr.Button("Click here after the generation to show the video")
                 with gr.Row(variant='compact'):
@@ -166,7 +167,7 @@ def on_ui_tabs():
                 #_js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae],#[dummy_component, dummy_component] + 
                 outputs=[
-                        result,
+                        result,result2,
                 ],
             )
 
