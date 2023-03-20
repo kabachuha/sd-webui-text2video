@@ -6,11 +6,15 @@ Auto1111 extension consisting of implementation of ModelScope text2video using o
 
 There is a known issue with ffmpeg stitching, if ffmpeg fails and it outputs something like 'tuple split failed', go to 'stable-diffusion-webui/outputs/img2img-images/text2video-modelscope' and grab the frames from there until it's fixed.
 
+Test examples:
+
 Prompt: `flowers turning into lava`
 
-Test example:
-
 https://user-images.githubusercontent.com/14872007/226214023-2d3892d8-64d4-4312-baab-575aafedae09.mp4
+
+Prompt: `cinematic explosion by greg rutkowski`
+
+https://user-images.githubusercontent.com/14872007/226345611-a1f0601f-db32-41bd-b983-80d363eca4d5.mp4
 
 
 ## Where to get the weights
