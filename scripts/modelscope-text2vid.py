@@ -109,7 +109,24 @@ def on_ui_tabs():
                     with gr.Row():
                         cpu_vae = gr.Checkbox(label='Low VRAM VAE', value=False)
                 with gr.Tab('Output'):
+                    with gr.Row(variant='compact') as fps_out_format_row:
 
+                        fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
+
+
+
+
+                   
+
+                    with gr.Row(variant='compact') as soundtrack_row:
+
+                        add_soundtrack = gr.Radio(['None', 'File', 'Init Video'], label="Add soundtrack", value=dv.add_soundtrack)
+
+                        soundtrack_path = gr.Textbox(label="Soundtrack path", lines=1, interactive=True, value = dv.soundtrack_path)
+
+                    with gr.Row(variant='compact'):
+
+                        skip_video_creation = gr.Checkbox(label="Skip video creation", value=dv.skip_video_creation, interactive=True)
                     with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_set_row:
                         ffmpeg_crf = gr.Slider(minimum=0, maximum=51, step=1, label="CRF", value=dv.ffmpeg_crf, interactive=True)
                         ffmpeg_preset = gr.Dropdown(label="Preset", choices=['veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value = dv.ffmpeg_preset, type="value")
