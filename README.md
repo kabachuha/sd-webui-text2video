@@ -18,8 +18,7 @@ https://user-images.githubusercontent.com/14872007/226345611-a1f0601f-db32-41bd-
 
 Prompt: `really attractive anime girl skating, by makoto shinkai, cinematic lighting`
 
-https://user-images.githubusercontent.com/14872007/226467288-c8f7a62f-9a66-4ef8-8c03-52a29d9c9a28.mp4
-
+https://user-images.githubusercontent.com/14872007/226468406-ce43fa0c-35f2-4625-a892-9fb3411d96bb.mp4
 
 
 ## Where to get the weights
