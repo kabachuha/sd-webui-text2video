@@ -1,6 +1,7 @@
 # See https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
 
 from modules import script_callbacks
+from types import SimpleNamespace
 import gradio as gr
 import torch
 import random
