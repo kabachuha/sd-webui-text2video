@@ -59,53 +59,56 @@ def on_ui_tabs():
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
         gr.Markdown('Put your models from https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main to stable-diffusion-webui/models/ModelScope/t2v/. 8gbs of VRAM on top of SD (TODO: unload SD on launch) should be enough to launch.\n\n Btw, This is all going to be HACKABLE at some point. Join the development https://github.com/deforum-art/sd-webui-modelscope-text2video \n\n')
         with gr.Column(scale=1, variant='panel'):
-            with gr.Row():
-                prompt = gr.Text(label='Prompt', max_lines=1)
-            with gr.Row():
-                n_prompt = gr.Text(label='Negative prompt', max_lines=1)
-            with gr.Row():
-                steps = gr.Slider(
-                    label='Steps',
-                    minimum=1,
-                    maximum=100,
-                    step=1,
-                    value=20,
-                    info='Steps')
-                cfg_scale = gr.Slider(
-                    label='cfg_scale',
-                    minimum=1,
-                    maximum=100,
-                    step=1,
-                    value=7,
-                    info='Steps')
-            with gr.Row():
-                frames = gr.Number(label="frames", value=24, interactive=True, precision=0)
-                seed = gr.Slider(
-                    label='Seed',
-                    minimum=-1,
-                    maximum=1000000,
-                    step=1,
-                    value=-1,
-                    info='If set to -1, a different seed will be used each time.')
-            with gr.Row():
-                width = gr.Slider(
-                    label='width',
-                    minimum=64,
-                    maximum=1024,
-                    step=64,
-                    value=256,
-                    info='If set to -1, a different seed will be used each time.')
-                height = gr.Slider(
-                    label='height',
-                    minimum=64,
-                    maximum=1024,
-                    step=64,
-                    value=256,
-                    info='If set to -1, a different seed will be used each time.')
-            with gr.Row():
-                eta = gr.Number(label="eta", value=0, interactive=True)
-            with gr.Row():
-                cpu_vae = gr.Checkbox(label='Low VRAM VAE', value=False)
+            with gr.Tab('text2video'):
+                with gr.Row():
+                    prompt = gr.Text(label='Prompt', max_lines=1)
+                with gr.Row():
+                    n_prompt = gr.Text(label='Negative prompt', max_lines=1)
+                with gr.Row():
+                    steps = gr.Slider(
+                        label='Steps',
+                        minimum=1,
+                        maximum=100,
+                        step=1,
+                        value=20,
+                        info='Steps')
+                    cfg_scale = gr.Slider(
+                        label='cfg_scale',
+                        minimum=1,
+                        maximum=100,
+                        step=1,
+                        value=7,
+                        info='Steps')
+                with gr.Row():
+                    frames = gr.Number(label="frames", value=24, interactive=True, precision=0)
+                    seed = gr.Slider(
+                        label='Seed',
+                        minimum=-1,
+                        maximum=1000000,
+                        step=1,
+                        value=-1,
+                        info='If set to -1, a different seed will be used each time.')
+                with gr.Row():
+                    width = gr.Slider(
+                        label='width',
+                        minimum=64,
+                        maximum=1024,
+                        step=64,
+                        value=256,
+                        info='If set to -1, a different seed will be used each time.')
+                    height = gr.Slider(
+                        label='height',
+                        minimum=64,
+                        maximum=1024,
+                        step=64,
+                        value=256,
+                        info='If set to -1, a different seed will be used each time.')
+                with gr.Row():
+                    eta = gr.Number(label="eta", value=0, interactive=True)
+                with gr.Row():
+                    cpu_vae = gr.Checkbox(label='Low VRAM VAE', value=False)
+            with gr.Tab('Output'):
+                gr.Markdown('TODO')
         with gr.Column(scale=1, variant='compact'):
             with gr.Row():
                 run_button = gr.Button('Generate', variant='primary')
