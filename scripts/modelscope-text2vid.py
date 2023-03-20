@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import gradio as gr
 import torch
 import random
+from pkg_resources import resource_filename
 import modules.paths as ph
 from modules import lowvram, devices, sd_hijack
 from modules import shared
