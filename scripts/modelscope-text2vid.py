@@ -109,7 +109,12 @@ def on_ui_tabs():
                     with gr.Row():
                         cpu_vae = gr.Checkbox(label='Low VRAM VAE', value=False)
                 with gr.Tab('Output'):
-                    gr.Markdown('TODO')
+
+                    with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_set_row:
+                        ffmpeg_crf = gr.Slider(minimum=0, maximum=51, step=1, label="CRF", value=dv.ffmpeg_crf, interactive=True)
+                        ffmpeg_preset = gr.Dropdown(label="Preset", choices=['veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value = dv.ffmpeg_preset, type="value")
+                    with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_location_row:
+                        ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value = dv.ffmpeg_location)
         with gr.Column(scale=1, variant='compact'):
             with gr.Row():
                 run_button = gr.Button('Generate', variant='primary')
