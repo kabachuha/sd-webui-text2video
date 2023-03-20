@@ -29,11 +29,14 @@ i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
     global i1_store_t2v
     outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
+    mp4 = open(os.path.join(os.getcwd(), 'extensions/sd-webui-modelscope-text2video/error.mp4'),'rb').read()
+    dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
     try:
         latents=None
 
-        sd_hijack.model_hijack.undo_hijack(shared.sd_model)
-        shared.sd_model = None
+        if sd_model is not None:
+            sd_hijack.model_hijack.undo_hijack(shared.sd_model)
+            shared.sd_model = None
         gc.collect()
         devices.torch_gc()
 
@@ -57,8 +60,6 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     except Exception as e:
         print('Exception occured')
         print(e)
-        mp4 = open(os.path.join(os.getcwd(), 'extensions/sd-webui-modelscope-text2video/error.mp4'),'rb').read()
-        dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
     finally:
         devices.torch_gc()
         gc.collect()
