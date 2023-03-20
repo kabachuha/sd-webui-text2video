@@ -125,6 +125,22 @@ def on_ui_tabs():
 
 script_callbacks.on_ui_tabs(on_ui_tabs)
 
+def find_ffmpeg_binary():
+    try:
+        import google.colab
+        return 'ffmpeg'
+    except:
+        pass
+    for package in ['imageio_ffmpeg', 'imageio-ffmpeg']:
+        try:
+            package_path = resource_filename(package, 'binaries')
+            files = [os.path.join(package_path, f) for f in os.listdir(package_path) if f.startswith("ffmpeg-")]
+            files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+            return files[0] if files else 'ffmpeg'
+        except:
+            return 'ffmpeg'
+          
+
 # Stitch images to a h264 mp4 video using ffmpeg
 def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
     start_time = time.time()
