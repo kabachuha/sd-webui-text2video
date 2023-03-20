@@ -38,9 +38,4 @@ body:
     attributes:
       label: Additional information
       description: Add any other context or screenshots about the feature request here.
-  - type: textarea
-    attributes:
-      label: Are you going to help adding it?
-      description: Do you want to participate in the development and bring the desired feature sooner? Let us know if you are willing to add the desired feature, ideally, leave your Discord handle here, so we will contact you for a less formal conversation. Our community is welcoming and ready to provide you with any information on the project structure or how the code works. If not, however, keep in mind that if you do not want to do your new feature yourself, you will have to wait until the team picks up your issue.
-    validations:
-      required: true
+
