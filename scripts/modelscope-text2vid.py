@@ -34,8 +34,9 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     try:
         latents=None
 
-        sd_hijack.model_hijack.undo_hijack(shared.sd_model)
-        shared.sd_model = None
+        if sd_model is not None:
+            sd_hijack.model_hijack.undo_hijack(shared.sd_model)
+            shared.sd_model = None
         gc.collect()
         devices.torch_gc()
 
