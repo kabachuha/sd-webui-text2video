@@ -19,7 +19,7 @@ def setup_pipeline():
     pipe = TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
     return pipe
 
-def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
+def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
     try:
         latents=None
 
@@ -141,7 +141,7 @@ def on_ui_tabs():
         run_button.click(
             fn=wrap_gradio_gpu_call(process, extra_outputs=[None, '', '']),
             #_js="submit_deforum",
-            inputs=[prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae],#[dummy_component, dummy_component] + 
+            inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae],#[dummy_component, dummy_component] + 
             outputs=[
                     result,
             ],
