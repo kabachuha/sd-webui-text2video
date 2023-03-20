@@ -35,14 +35,14 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         #print(pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents))
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents)
         outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
-        print('text2video finished, saving frames')
+        print(f'text2video finished, saving frames to {outdir_current}')
         os.makedirs(outdir_current, exist_ok=True) # just deleted the folder so we need to make it again
         for i in range(len(samples)):
             cv2.imwrite(outdir_current + os.path.sep + f"{i:09}.png", samples[i])
         
         # TODO: add params to the GUI
-
-        ffmpeg_stitch_video('ffmpeg', 24, outdir_current + os.path.sep + f"vid.mp4", 0, None, outdir_current)# add timestring
+        if not skip_video_creation:
+            ffmpeg_stitch_video(ffmpeg_location, fps, outdir_current + os.path.sep + f"vid.mp4", 0, None, outdir_current)# add timestring
         print(f't2v complete, result saved at {outdir_current}')
     except Exception as e:
         print('Exception occured')
