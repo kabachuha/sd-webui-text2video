@@ -59,94 +59,85 @@ def on_ui_tabs():
     dv = SimpleNamespace(**DeforumOutputArgs())
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
         gr.Markdown('Put your models from https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main to stable-diffusion-webui/models/ModelScope/t2v/. 8gbs of VRAM on top of SD (TODO: unload SD on launch) should be enough to launch.\n\n Btw, This is all going to be HACKABLE at some point. Join the development https://github.com/deforum-art/sd-webui-modelscope-text2video \n\n')
-        with gr.Column(scale=1, variant='panel'):
-            with gr.Tabs():
-                with gr.Tab('text2video'):
-                    with gr.Row():
-                        prompt = gr.Text(label='Prompt', max_lines=1)
-                    with gr.Row():
-                        n_prompt = gr.Text(label='Negative prompt', max_lines=1)
-                    with gr.Row():
-                        steps = gr.Slider(
-                            label='Steps',
-                            minimum=1,
-                            maximum=100,
-                            step=1,
-                            value=20,
-                            info='Steps')
-                        cfg_scale = gr.Slider(
-                            label='cfg_scale',
-                            minimum=1,
-                            maximum=100,
-                            step=1,
-                            value=7,
-                            info='Steps')
-                    with gr.Row():
-                        frames = gr.Number(label="frames", value=24, interactive=True, precision=0)
-                        seed = gr.Slider(
-                            label='Seed',
-                            minimum=-1,
-                            maximum=1000000,
-                            step=1,
-                            value=-1,
-                            info='If set to -1, a different seed will be used each time.')
-                    with gr.Row():
-                        width = gr.Slider(
-                            label='width',
-                            minimum=64,
-                            maximum=1024,
-                            step=64,
-                            value=256,
-                            info='If set to -1, a different seed will be used each time.')
-                        height = gr.Slider(
-                            label='height',
-                            minimum=64,
-                            maximum=1024,
-                            step=64,
-                            value=256,
-                            info='If set to -1, a different seed will be used each time.')
-                    with gr.Row():
-                        eta = gr.Number(label="eta", value=0, interactive=True)
-                    with gr.Row():
-                        cpu_vae = gr.Checkbox(label='Low VRAM VAE', value=False)
-                with gr.Tab('Output'):
-                    with gr.Row(variant='compact') as fps_out_format_row:
+        with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
+            with gr.Column(scale=1, variant='panel'):
+                with gr.Tabs():
+                    with gr.Tab('text2video'):
+                        with gr.Row():
+                            prompt = gr.Text(label='Prompt', max_lines=1)
+                        with gr.Row():
+                            n_prompt = gr.Text(label='Negative prompt', max_lines=1)
+                        with gr.Row():
+                            steps = gr.Slider(
+                                label='Steps',
+                                minimum=1,
+                                maximum=100,
+                                step=1,
+                                value=20,
+                                info='Steps')
+                            cfg_scale = gr.Slider(
+                                label='cfg_scale',
+                                minimum=1,
+                                maximum=100,
+                                step=1,
+                                value=7,
+                                info='Steps')
+                        with gr.Row():
+                            frames = gr.Number(label="frames", value=24, interactive=True, precision=0)
+                            seed = gr.Slider(
+                                label='Seed',
+                                minimum=-1,
+                                maximum=1000000,
+                                step=1,
+                                value=-1,
+                                info='If set to -1, a different seed will be used each time.')
+                        with gr.Row():
+                            width = gr.Slider(
+                                label='width',
+                                minimum=64,
+                                maximum=1024,
+                                step=64,
+                                value=256,
+                                info='If set to -1, a different seed will be used each time.')
+                            height = gr.Slider(
+                                label='height',
+                                minimum=64,
+                                maximum=1024,
+                                step=64,
+                                value=256,
+                                info='If set to -1, a different seed will be used each time.')
+                        with gr.Row():
+                            eta = gr.Number(label="eta", value=0, interactive=True)
+                        with gr.Row():
+                            cpu_vae = gr.Checkbox(label='Low VRAM VAE', value=False)
+                    with gr.Tab('Output'):
+                        with gr.Row(variant='compact') as fps_out_format_row:
+                            fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
+                        with gr.Row(variant='compact') as soundtrack_row:
+                            add_soundtrack = gr.Radio(['None', 'File', 'Init Video'], label="Add soundtrack", value=dv.add_soundtrack)
+                            soundtrack_path = gr.Textbox(label="Soundtrack path", lines=1, interactive=True, value = dv.soundtrack_path)
 
-                        fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
-
-
-
-
-                   
-
-                    with gr.Row(variant='compact') as soundtrack_row:
-
-                        add_soundtrack = gr.Radio(['None', 'File', 'Init Video'], label="Add soundtrack", value=dv.add_soundtrack)
-
-                        soundtrack_path = gr.Textbox(label="Soundtrack path", lines=1, interactive=True, value = dv.soundtrack_path)
-
-                    with gr.Row(variant='compact'):
-
-                        skip_video_creation = gr.Checkbox(label="Skip video creation", value=dv.skip_video_creation, interactive=True)
-                    with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_set_row:
-                        ffmpeg_crf = gr.Slider(minimum=0, maximum=51, step=1, label="CRF", value=dv.ffmpeg_crf, interactive=True)
-                        ffmpeg_preset = gr.Dropdown(label="Preset", choices=['veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value = dv.ffmpeg_preset, type="value")
-                    with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_location_row:
-                        ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value = dv.ffmpeg_location)
-        with gr.Column(scale=1, variant='compact'):
-            with gr.Row():
-                run_button = gr.Button('Generate', variant='primary')
-            with gr.Row():
-                result = gr.PlayableVideo(label='Result')
-        dummy_component = gr.Label(visible=False)
-        run_button.click(
-            fn=wrap_gradio_gpu_call(process, extra_outputs=[None, '', '']),
-            #_js="submit_deforum",
-            inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae],#[dummy_component, dummy_component] + 
-            outputs=[
-                    result,
-            ],
-        )
+                        with gr.Row(variant='compact'):
+                            skip_video_creation = gr.Checkbox(label="Skip video creation", value=dv.skip_video_creation, interactive=True)
+                        with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_set_row:
+                            ffmpeg_crf = gr.Slider(minimum=0, maximum=51, step=1, label="CRF", value=dv.ffmpeg_crf, interactive=True)
+                            ffmpeg_preset = gr.Dropdown(label="Preset", choices=['veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value = dv.ffmpeg_preset, type="value")
+                        with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_location_row:
+                            ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value = dv.ffmpeg_location)
+            with gr.Column(scale=1, variant='compact'):
+                with gr.Row():
+                    run_button = gr.Button('Generate', variant='primary')
+                with gr.Row():
+                    result = gr.PlayableVideo(label='Result')
+            dummy_component = gr.Label(visible=False)
+            run_button.click(
+                fn=wrap_gradio_gpu_call(process, extra_outputs=[None, '', '']),
+                #_js="submit_deforum",
+                inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae],#[dummy_component, dummy_component] + 
+                outputs=[
+                        result,
+                ],
+            )
 
     return [(deforum_interface, "ModelScope text2video", "t2v_interface")]
 
