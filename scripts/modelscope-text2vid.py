@@ -143,7 +143,7 @@ def on_ui_tabs():
                     run_button = gr.Button('Generate', variant='primary')
                 with gr.Row():
                     i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
-                with gr.Row():
+                with gr.Row(visible=False):
                     result = gr.Label("")
                     result2 = gr.Label("")
                 with gr.Row(variant='compact'):
