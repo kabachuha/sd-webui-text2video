@@ -16,6 +16,11 @@ Prompt: `cinematic explosion by greg rutkowski`
 
 https://user-images.githubusercontent.com/14872007/226345611-a1f0601f-db32-41bd-b983-80d363eca4d5.mp4
 
+Prompt: `really attractive anime girl skating, by makoto shinkai, cinematic lighting`
+
+https://user-images.githubusercontent.com/14872007/226467288-c8f7a62f-9a66-4ef8-8c03-52a29d9c9a28.mp4
+
+
 
 ## Where to get the weights
 
