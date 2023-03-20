@@ -54,8 +54,8 @@ def process(prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, e
     return outdir_current + os.path.sep + f"vid.mp4"
 
 def on_ui_tabs():
-    # Uses only SD-requirements
-    
+    # Uses only SD-requirements + ffmpeg
+    dv = SimpleNamespace(**DeforumOutputArgs())
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
         gr.Markdown('Put your models from https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main to stable-diffusion-webui/models/ModelScope/t2v/. 8gbs of VRAM on top of SD (TODO: unload SD on launch) should be enough to launch.\n\n Btw, This is all going to be HACKABLE at some point. Join the development https://github.com/deforum-art/sd-webui-modelscope-text2video \n\n')
         with gr.Column(scale=1, variant='panel'):
