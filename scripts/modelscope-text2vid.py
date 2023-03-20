@@ -24,7 +24,10 @@ def setup_pipeline():
     pipe = TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
     return pipe
 
+i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
+
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
+    global i1_store_t2v
     outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
     try:
         latents=None
@@ -60,10 +63,11 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         devices.torch_gc()
         gc.collect()
         devices.torch_gc()
-        i1_store = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
-    return i1_store
+        i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
+    return f'Video at {outdir_current} ready!'
 
 def on_ui_tabs():
+    global i1_store_t2v
     # Uses only SD-requirements + ffmpeg
     dv = SimpleNamespace(**DeforumOutputArgs())
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
@@ -137,8 +141,24 @@ def on_ui_tabs():
                 with gr.Row():
                     run_button = gr.Button('Generate', variant='primary')
                 with gr.Row():
-                    i1_store = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
-                    result = gr.HTML(i1_store, elem_id='deforum_header')
+                    i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
+                    result = gr.Label("")
+                with gr.Row(variant='compact'):
+                    btn = gr.Button("Click here after the generation to show the video")
+                with gr.Row(variant='compact'):
+                    i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
+                    # Show video
+                    def show_vid():
+                        return {
+                            i1: gr.update(value=i1_store_t2v, visible=True),
+                            btn: gr.update(value="Update the video", visible=True),
+                        }
+                
+                    btn.click(
+                        show_vid,
+                        [],
+                        [i1, btn],
+                        )
             dummy_component = gr.Label(visible=False)
             run_button.click(
                 fn=wrap_gradio_gpu_call(process),#, extra_outputs=[None, '', '']),
