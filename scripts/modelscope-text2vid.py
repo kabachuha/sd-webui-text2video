@@ -27,6 +27,14 @@ def setup_pipeline():
 
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
 
+welcome_text = '''Put your models from <a style="color:SteelBlue" href="https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main">https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main</a> to stable-diffusion-webui/models/ModelScope/t2v/. Make sure, you downloaded the file named 'configuration.json' in its raw text form (click on the ⬇️ character to the right, don't save via right-click).
+
+8gbs of VRAM on top of SD should be enough to launch (when the VAE unloading will be fixed, before that orient around ~12 gbs).
+
+Join the development or report issues and feature requests here <a style="color:SteelBlue" href="https://github.com/deforum-art/sd-webui-modelscope-text2video">https://github.com/deforum-art/sd-webui-modelscope-text2video</a>
+
+'''
+
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae=False):
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
@@ -46,9 +54,11 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print('Pipeline setup')
         pipe = setup_pipeline()
         print('Starting text2video')
-        #print(pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents))
+
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, latents)
+
         print(f'text2video finished, saving frames to {outdir_current}')
+
         os.makedirs(outdir_current, exist_ok=True) # just deleted the folder so we need to make it again
         for i in range(len(samples)):
             cv2.imwrite(outdir_current + os.path.sep + f"{i:06}.png", samples[i])
@@ -57,6 +67,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         if not skip_video_creation:
             ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current, "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
+
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4",'rb').read()
         dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
     except Exception as e:
@@ -74,7 +85,6 @@ def on_ui_tabs():
     # Uses only SD-requirements + ffmpeg
     dv = SimpleNamespace(**DeforumOutputArgs())
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
-        gr.Markdown('Put your models from <a style="color:SteelBlue" href="https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main">https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main</a> to stable-diffusion-webui/models/ModelScope/t2v/. 8gbs of VRAM on top of SD should be enough to launch (when the VAE unloading will be fixed, before that orient around ~12 gbs).\n\n Join the development or report issues and feature requests here <a style="color:SteelBlue" href="https://github.com/deforum-art/sd-webui-modelscope-text2video">https://github.com/deforum-art/sd-webui-modelscope-text2video</a>\n\n')
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
                 with gr.Tabs():
@@ -140,6 +150,8 @@ def on_ui_tabs():
                             ffmpeg_preset = gr.Dropdown(label="Preset", choices=['veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value = dv.ffmpeg_preset, type="value")
                         with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_location_row:
                             ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value = dv.ffmpeg_location)
+                    with gr.Tab('How to install? Where to get help, how to help?'):
+                        gr.Markdown(welcome_text)
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row():
                     run_button = gr.Button('Generate', variant='primary')
