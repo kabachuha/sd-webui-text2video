@@ -31,8 +31,6 @@ Download the following files from [HuggingFace](https://huggingface.co/damo-vila
 
 And put them in `stable-diffusion-webui/models/ModelScope/t2v`. Create those 2 folders if they are missing. 
 
-https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main
-
 ## Screenshots
 
 ![Screenshot 2023-03-20 at 15-52-21 Stable Diffusion](https://user-images.githubusercontent.com/14872007/226345377-bad6dda5-f921-4233-b832-843e78854cbb.png)
