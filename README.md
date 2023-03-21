@@ -23,7 +23,13 @@ https://user-images.githubusercontent.com/14872007/226468406-ce43fa0c-35f2-4625-
 
 ## Where to get the weights
 
-All the parts of the model at HuggingFace (download your weights from there and put into `stable-diffusion-webui/models/ModelScope/t2v`):
+Download the following files from [HuggingFace](https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main):
+- VQGAN_autoencoder.pth
+- configuration.json
+- open_clip_pytorch_model.bin
+- text2video_pytorch_model.pth
+
+And put them in `stable-diffusion-webui/models/ModelScope/t2v`. Create those 2 folders if they are missing. 
 
 https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main
 
