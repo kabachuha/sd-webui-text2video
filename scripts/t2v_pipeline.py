@@ -162,7 +162,7 @@ class TextToVideoSynthesis():
         Returns:
             A generated video (as pytorch tensor).
         """
-        print(self.sd_model.use_fps_condition)
+        #print(self.sd_model.use_fps_condition)
         self.sd_model.use_fps_condition = False
         self.device = device
         self.clip_encoder.to(self.device)
