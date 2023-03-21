@@ -52,7 +52,7 @@ class TextToVideoSynthesis():
         clip_encoder: encode the text into text embedding.
     """
 
-    def __init__(self, model_dir):
+    def __init__(self, model_dir,map_location):
         r"""
         Args:
             model_dir (`str` or `os.PathLike`)
@@ -103,9 +103,10 @@ class TextToVideoSynthesis():
         self.sd_model.load_state_dict(
             torch.load(
                 osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"])),
-            strict=True)
+            strict=True, map_location='cpu' if map_location.type == 'mps' else map_location)
         self.sd_model.eval()
-        self.sd_model.half()
+        if map_location != 'cpu':
+            self.sd_model.half()
 
         # Initialize diffusion
         betas = beta_schedule(

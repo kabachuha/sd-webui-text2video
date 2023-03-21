@@ -24,8 +24,8 @@ outdir = os.path.join(os.getcwd(), outdir)
 
 pipe = None
 
-def setup_pipeline():
-    return TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
+def setup_pipeline(device):
+    return TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v', device)
 
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
 
@@ -48,8 +48,10 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     dataurl = get_error()
     try:
         latents = None
+        device = devices.get_optimal_device()
 
         if shared.sd_model is not None:
+            print('Unloading SD checkpoint')
             sd_hijack.model_hijack.undo_hijack(shared.sd_model)
             try:
                 lowvram.send_everything_to_cpu()
@@ -57,19 +59,19 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 ...
             del shared.sd_model
             shared.sd_model = None
+            print('SD unloaded')
         gc.collect()
         devices.torch_gc()
 
         print('Starting text2video')
-        print('Pipeline setup')
-
         if pipe is None:
-            pipe = setup_pipeline()
+            print('Pipeline setup')
+            pipe = setup_pipeline(device)
 
         print('Starting text2video')
 
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale,
-                                width, height, eta, cpu_vae, devices.get_optimal_device(), latents)
+                                width, height, eta, cpu_vae, device, latents)
 
         print(f'text2video finished, saving frames to {outdir_current}')
 
