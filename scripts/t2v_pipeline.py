@@ -208,17 +208,14 @@ class TextToVideoSynthesis():
                 scale_factor = 0.18215
                 bs_vd = x0.shape[0]
                 if 'CPU' in cpu_vae:
-                    vd = x0.cpu()
-                    x0 = None
-                    del x0
-                    vd = rearrange(vd, 'b c f h w -> (b f) c h w')
+                    x0 = x0.cpu()
                     print("DECODING FRAMES")
-                    print(vd.shape)
+                    print(x0.shape)
                     #self.autoencoder.to(self.device)
-                    vd.float()
+                    x0.float()
                     # Split the tensor into chunks along the first dimension
                     chunk_size = 1
-                    chunks = vd.chunk(vd.size(0) // chunk_size)
+                    chunks = x0.chunk(x0.size(0) // chunk_size)
                     # Apply the autoencoder to each chunk
                     output_chunks = []
                     self.autoencoder.to("cpu")
