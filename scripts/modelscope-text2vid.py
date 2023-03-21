@@ -170,12 +170,10 @@ def on_ui_tabs():
                             cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=[
                                                'GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
                         with gr.Row():
-                            keep_pipe = gr.Checkbox(
-                                label="keep pipe in memory", value=dv.keep_pipe_in_memory, interactive=True)
+                            keep_pipe = gr.Checkbox(label="Keep pipe in VRAM", value=dv.keep_pipe_in_memory, interactive=True)
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
-                            fps = gr.Slider(
-                                label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
+                            fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
                         with gr.Row(variant='compact') as soundtrack_row:
                             add_soundtrack = gr.Radio(
                                 ['None', 'File', 'Init Video'], label="Add soundtrack", value=dv.add_soundtrack)
@@ -183,16 +181,12 @@ def on_ui_tabs():
                                 label="Soundtrack path", lines=1, interactive=True, value=dv.soundtrack_path)
 
                         with gr.Row(variant='compact'):
-                            skip_video_creation = gr.Checkbox(
-                                label="Skip video creation", value=dv.skip_video_creation, interactive=True)
+                            skip_video_creation = gr.Checkbox(label="Skip video creation", value=dv.skip_video_creation, interactive=True)
                         with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_set_row:
-                            ffmpeg_crf = gr.Slider(
-                                minimum=0, maximum=51, step=1, label="CRF", value=dv.ffmpeg_crf, interactive=True)
-                            ffmpeg_preset = gr.Dropdown(label="Preset", choices=[
-                                                        'veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value=dv.ffmpeg_preset, type="value")
+                            ffmpeg_crf = gr.Slider(minimum=0, maximum=51, step=1, label="CRF", value=dv.ffmpeg_crf, interactive=True)
+                            ffmpeg_preset = gr.Dropdown(label="Preset", choices=['veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value=dv.ffmpeg_preset, type="value")
                         with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_location_row:
-                            ffmpeg_location = gr.Textbox(
-                                label="Location", lines=1, interactive=True, value=dv.ffmpeg_location)
+                            ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value=dv.ffmpeg_location)
                     with gr.Tab('How to install? Where to get help, how to help?'):
                         gr.Markdown(welcome_text)
             with gr.Column(scale=1, variant='compact'):
@@ -204,8 +198,7 @@ def on_ui_tabs():
                     result = gr.Label("")
                     result2 = gr.Label("")
                 with gr.Row(variant='compact'):
-                    btn = gr.Button(
-                        "Click here after the generation to show the video")
+                    btn = gr.Button("Click here after the generation to show the video")
                 with gr.Row(variant='compact'):
                     i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
                     # Show video
@@ -228,16 +221,12 @@ def on_ui_tabs():
                 # _js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt,
                         n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe],  # [dummy_component, dummy_component] +
-                outputs=[
-                    result, result2,
-                ],
+                outputs=[result, result2]
             )
 
     return [(deforum_interface, "ModelScope text2video", "t2v_interface")]
 
-
 script_callbacks.on_ui_tabs(on_ui_tabs)
-
 
 def find_ffmpeg_binary():
     try:
@@ -255,7 +244,6 @@ def find_ffmpeg_binary():
         except:
             return 'ffmpeg'
 
-
 def get_t2v_version():
     from modules import extensions as mext
     try:
@@ -265,7 +253,6 @@ def get_t2v_version():
         return "Unknown"
     except:
         return "Unknown"
-
 
 def DeforumOutputArgs():
     skip_video_creation = False
@@ -303,8 +290,7 @@ def DeforumOutputArgs():
 def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
     start_time = time.time()
 
-    print(
-        f"Got a request to stitch frames to video using FFmpeg.\nFrames:\n{imgs_path}\nTo Video:\n{outmp4_path}")
+    print(f"Got a request to stitch frames to video using FFmpeg.\nFrames:\n{imgs_path}\nTo Video:\n{outmp4_path}")
     msg_to_print = f"Stitching *video*..."
     print(msg_to_print)
     if stitch_to_frame == -1:
@@ -366,17 +352,13 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
             os.replace(outmp4_path+'.temp.mp4', outmp4_path)
             print("\r" + " " * len(msg_to_print), end="", flush=True)
             print(f"\r{msg_to_print}", flush=True)
-            print(
-                f"\rFFmpeg Video+Audio stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
+            print(f"\rFFmpeg Video+Audio stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
         except Exception as e:
             print("\r" + " " * len(msg_to_print), end="", flush=True)
             print(f"\r{msg_to_print}", flush=True)
-            print(
-                f'\rError adding audio to video. Actual error: {e}', flush=True)
-            print(
-                f"FFMPEG Video (sorry, no audio) stitching \033[33mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
+            print(f'\rError adding audio to video. Actual error: {e}', flush=True)
+            print(f"FFMPEG Video (sorry, no audio) stitching \033[33mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
     else:
         print("\r" + " " * len(msg_to_print), end="", flush=True)
         print(f"\r{msg_to_print}", flush=True)
-        print(
-            f"\rVideo stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
+        print(f"\rVideo stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
