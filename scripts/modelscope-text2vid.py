@@ -9,7 +9,7 @@ from pkg_resources import resource_filename
 import modules.paths as ph
 from modules import lowvram, devices, sd_hijack, shared
 import gc
-from modules.shared import opts, cmd_opts, state, sd_model
+from modules.shared import opts, cmd_opts, state
 from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from scripts.error_hardcode import get_error
 from webui import wrap_gradio_gpu_call
@@ -22,11 +22,10 @@ import time
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
 
-savedPipe = None
+pipe = None
 
 def setup_pipeline():
-    pipe = TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
-    return pipe
+    return TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
 
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
 
@@ -41,7 +40,7 @@ Join the development or report issues and feature requests here <a style="color:
 '''
 
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe=False):
-    global savedPipe
+    global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
     global i1_store_t2v
@@ -50,8 +49,13 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     try:
         latents = None
 
-        if sd_model is not None:
+        if shared.sd_model is not None:
             sd_hijack.model_hijack.undo_hijack(shared.sd_model)
+            try:
+                lowvram.send_everything_to_cpu()
+            except e:
+                ...
+            del shared.sd_model
             shared.sd_model = None
         gc.collect()
         devices.torch_gc()
@@ -59,17 +63,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print('Starting text2video')
         print('Pipeline setup')
 
-        #optionally store pipe in global between runs
-        if keep_pipe:
-            if savedPipe is None:
-                savedPipe = setup_pipeline()
-            pipe = savedPipe
-        else:
-            if savedPipe is None:
-                pipe = setup_pipeline()
-            else:
-                pipe = savedPipe
-                savedPipe = None
+        if pipe is None:
+            pipe = setup_pipeline()
 
         print('Starting text2video')
 
@@ -96,6 +91,9 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print('Exception occured')
         print(e)
     finally:
+        #optionally store pipe in global between runs, if not, remove it
+        if not keep_pipe:
+            pipe = None
         devices.torch_gc()
         gc.collect()
         devices.torch_gc()
