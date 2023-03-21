@@ -7,8 +7,7 @@ import torch
 import random
 from pkg_resources import resource_filename
 import modules.paths as ph
-from modules import lowvram, devices, sd_hijack
-from modules import shared
+from modules import lowvram, devices, sd_hijack, shared
 import gc
 from modules.shared import opts, cmd_opts, state, sd_model
 from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
@@ -19,18 +18,15 @@ from base64 import b64encode
 import os
 import subprocess
 import time
-from modules import devices
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
 
 savedPipe = None
 
-
 def setup_pipeline():
     pipe = TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
     return pipe
-
 
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
 
@@ -43,7 +39,6 @@ Join the development or report issues and feature requests here <a style="color:
 <italic>If you liked this extension, please <a style="color:SteelBlue" href="https://github.com/deforum-art/sd-webui-modelscope-text2video">give it a star on GitHub</a>!</italic> 😊
 
 '''
-
 
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe=False):
     global savedPipe
