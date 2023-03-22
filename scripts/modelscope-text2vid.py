@@ -240,7 +240,7 @@ def on_ui_tabs():
                     do_img2img = gr.State(value=0)
                     with gr.Tab('txt2vid') as tab_txt2vid:
                         # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
-                        prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe = setup_common_values()
+                        prompt, n_prompt, steps, frames, cfg_scale, width, height, eta = setup_common_values()
 
                     with gr.Tab('vid2vid') as tab_vid2vid:
                         img2img_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
