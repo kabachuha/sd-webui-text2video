@@ -1,23 +1,21 @@
 # See https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
-
-from modules import script_callbacks
-from types import SimpleNamespace
-import gradio as gr
-import torch
-import random
-from pkg_resources import resource_filename
-import modules.paths as ph
-from modules import lowvram, devices, sd_hijack, shared
-import gc
-from modules.shared import opts, cmd_opts, state
-from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
-from scripts.error_hardcode import get_error
-from webui import wrap_gradio_gpu_call
 import cv2
-from base64 import b64encode
+import gc
 import os
+import random
 import subprocess
 import time
+import torch
+from base64 import b64encode
+from types import SimpleNamespace
+import gradio as gr
+from webui import wrap_gradio_gpu_call
+import modules.paths as ph
+from modules import devices, lowvram, script_callbacks, sd_hijack, shared
+from modules.shared import cmd_opts, opts, state
+from scripts.error_hardcode import get_error
+from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
+from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
@@ -99,7 +97,6 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         devices.torch_gc()
         i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     return f'Video at {outdir_current} ready!'
-
 
 def on_ui_tabs():
     global i1_store_t2v
@@ -221,22 +218,6 @@ def on_ui_tabs():
 
 script_callbacks.on_ui_tabs(on_ui_tabs)
 
-def find_ffmpeg_binary():
-    try:
-        import google.colab
-        return 'ffmpeg'
-    except:
-        pass
-    for package in ['imageio_ffmpeg', 'imageio-ffmpeg']:
-        try:
-            package_path = resource_filename(package, 'binaries')
-            files = [os.path.join(package_path, f) for f in os.listdir(
-                package_path) if f.startswith("ffmpeg-")]
-            files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-            return files[0] if files else 'ffmpeg'
-        except:
-            return 'ffmpeg'
-
 def get_t2v_version():
     from modules import extensions as mext
     try:
@@ -277,81 +258,3 @@ def DeforumOutputArgs():
     frame_interpolation_keep_imgs = False
     keep_pipe_in_memory = False
     return locals()
-
-
-# Stitch images to a h264 mp4 video using ffmpeg
-def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
-    start_time = time.time()
-
-    print(f"Got a request to stitch frames to video using FFmpeg.\nFrames:\n{imgs_path}\nTo Video:\n{outmp4_path}")
-    msg_to_print = f"Stitching *video*..."
-    print(msg_to_print)
-    if stitch_to_frame == -1:
-        stitch_to_frame = 999999999
-    try:
-        cmd = [
-            ffmpeg_location,
-            '-y',
-            '-vcodec', 'png',
-            '-r', str(float(fps)),
-            '-start_number', str(stitch_from_frame),
-            '-i', imgs_path,
-            '-frames:v', str(stitch_to_frame),
-            '-c:v', 'libx264',
-            '-vf',
-            f'fps={float(fps)}',
-            '-pix_fmt', 'yuv420p',
-            '-crf', str(crf),
-            '-preset', preset,
-            '-pattern_type', 'sequence',
-            outmp4_path
-        ]
-        process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-    except FileNotFoundError:
-        print("\r" + " " * len(msg_to_print), end="", flush=True)
-        print(f"\r{msg_to_print}", flush=True)
-        raise FileNotFoundError(
-            "FFmpeg not found. Please make sure you have a working ffmpeg path under 'ffmpeg_location' parameter.")
-    except Exception as e:
-        print("\r" + " " * len(msg_to_print), end="", flush=True)
-        print(f"\r{msg_to_print}", flush=True)
-        raise Exception(
-            f'Error stitching frames to video. Actual runtime error:{e}')
-
-    if add_soundtrack != 'None':
-        audio_add_start_time = time.time()
-        try:
-            cmd = [
-                ffmpeg_location,
-                '-i',
-                outmp4_path,
-                '-i',
-                audio_path,
-                '-map', '0:v',
-                '-map', '1:a',
-                '-c:v', 'copy',
-                '-shortest',
-                outmp4_path+'.temp.mp4'
-            ]
-            process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = process.communicate()
-            if process.returncode != 0:
-                print("\r" + " " * len(msg_to_print), end="", flush=True)
-                print(f"\r{msg_to_print}", flush=True)
-                raise RuntimeError(stderr)
-            os.replace(outmp4_path+'.temp.mp4', outmp4_path)
-            print("\r" + " " * len(msg_to_print), end="", flush=True)
-            print(f"\r{msg_to_print}", flush=True)
-            print(f"\rFFmpeg Video+Audio stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
-        except Exception as e:
-            print("\r" + " " * len(msg_to_print), end="", flush=True)
-            print(f"\r{msg_to_print}", flush=True)
-            print(f'\rError adding audio to video. Actual error: {e}', flush=True)
-            print(f"FFMPEG Video (sorry, no audio) stitching \033[33mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
-    else:
-        print("\r" + " " * len(msg_to_print), end="", flush=True)
-        print(f"\r{msg_to_print}", flush=True)
-        print(f"\rVideo stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
