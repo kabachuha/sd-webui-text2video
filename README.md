@@ -4,8 +4,6 @@ Auto1111 extension consisting of implementation of ModelScope text2video using o
 
 8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (some opts are not working properly rn, however we are already getting reports of people launching 192x192 videos with 4gbs of vram). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
 
-There is a known issue with ffmpeg stitching, if ffmpeg fails and it outputs something like 'tuple split failed', go to 'stable-diffusion-webui/outputs/img2img-images/text2video-modelscope' and grab the frames from there until it's fixed.
-
 Test examples:
 
 Prompt: `flowers turning into lava`
@@ -23,7 +21,7 @@ https://user-images.githubusercontent.com/14872007/226468406-ce43fa0c-35f2-4625-
 
 ## Where to get the weights
 
-Download the following files from [HuggingFace](https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main):
+Download the following files from the [original HuggingFace repository](https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main). Alternatively, [download half-precision fp16 pruned weights (they are smaller and use less vram on loading)](https://huggingface.co/kabachuha/modelscope-damo-text2video-pruned-weights/tree/main):
 - VQGAN_autoencoder.pth
 - configuration.json
 - open_clip_pytorch_model.bin
