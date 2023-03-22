@@ -3,6 +3,7 @@
 # Copyright 2021-2022 The Alibaba Fundamental Vision Team Authors. All rights reserved.
 
 # https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
+from ldm.util import instantiate_from_config
 import importlib
 import math
 from typing import Optional
@@ -46,7 +47,8 @@ from ldm.modules.diffusionmodules.model import Decoder, Encoder
 from ldm.modules.distributions.distributions import DiagonalGaussianDistribution
 
 DEFAULT_MODEL_REVISION = None
-from ldm.util import instantiate_from_config
+
+
 class Invoke(object):
     KEY = 'invoked_by'
     PRETRAINED = 'from_pretrained'
@@ -1102,6 +1104,7 @@ class TemporalConvBlock_v2(nn.Module):
             x = identity + x
         return x
 
+
 class FrozenOpenCLIPEmbedder(torch.nn.Module):
     """
     Uses the OpenCLIP transformer encoder for text
@@ -1166,7 +1169,7 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
     def from_pretrained(cls,
                         model_name_or_path: str,
                         revision: Optional[str] = DEFAULT_MODEL_REVISION,
-                        cfg_dict = None,
+                        cfg_dict=None,
                         device: str = None,
                         **kwargs):
         """Instantiate a model from local directory or remote model repo. Note
@@ -1213,12 +1216,11 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
             model_cfg.type = model_cfg.model_type
         model_cfg.model_dir = local_model_dir
 
-        print("plugins",cfg.safe_get('plugins'))
-
+        print("plugins", cfg.safe_get('plugins'))
 
         # install and import remote repos before build
-        #register_plugins_repo(cfg.safe_get('plugins'))
-        #register_modelhub_repo(local_model_dir, cfg.get('allow_remote', False))
+        # register_plugins_repo(cfg.safe_get('plugins'))
+        # register_modelhub_repo(local_model_dir, cfg.get('allow_remote', False))
 
         for k, v in kwargs.items():
             model_cfg[k] = v
@@ -1229,7 +1231,7 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
             model = build_backbone(model_cfg)
         else:"""
         model = instantiate_from_config(model_cfg)
-        #model = build_model(model_cfg, task_name=task_name)
+        # model = build_model(model_cfg, task_name=task_name)
 
         # dynamically add pipeline info to model for pipeline inference
         if hasattr(cfg, 'pipeline'):
@@ -1326,11 +1328,12 @@ class GaussianDiffusion(object):
         self.posterior_mean_coef2 = (
             1.0 - self.alphas_cumprod_prev) * torch.sqrt(alphas) / (
                 1.0 - self.alphas_cumprod)
-        
 
-    def add_noise(self,xt,noise,t):
-        print("adding noise",t,self.sqrt_alphas_cumprod[t],self.sqrt_one_minus_alphas_cumprod[t])
-        noisy_sample = self.sqrt_alphas_cumprod[t]*xt+noise*self.sqrt_one_minus_alphas_cumprod[t]
+    def add_noise(self, xt, noise, t):
+        print("adding noise", t,
+              self.sqrt_alphas_cumprod[t], self.sqrt_one_minus_alphas_cumprod[t])
+        noisy_sample = self.sqrt_alphas_cumprod[t] * \
+            xt+noise*self.sqrt_one_minus_alphas_cumprod[t]
         return noisy_sample
 
     def p_mean_variance(self,
@@ -1482,7 +1485,7 @@ class GaussianDiffusion(object):
                          ddim_timesteps=20,
                          eta=0.0,
                          skip_steps=0,
-                         img2img_noise=1):
+                         ):
         # prepare input
         b = noise.size(0)
         xt = noise
@@ -1491,23 +1494,22 @@ class GaussianDiffusion(object):
         steps = (1 + torch.arange(0, self.num_timesteps,
                                   self.num_timesteps // ddim_timesteps)).clamp(
                                       0, self.num_timesteps - 1).flip(0)
-        
-        if skip_steps>0:
-            step0=steps[skip_steps-1]
-            steps=steps[skip_steps:]
 
-            #noise_to_add=torch.randn(noise.shape).to(xt.device)*img2img_noise
+        if skip_steps > 0:
+            step0 = steps[skip_steps-1]
+            steps = steps[skip_steps:]
+
             noise_to_add = torch.randn_like(xt)
             t = torch.full((b, ), step0, dtype=torch.long, device=xt.device)
-            print("huh",step0,t)
-            xt=self.add_noise(xt,noise_to_add,step0)
+            print("huh", step0, t)
+            xt = self.add_noise(xt, noise_to_add, step0)
 
         pbar = tqdm(steps, desc="DDIM sampling")
         for step in pbar:
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             xt = self.ddim_sample(xt, t, model, model_kwargs, clamp,
-                                     percentile, condition_fn, guide_scale,
-                                     ddim_timesteps, eta)
+                                  percentile, condition_fn, guide_scale,
+                                  ddim_timesteps, eta)
             t.cpu()
             t = None
             pbar.set_description(f"DDIM sampling {str(step)}")
@@ -1641,6 +1643,7 @@ class AutoencoderKL(nn.Module):
         x = F.conv2d(x, weight=self.colorize)
         x = 2. * (x - x.min()) / (x.max() - x.min()) - 1.
         return x
+
 
 def prob_mask_like(shape, prob, device):
     if prob == 1:

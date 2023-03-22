@@ -45,9 +45,9 @@ Join the development or report issues and feature requests here <a style="color:
 
 
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe=False,
-            do_img2img=False, img2img_frames=None, img2img_steps=0,img2img_noise=0
+            do_img2img=False, img2img_frames=None, img2img_steps=0
             ):
-    global savedPipe
+    global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
     global i1_store_t2v
@@ -107,39 +107,17 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             #should be -1,1, not 0,1
             vd_out=2*vd_out-1
 
-            #normalize video?
-            #vd_out=(vd_out-torch.mean(vd_out))/torch.std(vd_out)
-
-            #images should have shape # ncfhw (batches, channels [3], frames, height, width)
-            #and might have to be autoencoded in batches
-
-            #latent_h, latent_w = height // 8, width // 8
             #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
             print("computing latents")
             latents = pipe.compute_latents(vd_out).to(device)
-
-            #normalize latents?
-            #latents=(latents-torch.mean(latents))/torch.std(latents)
-            #latents=(latents-torch.mean(latents))
-
-            #noise=torch.rand_like(latents)
-            latent_h, latent_w = height // 8, width // 8
-            noise=torch.randn(1, 4, frames, latent_h,
-                                          latent_w).to(device)
-
-
-            #latents=latents*(1-img2img_noise)+noise*img2img_noise
-            #latents=latents+noise*img2img_noise
-
-
-
         else:
             latents = None
+            img2img_steps=0
 
         print('Starting text2video')
 
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale,
-                                width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps,img2img_noise=img2img_noise)
+                                width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
 
         print(f'text2video finished, saving frames to {outdir_current}')
 
@@ -242,8 +220,6 @@ def on_ui_tabs():
                                 label="img2img steps", value=dv.img2img_steps, minimum=0, maximum=100, step=1)
                             img2img_frames = gr.Text(
                                 label='img2img frames', max_lines=1, interactive=True)
-                            img2img_noise = gr.Slider(
-                                label="img2img noise", value=dv.img2img_noise, minimum=0, maximum=5, step=0.01)
 
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
@@ -295,7 +271,7 @@ def on_ui_tabs():
                 # _js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt,
                         n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe,
-                        do_img2img, img2img_frames, img2img_steps,img2img_noise
+                        do_img2img, img2img_frames, img2img_steps
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
@@ -363,7 +339,6 @@ def DeforumOutputArgs():
     keep_pipe_in_memory = False
     do_img2img = False
     img2img_steps = 15
-    img2img_noise=1.0
     return locals()
 
 
