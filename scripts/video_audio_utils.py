@@ -95,3 +95,16 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
         print("\r" + " " * len(msg_to_print), end="", flush=True)
         print(f"\r{msg_to_print}", flush=True)
         print(f"\rVideo stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
+
+# quick-retreive frame count, FPS and H/W dimensions of a video (local or URL-based)
+def get_quick_vid_info(vid_path):
+    vidcap = cv2.VideoCapture(vid_path)
+    video_fps = vidcap.get(cv2.CAP_PROP_FPS)
+    video_frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT)) 
+    video_width = int(vidcap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_height = int(vidcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    vidcap.release()
+    if video_fps.is_integer():
+        video_fps = int(video_fps)
+
+    return video_fps, video_frame_count, (video_width, video_height)
