@@ -4,8 +4,6 @@ Auto1111 extension consisting of implementation of ModelScope text2video using o
 
 8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (some opts are not working properly rn, however we are already getting reports of people launching 192x192 videos with 4gbs of vram). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
 
-There is a known issue with ffmpeg stitching, if ffmpeg fails and it outputs something like 'tuple split failed', go to 'stable-diffusion-webui/outputs/img2img-images/text2video-modelscope' and grab the frames from there until it's fixed.
-
 Test examples:
 
 Prompt: `flowers turning into lava`
