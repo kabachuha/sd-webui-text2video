@@ -41,6 +41,7 @@ except:
         """
         pass
 
+
 class TextToVideoSynthesis():
     r"""
     task for text to video synthesis.
@@ -79,8 +80,7 @@ class TextToVideoSynthesis():
 
         # Convert the dictionary to a namespace object
         self.config = SimpleNamespace(**config_dict)
-        print("config",self.config)
-
+        print("config", self.config)
 
         cfg = self.config.model["model_cfg"]
         cfg['temporal_attention'] = True if cfg[
@@ -149,8 +149,56 @@ class TextToVideoSynthesis():
 
         self.clip_encoder.to("cpu")
 
-    #@torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device = torch.device('cpu'), latents=None, strength=0.0):
+    def compute_latents(self, vd_out, cpu_vae='GPU (half precision)', device=torch.device('cuda')):
+        self.device = device
+        with torch.no_grad():
+            bs_vd, c, max_frames, height, width = vd_out.shape
+            scale_factor = 0.18215
+            vd_out_scaled = vd_out
+
+            if 'CPU' in cpu_vae:
+                print("STARTING VAE ON CPU")
+                self.autoencoder.to("cpu")
+                vd_out_scaled = vd_out_scaled.cpu()
+            else:
+                print("STARTING VAE ON GPU")
+                self.autoencoder.to(self.device)
+                if 'half precision' in cpu_vae:
+                    self.autoencoder.half()
+                    print("VAE HALVED")
+                    vd_out_scaled = vd_out_scaled.half()
+
+            vd_out_scaled = rearrange(
+                vd_out_scaled, 'b c f h w -> (b f) c h w')
+
+            # Split the tensor into chunks along the first dimension
+            chunk_size = 1
+            chunks = vd_out_scaled.chunk(vd_out_scaled.size(0) // chunk_size)
+
+            latents_chunks = []
+            for chunk in chunks:
+                if 'CPU' in cpu_vae:
+                    ch = chunk.cpu().float()
+                else:
+                    ch = chunk.to(self.device).float()
+                    if 'half precision' in cpu_vae:
+                        ch = ch.half()
+
+                latents_chunk = self.autoencoder.encode(ch)
+                latents_chunk = torch.tensor(
+                    latents_chunk.mean).cpu() * scale_factor
+                # latents_chunks.append(latents_chunk.cpu())
+                latents_chunks.append(latents_chunk)
+
+            # Concatenate the latents chunks back into a single tensor
+            latents = torch.cat(latents_chunks, dim=0)
+            latents = rearrange(latents, '(b f) c h w -> b c f h w', b=bs_vd)
+
+        out = latents.type(torch.float32).cpu()
+        return out
+
+    # @torch.compile()
+    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device=torch.device('cpu'), latents=None, skip_steps=0):
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
@@ -172,6 +220,7 @@ class TextToVideoSynthesis():
         Returns:
             A generated video (as list of np.arrays).
         """
+
         self.device = device
         self.clip_encoder.to(self.device)
         y, zero_y = self.preprocess(prompt, n_prompt)
@@ -188,10 +237,14 @@ class TextToVideoSynthesis():
             self.sd_model.to(self.device)
             if latents == None:
                 latents = torch.randn(num_sample, 4, max_frames, latent_h,
-                                          latent_w).to(
-                                              self.device)
+                                      latent_w).to(
+                    self.device)
             else:
                 latents.to(self.device)
+
+            print("latents", latents.shape, torch.mean(
+                latents), torch.std(latents))
+
             with amp.autocast(enabled=True):
                 self.sd_model.to(self.device)
                 x0 = self.diffusion.ddim_sample_loop(
@@ -207,7 +260,13 @@ class TextToVideoSynthesis():
                     guide_scale=scale,
                     ddim_timesteps=steps,
                     eta=eta,
-                    percentile=strength)
+                    percentile=strength,
+                  
+                  
+                    skip_steps=skip_steps,
+                )
+
+
                 self.last_tensor = x0
                 self.last_tensor.cpu()
                 self.sd_model.to("cpu")
@@ -218,7 +277,7 @@ class TextToVideoSynthesis():
                     x0 = x0.cpu()
                     print("DECODING FRAMES")
                     print(x0.shape)
-                    #self.autoencoder.to(self.device)
+                    # self.autoencoder.to(self.device)
                     x0.float()
                     # Split the tensor into chunks along the first dimension
                     chunk_size = 1
@@ -232,7 +291,7 @@ class TextToVideoSynthesis():
                         ch = chunk.cpu().float()
                         ch = 1. / scale_factor * ch
                         ch = rearrange(ch, 'b c f h w -> (b f) c h w')
-                        #print(ch)
+                        # print(ch)
                         chunk = None
                         del chunk
                         output_chunk = self.autoencoder.decode(ch)
@@ -245,7 +304,8 @@ class TextToVideoSynthesis():
                     x0 = x0.cpu()
                     del x0
 
-                    print(f"STARTING VAE ON GPU. {len(chunks)} CHUNKS TO PROCESS")
+                    print(
+                        f"STARTING VAE ON GPU. {len(chunks)} CHUNKS TO PROCESS")
                     self.autoencoder.to(self.device)
                     if 'half precision' in cpu_vae:
                         self.autoencoder.half()
@@ -270,7 +330,7 @@ class TextToVideoSynthesis():
                 torch_gc()
                 # Concatenate the output chunks back into a single tensor
                 vd_out = torch.cat(output_chunks, dim=0)
-                #video_data = self.autoencoder.decode(video_data)
+                # video_data = self.autoencoder.decode(video_data)
                 print(vd_out.shape)
                 vd_out = rearrange(
                     vd_out, '(b f) c h w -> b c f h w', b=bs_vd)
@@ -283,8 +343,8 @@ class TextToVideoSynthesis():
         self.autoencoder.encoder.to("cpu")
         self.autoencoder.decoder.to("cpu")
 
-        #self.autoencoder = None
-        #del self.autoencoder
+        # self.autoencoder = None
+        # del self.autoencoder
         del vd_out
         del context
         del latents
@@ -295,8 +355,10 @@ class TextToVideoSynthesis():
         torch_gc()
         last_tensor = self.last_tensor
         return video_path, last_tensor
+
     def cleanup(self):
         pass
+
     def preprocess(self, prompt, n_prompt, offload=True):
         self.clip_encoder.to(self.device)
         text_emb = self.clip_encoder(prompt)
@@ -323,11 +385,12 @@ class TextToVideoSynthesis():
         return_samples = []
         for i in range(len(video)):
             img = cv2.cvtColor(video[i], cv2.COLOR_RGB2BGR)
-            #video_writer.write(img)
+            # video_writer.write(img)
             return_samples.append(img)
         del video
         del video_data
         return return_samples
+
     def forward(self, *args, **kwargs) -> Dict[str, Any]:
         """
         Run the forward pass for a model.
@@ -352,5 +415,3 @@ def tensor2vid(video, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]):
     images = [(image.numpy() * 255).astype('uint8')
               for image in images]  # f h w c
     return images
-
-

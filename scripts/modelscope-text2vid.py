@@ -18,6 +18,10 @@ from base64 import b64encode
 import os
 import subprocess
 import time
+from modules import devices
+from PIL import Image
+import numpy as np
+import glob
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
@@ -39,7 +43,10 @@ Join the development or report issues and feature requests here <a style="color:
 
 '''
 
-def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe=False):
+
+def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe=False,
+            do_img2img=False, img2img_frames=None, img2img_steps=0
+            ):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
@@ -47,7 +54,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
     dataurl = get_error()
     try:
-        latents = None
+        
+        
 
         if shared.sd_model is not None:
             sd_hijack.model_hijack.undo_hijack(shared.sd_model)
@@ -63,13 +71,53 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print('Starting text2video')
         print('Pipeline setup')
 
+        # optionally store pipe in global between runs
         if pipe is None:
             pipe = setup_pipeline()
+
+        device=devices.get_optimal_device()
+        print('device',device)
+
+
+        if do_img2img and img2img_frames:
+            print("loading frames")
+            pattern = os.path.join(img2img_frames, '[0-9][0-9][0-9][0-9][0-9].png')
+            matching_files = glob.glob(pattern)[:frames]
+            images=[]
+            for file in matching_files:
+                image=Image.open(file)
+                image=image.resize((height,width), Image.ANTIALIAS)
+                array = np.array(image)
+                images+=[array]
+
+            #print(images)
+
+            images=np.stack(images)# f h w c
+            batches=1
+            n_images=np.tile(images[np.newaxis, ...], (batches, 1, 1, 1, 1)) # n f h w c
+            bcfhw=n_images.transpose(0,4,1,2,3)
+            #convert to 0-1 float
+            bcfhw=bcfhw.astype(np.float32)/255
+            bfchw=bcfhw.transpose(0,2,1,3,4)#b c f h w
+
+            print("got here!",bfchw.shape)
+
+            vd_out=torch.from_numpy(bcfhw).to("cuda")
+
+            #should be -1,1, not 0,1
+            vd_out=2*vd_out-1
+
+            #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
+            print("computing latents")
+            latents = pipe.compute_latents(vd_out).to(device)
+        else:
+            latents = None
+            img2img_steps=0
 
         print('Starting text2video')
 
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale,
-                                width, height, eta, cpu_vae, devices.get_optimal_device(), latents)
+                                width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
 
         print(f'text2video finished, saving frames to {outdir_current}')
 
@@ -163,7 +211,16 @@ def on_ui_tabs():
                             cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=[
                                                'GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
                         with gr.Row():
-                            keep_pipe = gr.Checkbox(label="Keep pipe in VRAM", value=dv.keep_pipe_in_memory, interactive=True)
+                            keep_pipe = gr.Checkbox(
+                                label="keep pipe in memory", value=dv.keep_pipe_in_memory, interactive=True)
+                        with gr.Row():
+                            do_img2img = gr.Checkbox(
+                                 label="do img2img", value=dv.do_img2img, interactive=True)
+                            img2img_steps = gr.Slider(
+                                label="img2img steps", value=dv.img2img_steps, minimum=0, maximum=100, step=1)
+                            img2img_frames = gr.Text(
+                                label='img2img frames', max_lines=1, interactive=True)
+
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
                             fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
@@ -213,8 +270,12 @@ def on_ui_tabs():
                 fn=wrap_gradio_gpu_call(process),
                 # _js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt,
-                        n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe],  # [dummy_component, dummy_component] +
-                outputs=[result, result2]
+                        n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe,
+                        do_img2img, img2img_frames, img2img_steps
+                        ],  # [dummy_component, dummy_component] +
+                outputs=[
+                    result, result2,
+                ],
             )
 
     return [(deforum_interface, "ModelScope text2video", "t2v_interface")]
@@ -276,6 +337,8 @@ def DeforumOutputArgs():
     frame_interpolation_slow_mo_amount = 2  # [2 to 10]
     frame_interpolation_keep_imgs = False
     keep_pipe_in_memory = False
+    do_img2img = False
+    img2img_steps = 15
     return locals()
 
 
