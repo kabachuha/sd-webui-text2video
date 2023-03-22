@@ -131,14 +131,7 @@ def on_ui_tabs():
                         with gr.Row(variant='compact'):
                             frames = gr.Slider(
                                 label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
-                            seed = gr.Slider(
-                                label='Seed',
-                                minimum=-1,
-                                maximum=1000000,
-                                step=1,
-                                value=-1,
-                                info='If set to -1, a different seed will be used each time.',
-                                interactive=True)
+                            seed = gr.Number(label='Seed', value = -1, Interactive = True, precision=0)
                         with gr.Row(variant='compact'):
                             width = gr.Slider(
                                 label='width',
