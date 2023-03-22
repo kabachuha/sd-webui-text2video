@@ -22,6 +22,7 @@ from modules import devices
 from PIL import Image
 import numpy as np
 import glob
+from tqdm import tqdm
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
@@ -77,18 +78,41 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         device=devices.get_optimal_device()
         print('device',device)
 
-        is_vid2vid = do_img2img and img2img_frames
-
-        if is_vid2vid:
+        if do_img2img:
 
             prompt, n_prompt, steps, frames, cfg_scale, width, height, eta = prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v
 
-            print("loading frames")
-            pattern = os.path.join(img2img_frames, '[0-9][0-9][0-9][0-9][0-9].png')
-            img2img_startFrame=int(img2img_startFrame)
-            matching_files = glob.glob(pattern)[img2img_startFrame:img2img_startFrame+frames]
+            if img2img_frames is None:
+                raise FileNotFoundError("Please upload a video :()")
+
+            print("got a request to *vid2vid* an existing video.")
+
+            in_vid_fps, _, _ = get_quick_vid_info(file.name)
+            folder_name = clean_folder_name(Path(vid_file_name).stem)
+            outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name)
+            i = 1
+            while os.path.exists(outdir_no_tmp):
+                outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name + '_' + str(i))
+                i += 1
+
+            outdir_v2v = os.path.join(outdir_no_tmp, 'tmp_input_frames')
+            os.makedirs(outdir, exist_ok=True)
+            
+            vid2frames(video_path=file.name, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=img2img_startFrame, extract_to_frame=img2img_startFrame+frames, numeric_files_output=True, out_img_format='png')
+            
+            temp_convert_raw_png_path = os.path.join(raw_output_imgs_path, "tmp_vid2vid_folder")
+            duplicate_pngs_from_folder(raw_output_imgs_path, temp_convert_raw_png_path, img_batch_id, orig_vid_name)
+
+            videogen = []
+            for f in os.listdir(temp_convert_raw_png_path):
+                # double check for old _depth_ files, not really needed probably but keeping it for now
+                if '_depth_' not in f:
+                    videogen.append(f)
+                    
+            videogen.sort(key= lambda x:int(x.split('.')[0]))
+
             images=[]
-            for file in matching_files:
+            for file in tqdm(videogen, desc="Loading frames"):
                 image=Image.open(file)
                 image=image.resize((width,height), Image.ANTIALIAS)
                 array = np.array(image)
@@ -104,7 +128,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             bcfhw=bcfhw.astype(np.float32)/255
             bfchw=bcfhw.transpose(0,2,1,3,4)#b c f h w
 
-            print("got here!",bfchw.shape)
+            print(f"Converted the frames to tensor {bfchw.shape}")
 
             vd_out=torch.from_numpy(bcfhw).to("cuda")
 
@@ -112,13 +136,13 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             vd_out=2*vd_out-1
 
             #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
-            print("computing latents")
+            print("Computing latents")
             latents = pipe.compute_latents(vd_out).to(device)
         else:
             latents = None
             img2img_steps=0
 
-        print('Starting text2video' if not is_vid2vid else 'Starting video2video')
+        print('Starting text2video' if not do_img2img else 'Starting video2video')
 
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale,
                                 width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
@@ -219,13 +243,12 @@ def on_ui_tabs():
                         prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe = setup_common_values()
 
                     with gr.Tab('vid2vid') as tab_vid2vid:
+                        img2img_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
                         # TODO: here too
                         prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v, cpu_vae_v, keep_pipe_v = setup_common_values()
                         with gr.Row():
                             img2img_steps = gr.Slider(
                                 label="img2img steps", value=dv.img2img_steps, minimum=0, maximum=100, step=1)
-                            img2img_frames = gr.Text(
-                                label='img2img frames', max_lines=1, interactive=True)
                             img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
                     
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
@@ -438,3 +461,17 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
         print("\r" + " " * len(msg_to_print), end="", flush=True)
         print(f"\r{msg_to_print}", flush=True)
         print(f"\rVideo stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
+
+# TODO: MOVEME
+# quick-retreive frame count, FPS and H/W dimensions of a video (local or URL-based)
+def get_quick_vid_info(vid_path):
+    vidcap = cv2.VideoCapture(vid_path)
+    video_fps = vidcap.get(cv2.CAP_PROP_FPS)
+    video_frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT)) 
+    video_width = int(vidcap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_height = int(vidcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    vidcap.release()
+    if video_fps.is_integer():
+        video_fps = int(video_fps)
+
+    return video_fps, video_frame_count, (video_width, video_height)
