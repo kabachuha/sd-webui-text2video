@@ -37,7 +37,7 @@ Join the development or report issues and feature requests here <a style="color:
 
 '''
 
-def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe=False):
+def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
@@ -90,7 +90,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print(e)
     finally:
         #optionally store pipe in global between runs, if not, remove it
-        if not keep_pipe:
+        if not keep_pipe_in_vram:
             pipe = None
         devices.torch_gc()
         gc.collect()
@@ -160,7 +160,7 @@ def on_ui_tabs():
                             cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=[
                                                'GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
                         with gr.Row(variant='compact'):
-                            keep_pipe = gr.Checkbox(label="Keep pipe in VRAM", value=dv.keep_pipe_in_memory, interactive=True)
+                            keep_pipe_in_vram = gr.Checkbox(label="Keep pipe in VRAM", value=dv.keep_pipe_in_vram, interactive=True)
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
                             fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
@@ -210,7 +210,7 @@ def on_ui_tabs():
                 fn=wrap_gradio_gpu_call(process),
                 # _js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt,
-                        n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe],  # [dummy_component, dummy_component] +
+                        n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe_in_vram],  # [dummy_component, dummy_component] +
                 outputs=[result, result2]
             )
 
@@ -256,5 +256,5 @@ def DeforumOutputArgs():
     frame_interpolation_slow_mo_enabled = False
     frame_interpolation_slow_mo_amount = 2  # [2 to 10]
     frame_interpolation_keep_imgs = False
-    keep_pipe_in_memory = False
+    keep_pipe_in_vram = False
     return locals()
