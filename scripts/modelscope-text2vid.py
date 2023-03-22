@@ -37,7 +37,7 @@ Join the development or report issues and feature requests here <a style="color:
 
 '''
 
-def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False):
+def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, seed, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
@@ -66,7 +66,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
         print('Starting text2video')
 
-        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale,
+        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
                                 width, height, eta, cpu_vae, devices.get_optimal_device(), latents)
 
         print(f'text2video finished, saving frames to {outdir_current}')
@@ -137,7 +137,8 @@ def on_ui_tabs():
                                 maximum=1000000,
                                 step=1,
                                 value=-1,
-                                info='If set to -1, a different seed will be used each time.')
+                                info='If set to -1, a different seed will be used each time.',
+                                interactive=True)
                         with gr.Row(variant='compact'):
                             width = gr.Slider(
                                 label='width',
@@ -210,7 +211,7 @@ def on_ui_tabs():
                 fn=wrap_gradio_gpu_call(process),
                 # _js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt,
-                        n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe_in_vram],  # [dummy_component, dummy_component] +
+                        n_prompt, steps, frames, seed, cfg_scale, width, height, eta, cpu_vae, keep_pipe_in_vram],  # [dummy_component, dummy_component] +
                 outputs=[result, result2]
             )
 
