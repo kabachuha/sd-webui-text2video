@@ -26,7 +26,7 @@ import glob
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
 
-savedPipe = None
+pipe = None
 
 def setup_pipeline():
     return TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
@@ -72,16 +72,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print('Pipeline setup')
 
         # optionally store pipe in global between runs
-        if keep_pipe:
-            if savedPipe is None:
-                savedPipe = setup_pipeline()
-            pipe = savedPipe
-        else:
-            if savedPipe is None:
-                pipe = setup_pipeline()
-            else:
-                pipe = savedPipe
-                savedPipe = None
+        if pipe is None:
+            pipe = setup_pipeline()
 
         device=devices.get_optimal_device()
         print('device',device)
@@ -115,6 +107,9 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             #should be -1,1, not 0,1
             vd_out=2*vd_out-1
 
+            #normalize video?
+            #vd_out=(vd_out-torch.mean(vd_out))/torch.std(vd_out)
+
             #images should have shape # ncfhw (batches, channels [3], frames, height, width)
             #and might have to be autoencoded in batches
 
@@ -123,13 +118,17 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             print("computing latents")
             latents = pipe.compute_latents(vd_out).to(device)
 
+            #normalize latents?
+            #latents=(latents-torch.mean(latents))/torch.std(latents)
+            #latents=(latents-torch.mean(latents))
+
             #noise=torch.rand_like(latents)
             latent_h, latent_w = height // 8, width // 8
             noise=torch.randn(1, 4, frames, latent_h,
                                           latent_w).to(device)
 
 
-            latents=latents*(1-img2img_noise)+noise*img2img_noise
+            #latents=latents*(1-img2img_noise)+noise*img2img_noise
             #latents=latents+noise*img2img_noise
 
 
@@ -140,7 +139,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print('Starting text2video')
 
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale,
-                                width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
+                                width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps,img2img_noise=img2img_noise)
 
         print(f'text2video finished, saving frames to {outdir_current}')
 
@@ -244,7 +243,7 @@ def on_ui_tabs():
                             img2img_frames = gr.Text(
                                 label='img2img frames', max_lines=1, interactive=True)
                             img2img_noise = gr.Slider(
-                                label="img2img noise", value=dv.img2img_noise, minimum=0, maximum=1, step=0.01)
+                                label="img2img noise", value=dv.img2img_noise, minimum=0, maximum=5, step=0.01)
 
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
@@ -364,7 +363,7 @@ def DeforumOutputArgs():
     keep_pipe_in_memory = False
     do_img2img = False
     img2img_steps = 15
-    img2img_noise=0.5
+    img2img_noise=1.0
     return locals()
 
 

@@ -1326,6 +1326,12 @@ class GaussianDiffusion(object):
         self.posterior_mean_coef2 = (
             1.0 - self.alphas_cumprod_prev) * torch.sqrt(alphas) / (
                 1.0 - self.alphas_cumprod)
+        
+
+    def add_noise(self,xt,noise,t):
+        print("adding noise",t,self.sqrt_alphas_cumprod[t],self.sqrt_one_minus_alphas_cumprod[t])
+        noisy_sample = self.sqrt_alphas_cumprod[t]*xt+noise*self.sqrt_one_minus_alphas_cumprod[t]
+        return noisy_sample
 
     def p_mean_variance(self,
                         xt,
@@ -1475,7 +1481,8 @@ class GaussianDiffusion(object):
                          guide_scale=None,
                          ddim_timesteps=20,
                          eta=0.0,
-                         skip_steps=0):
+                         skip_steps=0,
+                         img2img_noise=1):
         # prepare input
         b = noise.size(0)
         xt = noise
@@ -1485,7 +1492,15 @@ class GaussianDiffusion(object):
                                   self.num_timesteps // ddim_timesteps)).clamp(
                                       0, self.num_timesteps - 1).flip(0)
         
-        steps=steps[skip_steps:]
+        if skip_steps>0:
+            step0=steps[skip_steps-1]
+            steps=steps[skip_steps:]
+
+            #noise_to_add=torch.randn(noise.shape).to(xt.device)*img2img_noise
+            noise_to_add = torch.randn_like(xt)
+            t = torch.full((b, ), step0, dtype=torch.long, device=xt.device)
+            print("huh",step0,t)
+            xt=self.add_noise(xt,noise_to_add,step0)
 
         pbar = tqdm(steps, desc="DDIM sampling")
         for step in pbar:

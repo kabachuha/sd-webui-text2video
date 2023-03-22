@@ -154,7 +154,7 @@ class TextToVideoSynthesis():
         with torch.no_grad():
             bs_vd, c, max_frames, height, width = vd_out.shape
             scale_factor = 0.18215
-            vd_out_scaled = vd_out * scale_factor
+            vd_out_scaled = vd_out
 
             if 'CPU' in cpu_vae:
                 print("STARTING VAE ON CPU")
@@ -183,9 +183,10 @@ class TextToVideoSynthesis():
                     if 'half precision' in cpu_vae:
                         ch = ch.half()
 
-                latents_chunk = self.autoencoder.encode(ch)
+                latents_chunk = self.autoencoder.encode(ch) 
+                latents_chunk = torch.tensor(latents_chunk.mean).cpu() * scale_factor
                 #latents_chunks.append(latents_chunk.cpu())
-                latents_chunks.append(torch.tensor(latents_chunk.mean).cpu())
+                latents_chunks.append(latents_chunk)
 
             # Concatenate the latents chunks back into a single tensor
             latents = torch.cat(latents_chunks, dim=0)
@@ -195,7 +196,7 @@ class TextToVideoSynthesis():
         return out
 
     #@torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device = torch.device('cpu'), latents=None,skip_steps=0):
+    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device = torch.device('cpu'), latents=None,skip_steps=0,img2img_noise=1):
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
@@ -249,7 +250,11 @@ class TextToVideoSynthesis():
                     guide_scale=scale,
                     ddim_timesteps=steps,
                     eta=eta,
-                    skip_steps=skip_steps)
+                    skip_steps=skip_steps,
+                    img2img_noise=img2img_noise)
+                
+                print("xo",torch.mean(x0),torch.std(x0))
+
                 self.last_tensor = x0
                 self.last_tensor.cpu()
                 self.sd_model.to("cpu")
