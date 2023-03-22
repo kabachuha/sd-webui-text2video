@@ -107,13 +107,13 @@ def on_ui_tabs():
             with gr.Column(scale=1, variant='panel'):
                 with gr.Tabs():
                     with gr.Tab('text2video'):
-                        with gr.Row():
+                        with gr.Row(variant='compact'):
                             prompt = gr.Text(
                                 label='Prompt', max_lines=1, interactive=True)
-                        with gr.Row():
+                        with gr.Row(variant='compact'):
                             n_prompt = gr.Text(label='Negative prompt', max_lines=1,
                                                interactive=True, value='text, watermark, copyright, blurry')
-                        with gr.Row():
+                        with gr.Row(variant='compact'):
                             steps = gr.Slider(
                                 label='Steps',
                                 minimum=1,
@@ -128,7 +128,7 @@ def on_ui_tabs():
                                 step=1,
                                 value=12.5,
                                 info='Steps')
-                        with gr.Row():
+                        with gr.Row(variant='compact'):
                             frames = gr.Slider(
                                 label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
                             seed = gr.Slider(
@@ -138,7 +138,7 @@ def on_ui_tabs():
                                 step=1,
                                 value=-1,
                                 info='If set to -1, a different seed will be used each time.')
-                        with gr.Row():
+                        with gr.Row(variant='compact'):
                             width = gr.Slider(
                                 label='width',
                                 minimum=64,
@@ -153,13 +153,13 @@ def on_ui_tabs():
                                 step=64,
                                 value=256,
                                 info='If set to -1, a different seed will be used each time.')
-                        with gr.Row():
+                        with gr.Row(variant='compact'):
                             eta = gr.Number(
                                 label="eta", value=0, interactive=True)
-                        with gr.Row():
+                        with gr.Row(variant='compact'):
                             cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=[
                                                'GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
-                        with gr.Row():
+                        with gr.Row(variant='compact'):
                             keep_pipe = gr.Checkbox(label="Keep pipe in VRAM", value=dv.keep_pipe_in_memory, interactive=True)
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
@@ -180,9 +180,9 @@ def on_ui_tabs():
                     with gr.Tab('How to install? Where to get help, how to help?'):
                         gr.Markdown(welcome_text)
             with gr.Column(scale=1, variant='compact'):
-                with gr.Row():
+                with gr.Row(variant='compact'):
                     run_button = gr.Button('Generate', variant='primary')
-                with gr.Row():
+                with gr.Row(variant='compact'):
                     i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
                 with gr.Row(visible=False):
                     result = gr.Label("")
