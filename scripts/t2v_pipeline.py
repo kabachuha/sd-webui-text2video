@@ -157,10 +157,20 @@ class TextToVideoSynthesis():
         2. Using vqgan model (autoencoder) to decode the video's latent representation to visual space.
 
         Args:
-            input (`Dict[Str, Any]`):
-                The input of the task
+            prompt (str, optional): A string describing the scene to generate. Defaults to "A bunny in the forest".
+            n_prompt (Optional[str], optional): An additional prompt for generating the scene. Defaults to "".
+            steps (int, optional): The number of steps to run the diffusion model. Defaults to 50.
+            frames (int, optional): The number of frames in the generated video. Defaults to 15.
+            scale (float, optional): The scaling factor for the generated video. Defaults to 12.5.
+            width (int, optional): The width of the generated video. Defaults to 256.
+            height (int, optional): The height of the generated video. Defaults to 256.
+            eta (float, optional): A hyperparameter related to the diffusion model's noise schedule. Defaults to 0.0.
+            cpu_vae (bool, optional): If True, the VQGAN model will run on the CPU. Defaults to 'GPU (half precision)'.
+            latents (Optional[Tensor], optional): An optional latent tensor to use as input for the VQGAN model. Defaults to None.
+            strength (Optional[float], optional): A hyperparameter to control the strength of the generated video when using input latent. Defaults to None.
+
         Returns:
-            A generated video (as pytorch tensor).
+            A generated video (as list of np.arrays).
         """
         self.device = device
         self.clip_encoder.to(self.device)
