@@ -43,7 +43,7 @@ Join the development or report issues and feature requests here <a style="color:
 
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
              prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
-                cpu_vae='GPU (half precision)', keep_pipe=False,
+                cpu_vae='GPU (half precision)', keep_pipe_in_vram=False,
                 do_img2img=False, img2img_frames=None, img2img_steps=0,img2img_startFrame=0
             ):
     global pipe
@@ -273,7 +273,7 @@ def on_ui_tabs():
                     cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=[
                                         'GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
                 with gr.Row():
-                    keep_pipe = gr.Checkbox(
+                    keep_pipe_in_vram = gr.Checkbox(
                         label="keep pipe in memory", value=False, interactive=True)
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(variant='compact'):
@@ -308,7 +308,7 @@ def on_ui_tabs():
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
-                        cpu_vae, keep_pipe,
+                        cpu_vae, keep_pipe_in_vram,
                         do_img2img, img2img_frames, img2img_steps,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
