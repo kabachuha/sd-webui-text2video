@@ -150,31 +150,37 @@ class TextToVideoSynthesis():
         self.clip_encoder.to("cpu")
 
     #@torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device = torch.device('cpu'), latents=None):
+    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device = torch.device('cpu'), latents=None, strength=0.0):
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
         2. Using vqgan model (autoencoder) to decode the video's latent representation to visual space.
 
         Args:
-            input (`Dict[Str, Any]`):
-                The input of the task
+            prompt (str, optional): A string describing the scene to generate. Defaults to "A bunny in the forest".
+            n_prompt (Optional[str], optional): An additional prompt for generating the scene. Defaults to "".
+            steps (int, optional): The number of steps to run the diffusion model. Defaults to 50.
+            frames (int, optional): The number of frames in the generated video. Defaults to 15.
+            scale (float, optional): The scaling factor for the generated video. Defaults to 12.5.
+            width (int, optional): The width of the generated video. Defaults to 256.
+            height (int, optional): The height of the generated video. Defaults to 256.
+            eta (float, optional): A hyperparameter related to the diffusion model's noise schedule. Defaults to 0.0.
+            cpu_vae (bool, optional): If True, the VQGAN model will run on the CPU. Defaults to 'GPU (half precision)'.
+            latents (Optional[Tensor], optional): An optional latent tensor to use as input for the VQGAN model. Defaults to None.
+            strength (Optional[float], optional): A hyperparameter to control the strength of the generated video when using input latent. Defaults to None.
+
         Returns:
-            A generated video (as pytorch tensor).
+            A generated video (as list of np.arrays).
         """
-        #print(self.sd_model.use_fps_condition)
-        self.sd_model.use_fps_condition = False
         self.device = device
         self.clip_encoder.to(self.device)
         y, zero_y = self.preprocess(prompt, n_prompt)
         self.clip_encoder.to("cpu")
-        #self.clip_encoder = None
-        #del self.clip_encoder
         torch_gc()
 
         context = torch.cat([zero_y, y], dim=0).to(self.device)
         # synthesis
-
+        strength = None if strength == 0.0 else strength
         with torch.no_grad():
             num_sample = 1
             max_frames = frames
@@ -200,7 +206,8 @@ class TextToVideoSynthesis():
                     }],
                     guide_scale=scale,
                     ddim_timesteps=steps,
-                    eta=eta)
+                    eta=eta,
+                    percentile=strength)
                 self.last_tensor = x0
                 self.last_tensor.cpu()
                 self.sd_model.to("cpu")
@@ -215,7 +222,7 @@ class TextToVideoSynthesis():
                     x0.float()
                     # Split the tensor into chunks along the first dimension
                     chunk_size = 1
-                    chunks = x0.chunk(x0.size(0) // chunk_size)
+                    chunks = torch.chunk(x0, chunks=max_frames, dim=2)
                     # Apply the autoencoder to each chunk
                     output_chunks = []
                     self.autoencoder.to("cpu")
@@ -234,8 +241,8 @@ class TextToVideoSynthesis():
                         x += 1
                 else:
                     chunk_size = 1
-                    chunks = x0.chunk(x0.size(0) // chunk_size)
-                    x0.cpu()
+                    chunks = torch.chunk(x0, chunks=max_frames, dim=2)
+                    x0 = x0.cpu()
                     del x0
 
                     print(f"STARTING VAE ON GPU. {len(chunks)} CHUNKS TO PROCESS")
