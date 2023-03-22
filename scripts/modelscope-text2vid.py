@@ -1,5 +1,7 @@
 # See https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
-import cv2
+
+from cv2 import imwrite
+from pathlib import Path
 import gc
 import os
 import random
@@ -18,7 +20,7 @@ from modules import devices, lowvram, script_callbacks, sd_hijack, shared
 from modules.shared import cmd_opts, opts, state
 from scripts.error_hardcode import get_error
 from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
-from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info
+from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info, clean_folder_name, vid2frames
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
@@ -40,7 +42,7 @@ Join the development or report issues and feature requests here <a style="color:
 
 '''
 
-
+import traceback
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
              prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
                 cpu_vae='GPU (half precision)', keep_pipe_in_vram=False,
@@ -148,7 +150,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         # just deleted the folder so we need to make it again
         os.makedirs(outdir_current, exist_ok=True)
         for i in range(len(samples)):
-            cv2.imwrite(outdir_current + os.path.sep +
+            imwrite(outdir_current + os.path.sep +
                         f"{i:06}.png", samples[i])
 
         # TODO: add params to the GUI
@@ -160,8 +162,11 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
         dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
     except Exception as e:
-        print('Exception occured')
-        print(e)
+        traceback.print_exc()
+        print('Exception occurred:', e)
+    # except Exception as e:
+        # print('Exception occured')
+        # print(e)
     finally:
         #optionally store pipe in global between runs, if not, remove it
         if not keep_pipe_in_vram:

@@ -1,8 +1,77 @@
 import time
 import subprocess
 import os
+import cv2
 from pkg_resources import resource_filename
+    
+def vid2frames(video_path, video_in_frame_path, n=1, overwrite=True, extract_from_frame=0, extract_to_frame=-1, out_img_format='jpg', numeric_files_output = False): 
+    if (extract_to_frame <= extract_from_frame) and extract_to_frame != -1:
+        raise RuntimeError('Error: extract_to_frame can not be higher than extract_from_frame')
+    
+    if n < 1: n = 1 #HACK Gradio interface does not currently allow min/max in gr.Number(...) 
 
+    # check vid path using a function and only enter if we get True
+    if is_vid_path_valid(video_path):
+        
+        name = get_frame_name(video_path)
+        
+        vidcap = cv2.VideoCapture(video_path)
+        video_fps = vidcap.get(cv2.CAP_PROP_FPS)
+
+        input_content = []
+        if os.path.exists(video_in_frame_path) :
+            input_content = os.listdir(video_in_frame_path)
+
+        # check if existing frame is the same video, if not we need to erase it and repopulate
+        if len(input_content) > 0:
+            #get the name of the existing frame
+            content_name = get_frame_name(input_content[0])
+            if not content_name.startswith(name):
+                overwrite = True
+
+        # grab the frame count to check against existing directory len 
+        frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT)) 
+        
+        # raise error if the user wants to skip more frames than exist
+        if n >= frame_count : 
+            raise RuntimeError('Skipping more frames than input video contains. extract_nth_frames larger than input frames')
+        
+        expected_frame_count = math.ceil(frame_count / n) 
+        # Check to see if the frame count is matches the number of files in path
+        if overwrite or expected_frame_count != len(input_content):
+            shutil.rmtree(video_in_frame_path)
+            os.makedirs(video_in_frame_path, exist_ok=True) # just deleted the folder so we need to make it again
+            input_content = os.listdir(video_in_frame_path)
+        
+        print(f"Trying to extract frames from video with input FPS of {video_fps}. Please wait patiently.")
+        if len(input_content) == 0:
+            vidcap.set(cv2.CAP_PROP_POS_FRAMES, extract_from_frame) # Set the starting frame
+            success,image = vidcap.read()
+            count = extract_from_frame
+            t=1
+            success = True
+            while success:
+                if state.interrupted:
+                    return
+                if (count <= extract_to_frame or extract_to_frame == -1) and count % n == 0:
+                    if numeric_files_output == True:
+                        cv2.imwrite(video_in_frame_path + os.path.sep + f"{t:09}.{out_img_format}" , image) # save frame as file
+                    else:
+                        cv2.imwrite(video_in_frame_path + os.path.sep + name + f"{t:09}.{out_img_format}" , image) # save frame as file
+                    t += 1
+                success,image = vidcap.read()
+                count += 1
+            print(f"Successfully extracted {count} frames from video.")
+        else:
+            print("Frames already unpacked")
+        vidcap.release()
+        return video_fps
+
+def clean_folder_name(string):
+    illegal_chars = "/\\<>:\"|?*.,\" "
+    translation_table = str.maketrans(illegal_chars, "_"*len(illegal_chars))
+    return string.translate(translation_table)
+    
 def find_ffmpeg_binary():
     try:
         import google.colab
