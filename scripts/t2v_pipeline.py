@@ -149,8 +149,53 @@ class TextToVideoSynthesis():
 
         self.clip_encoder.to("cpu")
 
+    def compute_latents(self, vd_out, cpu_vae='GPU (half precision)', device = torch.device('cuda')):
+        self.device = device
+        with torch.no_grad():
+            bs_vd, c, max_frames, height, width = vd_out.shape
+            scale_factor = 0.18215
+            vd_out_scaled = vd_out * scale_factor
+
+            if 'CPU' in cpu_vae:
+                print("STARTING VAE ON CPU")
+                self.autoencoder.to("cpu")
+                vd_out_scaled = vd_out_scaled.cpu()
+            else:
+                print("STARTING VAE ON GPU")
+                self.autoencoder.to(self.device)
+                if 'half precision' in cpu_vae:
+                    self.autoencoder.half()
+                    print("VAE HALVED")
+                    vd_out_scaled = vd_out_scaled.half()
+
+            vd_out_scaled = rearrange(vd_out_scaled, 'b c f h w -> (b f) c h w')
+
+            # Split the tensor into chunks along the first dimension
+            chunk_size = 1
+            chunks = vd_out_scaled.chunk(vd_out_scaled.size(0) // chunk_size)
+
+            latents_chunks = []
+            for chunk in chunks:
+                if 'CPU' in cpu_vae:
+                    ch = chunk.cpu().float()
+                else:
+                    ch = chunk.to(self.device).float()
+                    if 'half precision' in cpu_vae:
+                        ch = ch.half()
+
+                latents_chunk = self.autoencoder.encode(ch)
+                #latents_chunks.append(latents_chunk.cpu())
+                latents_chunks.append(torch.tensor(latents_chunk.mean).cpu())
+
+            # Concatenate the latents chunks back into a single tensor
+            latents = torch.cat(latents_chunks, dim=0)
+            latents = rearrange(latents, '(b f) c h w -> b c f h w', b=bs_vd)
+
+        out = latents.type(torch.float32).cpu()
+        return out
+
     #@torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device = torch.device('cpu'), latents=None):
+    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device = torch.device('cpu'), latents=None,skip_steps=0):
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
@@ -186,6 +231,9 @@ class TextToVideoSynthesis():
                                               self.device)
             else:
                 latents.to(self.device)
+
+            print("latents",latents.shape,torch.mean(latents),torch.std(latents))
+
             with amp.autocast(enabled=True):
                 self.sd_model.to(self.device)
                 x0 = self.diffusion.ddim_sample_loop(
@@ -200,7 +248,8 @@ class TextToVideoSynthesis():
                     }],
                     guide_scale=scale,
                     ddim_timesteps=steps,
-                    eta=eta)
+                    eta=eta,
+                    skip_steps=skip_steps)
                 self.last_tensor = x0
                 self.last_tensor.cpu()
                 self.sd_model.to("cpu")
