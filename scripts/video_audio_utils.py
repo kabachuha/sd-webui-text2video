@@ -3,6 +3,11 @@ import subprocess
 import os
 import cv2
 from pkg_resources import resource_filename
+
+def get_frame_name(path):
+    name = os.path.basename(path)
+    name = os.path.splitext(name)[0]
+    return name
     
 def vid2frames(video_path, video_in_frame_path, n=1, overwrite=True, extract_from_frame=0, extract_to_frame=-1, out_img_format='jpg', numeric_files_output = False): 
     if (extract_to_frame <= extract_from_frame) and extract_to_frame != -1:
