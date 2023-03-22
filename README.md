@@ -21,7 +21,7 @@ https://user-images.githubusercontent.com/14872007/226468406-ce43fa0c-35f2-4625-
 
 ## Where to get the weights
 
-Download the following files from [HuggingFace](https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main):
+Download the following files from the [original HuggingFace repository](https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main). Alternatively, [download half-precision fp16 pruned weights (they are smaller and use less vram on loading)](https://huggingface.co/kabachuha/modelscope-damo-text2video-pruned-weights/tree/main):
 - VQGAN_autoencoder.pth
 - configuration.json
 - open_clip_pytorch_model.bin
