@@ -44,8 +44,10 @@ Join the development or report issues and feature requests here <a style="color:
 '''
 
 
-def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe=False,
-            do_img2img=False, img2img_frames=None, img2img_steps=0
+def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width, height, eta,\
+             prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v, \
+                cpu_vae='GPU (half precision)', keep_pipe=False,
+                do_img2img=False, img2img_frames=None, img2img_steps=0
             ):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
@@ -54,9 +56,6 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
     dataurl = get_error()
     try:
-        
-        
-
         if shared.sd_model is not None:
             sd_hijack.model_hijack.undo_hijack(shared.sd_model)
             try:
@@ -78,8 +77,12 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         device=devices.get_optimal_device()
         print('device',device)
 
+        is_vid2vid = do_img2img and img2img_frames
 
-        if do_img2img and img2img_frames:
+        if is_vid2vid:
+
+            prompt, n_prompt, steps, frames, cfg_scale, width, height, eta = prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v
+
             print("loading frames")
             pattern = os.path.join(img2img_frames, '[0-9][0-9][0-9][0-9][0-9].png')
             matching_files = glob.glob(pattern)[:frames]
@@ -114,7 +117,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             latents = None
             img2img_steps=0
 
-        print('Starting text2video')
+        print('Starting text2video' if not is_vid2vid else 'Starting video2video')
 
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale,
                                 width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
@@ -148,6 +151,58 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     return f'Video at {outdir_current} ready!'
 
+def setup_common_values():
+    with gr.Row():
+        prompt = gr.Text(
+            label='Prompt', max_lines=1, interactive=True)
+    with gr.Row():
+        n_prompt = gr.Text(label='Negative prompt', max_lines=1,
+                            interactive=True, value='text, watermark, copyright, blurry')
+    with gr.Row():
+        steps = gr.Slider(
+            label='Steps',
+            minimum=1,
+            maximum=100,
+            step=1,
+            value=30,
+            info='Steps')
+        cfg_scale = gr.Slider(
+            label='cfg_scale',
+            minimum=1,
+            maximum=100,
+            step=1,
+            value=12.5,
+            info='Steps')
+    with gr.Row():
+        frames = gr.Slider(
+            label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
+        seed = gr.Slider(
+            label='Seed',
+            minimum=-1,
+            maximum=1000000,
+            step=1,
+            value=-1,
+            info='If set to -1, a different seed will be used each time.')
+    with gr.Row():
+        width = gr.Slider(
+            label='width',
+            minimum=64,
+            maximum=1024,
+            step=64,
+            value=256,
+            info='If set to -1, a different seed will be used each time.')
+        height = gr.Slider(
+            label='height',
+            minimum=64,
+            maximum=1024,
+            step=64,
+            value=256,
+            info='If set to -1, a different seed will be used each time.')
+    with gr.Row():
+        eta = gr.Number(
+            label="eta", value=0, interactive=True)
+    
+    return prompt, n_prompt, steps, frames, cfg_scale, width, height, eta
 
 def on_ui_tabs():
     global i1_store_t2v
@@ -157,69 +212,22 @@ def on_ui_tabs():
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
                 with gr.Tabs():
-                    with gr.Tab('text2video'):
+                    do_img2img = gr.State(value=0)
+                    with gr.Tab('txt2vid') as tab_txt2vid:
+                        # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
+                        prompt, n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe = setup_common_values()
+
+                    with gr.Tab('vid2vid') as tab_vid2vid:
+                        # TODO: here too
+                        prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v, cpu_vae_v, keep_pipe_v = setup_common_values()
                         with gr.Row():
-                            prompt = gr.Text(
-                                label='Prompt', max_lines=1, interactive=True)
-                        with gr.Row():
-                            n_prompt = gr.Text(label='Negative prompt', max_lines=1,
-                                               interactive=True, value='text, watermark, copyright, blurry')
-                        with gr.Row():
-                            steps = gr.Slider(
-                                label='Steps',
-                                minimum=1,
-                                maximum=100,
-                                step=1,
-                                value=30,
-                                info='Steps')
-                            cfg_scale = gr.Slider(
-                                label='cfg_scale',
-                                minimum=1,
-                                maximum=100,
-                                step=1,
-                                value=12.5,
-                                info='Steps')
-                        with gr.Row():
-                            frames = gr.Slider(
-                                label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
-                            seed = gr.Slider(
-                                label='Seed',
-                                minimum=-1,
-                                maximum=1000000,
-                                step=1,
-                                value=-1,
-                                info='If set to -1, a different seed will be used each time.')
-                        with gr.Row():
-                            width = gr.Slider(
-                                label='width',
-                                minimum=64,
-                                maximum=1024,
-                                step=64,
-                                value=256,
-                                info='If set to -1, a different seed will be used each time.')
-                            height = gr.Slider(
-                                label='height',
-                                minimum=64,
-                                maximum=1024,
-                                step=64,
-                                value=256,
-                                info='If set to -1, a different seed will be used each time.')
-                        with gr.Row():
-                            eta = gr.Number(
-                                label="eta", value=0, interactive=True)
-                        with gr.Row():
-                            cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=[
-                                               'GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
-                        with gr.Row():
-                            keep_pipe = gr.Checkbox(
-                                label="keep pipe in memory", value=dv.keep_pipe_in_memory, interactive=True)
-                        with gr.Row():
-                            do_img2img = gr.Checkbox(
-                                 label="do img2img", value=dv.do_img2img, interactive=True)
                             img2img_steps = gr.Slider(
                                 label="img2img steps", value=dv.img2img_steps, minimum=0, maximum=100, step=1)
                             img2img_frames = gr.Text(
                                 label='img2img frames', max_lines=1, interactive=True)
+                    
+                    tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
+                    tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_img2img])
 
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
@@ -239,6 +247,13 @@ def on_ui_tabs():
                             ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value=dv.ffmpeg_location)
                     with gr.Tab('How to install? Where to get help, how to help?'):
                         gr.Markdown(welcome_text)
+                
+                with gr.Row():
+                    cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=[
+                                        'GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
+                with gr.Row():
+                    keep_pipe = gr.Checkbox(
+                        label="keep pipe in memory", value=False, interactive=True)
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row():
                     run_button = gr.Button('Generate', variant='primary')
@@ -269,8 +284,10 @@ def on_ui_tabs():
                 # , extra_outputs=[None, '', '']),
                 fn=wrap_gradio_gpu_call(process),
                 # _js="submit_deforum",
-                inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt,
-                        n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe,
+                inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
+                        prompt, n_prompt, steps, frames, cfg_scale, width, height, eta,\
+                        prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v,\
+                        cpu_vae, keep_pipe,
                         do_img2img, img2img_frames, img2img_steps
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
