@@ -245,7 +245,7 @@ def on_ui_tabs():
                     with gr.Tab('vid2vid') as tab_vid2vid:
                         img2img_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
                         # TODO: here too
-                        prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v, cpu_vae_v, keep_pipe_v = setup_common_values()
+                        prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values()
                         with gr.Row():
                             img2img_steps = gr.Slider(
                                 label="img2img steps", value=dv.img2img_steps, minimum=0, maximum=100, step=1)
