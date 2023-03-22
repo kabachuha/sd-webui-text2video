@@ -1474,7 +1474,8 @@ class GaussianDiffusion(object):
                          condition_fn=None,
                          guide_scale=None,
                          ddim_timesteps=20,
-                         eta=0.0):
+                         eta=0.0,
+                         unet_lowvram=False):
         # prepare input
         b = noise.size(0)
         xt = noise
