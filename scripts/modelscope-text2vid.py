@@ -1,28 +1,24 @@
 # See https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
-
-from modules import script_callbacks
-from types import SimpleNamespace
-import gradio as gr
-import torch
-import random
-from pkg_resources import resource_filename
-import modules.paths as ph
-from modules import lowvram, devices, sd_hijack, shared
-import gc
-from modules.shared import opts, cmd_opts, state
-from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
-from scripts.error_hardcode import get_error
-from webui import wrap_gradio_gpu_call
 import cv2
-from base64 import b64encode
+import gc
 import os
+import random
 import subprocess
 import time
-from modules import devices
 from PIL import Image
 import numpy as np
-import glob
+import torch
 from tqdm import tqdm
+from base64 import b64encode
+from types import SimpleNamespace
+import gradio as gr
+from webui import wrap_gradio_gpu_call
+import modules.paths as ph
+from modules import devices, lowvram, script_callbacks, sd_hijack, shared
+from modules.shared import cmd_opts, opts, state
+from scripts.error_hardcode import get_error
+from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
+from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
@@ -45,8 +41,8 @@ Join the development or report issues and feature requests here <a style="color:
 '''
 
 
-def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width, height, eta,\
-             prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v, \
+def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
+             prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
                 cpu_vae='GPU (half precision)', keep_pipe=False,
                 do_img2img=False, img2img_frames=None, img2img_steps=0,img2img_startFrame=0
             ):
@@ -80,7 +76,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
         if do_img2img:
 
-            prompt, n_prompt, steps, frames, cfg_scale, width, height, eta = prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v
+            prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v
 
             if img2img_frames is None:
                 raise FileNotFoundError("Please upload a video :()")
@@ -144,7 +140,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
         print('Starting text2video' if not do_img2img else 'Starting video2video')
 
-        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, cfg_scale,
+        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
                                 width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
 
         print(f'text2video finished, saving frames to {outdir_current}')
@@ -168,7 +164,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print(e)
     finally:
         #optionally store pipe in global between runs, if not, remove it
-        if not keep_pipe:
+        if not keep_pipe_in_vram:
             pipe = None
         devices.torch_gc()
         gc.collect()
@@ -227,7 +223,7 @@ def setup_common_values():
         eta = gr.Number(
             label="eta", value=0, interactive=True)
     
-    return prompt, n_prompt, steps, frames, cfg_scale, width, height, eta
+    return prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta
 
 def on_ui_tabs():
     global i1_store_t2v
@@ -240,12 +236,12 @@ def on_ui_tabs():
                     do_img2img = gr.State(value=0)
                     with gr.Tab('txt2vid') as tab_txt2vid:
                         # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
-                        prompt, n_prompt, steps, frames, cfg_scale, width, height, eta = setup_common_values()
+                        prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = setup_common_values()
 
                     with gr.Tab('vid2vid') as tab_vid2vid:
                         img2img_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
                         # TODO: here too
-                        prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values()
+                        prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values()
                         with gr.Row():
                             img2img_steps = gr.Slider(
                                 label="img2img steps", value=dv.img2img_steps, minimum=0, maximum=100, step=1)
@@ -280,9 +276,9 @@ def on_ui_tabs():
                     keep_pipe = gr.Checkbox(
                         label="keep pipe in memory", value=False, interactive=True)
             with gr.Column(scale=1, variant='compact'):
-                with gr.Row():
+                with gr.Row(variant='compact'):
                     run_button = gr.Button('Generate', variant='primary')
-                with gr.Row():
+                with gr.Row(variant='compact'):
                     i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
                 with gr.Row(visible=False):
                     result = gr.Label("")
@@ -310,8 +306,8 @@ def on_ui_tabs():
                 fn=wrap_gradio_gpu_call(process),
                 # _js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
-                        prompt, n_prompt, steps, frames, cfg_scale, width, height, eta,\
-                        prompt_v, n_prompt_v, steps_v, frames_v, cfg_scale_v, width_v, height_v, eta_v,\
+                        prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
+                        prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
                         cpu_vae, keep_pipe,
                         do_img2img, img2img_frames, img2img_steps,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
@@ -323,22 +319,6 @@ def on_ui_tabs():
     return [(deforum_interface, "ModelScope text2video", "t2v_interface")]
 
 script_callbacks.on_ui_tabs(on_ui_tabs)
-
-def find_ffmpeg_binary():
-    try:
-        import google.colab
-        return 'ffmpeg'
-    except:
-        pass
-    for package in ['imageio_ffmpeg', 'imageio-ffmpeg']:
-        try:
-            package_path = resource_filename(package, 'binaries')
-            files = [os.path.join(package_path, f) for f in os.listdir(
-                package_path) if f.startswith("ffmpeg-")]
-            files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-            return files[0] if files else 'ffmpeg'
-        except:
-            return 'ffmpeg'
 
 def get_t2v_version():
     from modules import extensions as mext
@@ -378,100 +358,5 @@ def DeforumOutputArgs():
     frame_interpolation_slow_mo_enabled = False
     frame_interpolation_slow_mo_amount = 2  # [2 to 10]
     frame_interpolation_keep_imgs = False
-    keep_pipe_in_memory = False
-    do_img2img = False
-    img2img_steps = 15
-    img2img_startFrame=0
+    keep_pipe_in_vram = False
     return locals()
-
-
-# Stitch images to a h264 mp4 video using ffmpeg
-def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
-    start_time = time.time()
-
-    print(f"Got a request to stitch frames to video using FFmpeg.\nFrames:\n{imgs_path}\nTo Video:\n{outmp4_path}")
-    msg_to_print = f"Stitching *video*..."
-    print(msg_to_print)
-    if stitch_to_frame == -1:
-        stitch_to_frame = 999999999
-    try:
-        cmd = [
-            ffmpeg_location,
-            '-y',
-            '-vcodec', 'png',
-            '-r', str(float(fps)),
-            '-start_number', str(stitch_from_frame),
-            '-i', imgs_path,
-            '-frames:v', str(stitch_to_frame),
-            '-c:v', 'libx264',
-            '-vf',
-            f'fps={float(fps)}',
-            '-pix_fmt', 'yuv420p',
-            '-crf', str(crf),
-            '-preset', preset,
-            '-pattern_type', 'sequence',
-            outmp4_path
-        ]
-        process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-    except FileNotFoundError:
-        print("\r" + " " * len(msg_to_print), end="", flush=True)
-        print(f"\r{msg_to_print}", flush=True)
-        raise FileNotFoundError(
-            "FFmpeg not found. Please make sure you have a working ffmpeg path under 'ffmpeg_location' parameter.")
-    except Exception as e:
-        print("\r" + " " * len(msg_to_print), end="", flush=True)
-        print(f"\r{msg_to_print}", flush=True)
-        raise Exception(
-            f'Error stitching frames to video. Actual runtime error:{e}')
-
-    if add_soundtrack != 'None':
-        audio_add_start_time = time.time()
-        try:
-            cmd = [
-                ffmpeg_location,
-                '-i',
-                outmp4_path,
-                '-i',
-                audio_path,
-                '-map', '0:v',
-                '-map', '1:a',
-                '-c:v', 'copy',
-                '-shortest',
-                outmp4_path+'.temp.mp4'
-            ]
-            process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = process.communicate()
-            if process.returncode != 0:
-                print("\r" + " " * len(msg_to_print), end="", flush=True)
-                print(f"\r{msg_to_print}", flush=True)
-                raise RuntimeError(stderr)
-            os.replace(outmp4_path+'.temp.mp4', outmp4_path)
-            print("\r" + " " * len(msg_to_print), end="", flush=True)
-            print(f"\r{msg_to_print}", flush=True)
-            print(f"\rFFmpeg Video+Audio stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
-        except Exception as e:
-            print("\r" + " " * len(msg_to_print), end="", flush=True)
-            print(f"\r{msg_to_print}", flush=True)
-            print(f'\rError adding audio to video. Actual error: {e}', flush=True)
-            print(f"FFMPEG Video (sorry, no audio) stitching \033[33mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
-    else:
-        print("\r" + " " * len(msg_to_print), end="", flush=True)
-        print(f"\r{msg_to_print}", flush=True)
-        print(f"\rVideo stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
-
-# TODO: MOVEME
-# quick-retreive frame count, FPS and H/W dimensions of a video (local or URL-based)
-def get_quick_vid_info(vid_path):
-    vidcap = cv2.VideoCapture(vid_path)
-    video_fps = vidcap.get(cv2.CAP_PROP_FPS)
-    video_frame_count = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT)) 
-    video_width = int(vidcap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    video_height = int(vidcap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    vidcap.release()
-    if video_fps.is_integer():
-        video_fps = int(video_fps)
-
-    return video_fps, video_frame_count, (video_width, video_height)

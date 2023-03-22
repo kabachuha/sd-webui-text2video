@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
 import torch
+import random
 import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
@@ -148,6 +149,7 @@ class TextToVideoSynthesis():
         self.clip_encoder.model.to('cpu')
 
         self.clip_encoder.to("cpu")
+        self.noise_gen = torch.Generator(device='cpu')
 
     def compute_latents(self, vd_out, cpu_vae='GPU (half precision)', device=torch.device('cuda')):
         self.device = device
@@ -198,7 +200,7 @@ class TextToVideoSynthesis():
         return out
 
     # @torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device=torch.device('cpu'), latents=None, skip_steps=0,strength=0):
+    def infer(self, prompt, n_prompt, steps, frames, seed, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device=torch.device('cpu'), latents=None, skip_steps=0,strength=0):
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
@@ -236,9 +238,10 @@ class TextToVideoSynthesis():
             latent_h, latent_w = height // 8, width // 8
             self.sd_model.to(self.device)
             if latents == None:
+                self.noise_gen.manual_seed(seed if seed!=-1 else random.randint(0, 2**32 - 1))
                 latents = torch.randn(num_sample, 4, max_frames, latent_h,
-                                      latent_w).to(
-                    self.device)
+                                          latent_w, generator=self.noise_gen).to(
+                                              self.device)
             else:
                 latents.to(self.device)
 
