@@ -67,6 +67,29 @@ def vid2frames(video_path, video_in_frame_path, n=1, overwrite=True, extract_fro
         vidcap.release()
         return video_fps
 
+def is_vid_path_valid(video_path):
+    # make sure file format is supported!
+    file_formats = ["mov", "mpeg", "mp4", "m4v", "avi", "mpg", "webm"]
+    extension = video_path.rsplit('.', 1)[-1].lower()
+    # vid path is actually a URL, check it 
+    if video_path.startswith('http://') or video_path.startswith('https://'):
+        response = requests.head(video_path, allow_redirects=True)
+        if response.status_code == 404:
+            raise ConnectionError("Video URL is not valid. Response status code: {}".format(response.status_code))
+        elif response.status_code == 302:
+            response = requests.head(response.headers['location'], allow_redirects=True)
+        if response.status_code != 200:
+            raise ConnectionError("Video URL is not valid. Response status code: {}".format(response.status_code))
+        if extension not in file_formats:
+            raise ValueError("Video file format '{}' not supported. Supported formats are: {}".format(extension, file_formats))
+    else:
+        if not os.path.exists(video_path):
+            raise RuntimeError("Video path does not exist.")
+        if extension not in file_formats:
+            raise ValueError("Video file format '{}' not supported. Supported formats are: {}".format(extension, file_formats))
+    return True
+
+
 def clean_folder_name(string):
     illegal_chars = "/\\<>:\"|?*.,\" "
     translation_table = str.maketrans(illegal_chars, "_"*len(illegal_chars))
