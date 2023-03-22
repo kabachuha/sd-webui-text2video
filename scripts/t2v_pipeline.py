@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
 import torch
+import random
 import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
@@ -188,7 +189,7 @@ class TextToVideoSynthesis():
             latent_h, latent_w = height // 8, width // 8
             self.sd_model.to(self.device)
             if latents == None:
-                self.noise_gen.manual_seed(seed)
+                self.noise_gen.manual_seed(seed if seed!=-1 else random.randint(0, 2**32 - 1))
                 latents = torch.randn(num_sample, 4, max_frames, latent_h,
                                           latent_w, generator=self.noise_gen).to(
                                               self.device)
