@@ -45,7 +45,7 @@ Join the development or report issues and feature requests here <a style="color:
 
 
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, cfg_scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', keep_pipe=False,
-            do_img2img=False, img2img_frames=None, img2img_steps=0
+            do_img2img=False, img2img_frames=None, img2img_steps=0,img2img_startFrame=0
             ):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
@@ -82,11 +82,12 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         if do_img2img and img2img_frames:
             print("loading frames")
             pattern = os.path.join(img2img_frames, '[0-9][0-9][0-9][0-9][0-9].png')
-            matching_files = glob.glob(pattern)[:frames]
+            img2img_startFrame=int(img2img_startFrame)
+            matching_files = glob.glob(pattern)[img2img_startFrame:img2img_startFrame+frames]
             images=[]
             for file in matching_files:
                 image=Image.open(file)
-                image=image.resize((height,width), Image.ANTIALIAS)
+                image=image.resize((width,height), Image.ANTIALIAS)
                 array = np.array(image)
                 images+=[array]
 
@@ -220,6 +221,7 @@ def on_ui_tabs():
                                 label="img2img steps", value=dv.img2img_steps, minimum=0, maximum=100, step=1)
                             img2img_frames = gr.Text(
                                 label='img2img frames', max_lines=1, interactive=True)
+                            img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
 
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
@@ -271,7 +273,7 @@ def on_ui_tabs():
                 # _js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt,
                         n_prompt, steps, frames, cfg_scale, width, height, eta, cpu_vae, keep_pipe,
-                        do_img2img, img2img_frames, img2img_steps
+                        do_img2img, img2img_frames, img2img_steps,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
@@ -339,6 +341,7 @@ def DeforumOutputArgs():
     keep_pipe_in_memory = False
     do_img2img = False
     img2img_steps = 15
+    img2img_startFrame=0
     return locals()
 
 
