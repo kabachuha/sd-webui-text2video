@@ -181,11 +181,11 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     return f'Video at {outdir_current} ready!'
 
 def setup_common_values():
-    with gr.Row():
-        prompt = gr.Text(
-            label='Prompt', max_lines=1, interactive=True)
-    with gr.Row():
-        n_prompt = gr.Text(label='Negative prompt', max_lines=1,
+    with gr.Row(elem_id='txt2vid_prompt_toprow'):
+        prompt = gr.Textbox(
+            label='Prompt', max_lines=2, interactive=True)
+    with gr.Row(elem_id='txt2vid_n_prompt_toprow'):
+        n_prompt = gr.Textbox(label='Negative prompt', max_lines=2,
                             interactive=True, value='text, watermark, copyright, blurry')
     with gr.Row():
         steps = gr.Slider(
