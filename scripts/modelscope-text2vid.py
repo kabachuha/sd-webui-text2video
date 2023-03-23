@@ -45,7 +45,7 @@ import traceback
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
              prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
                 cpu_vae='GPU (half precision)', keep_pipe_in_vram=False,
-                do_img2img=False, img2img_frames=None, img2img_steps=0,img2img_startFrame=0
+                do_img2img=False, img2img_frames=None, img2img_frames_path="", img2img_steps=0,img2img_startFrame=0
             ):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
@@ -79,13 +79,17 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
             prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v
 
-            if img2img_frames is None:
+            if img2img_frames is None and img2img_frames_path == "":
                 raise FileNotFoundError("Please upload a video :()")
+
+            # Overrides
+            if img2img_frames is not None:
+                img2img_frames_path = img2img_frames.name
 
             print("got a request to *vid2vid* an existing video.")
 
-            in_vid_fps, _, _ = get_quick_vid_info(img2img_frames.name)
-            folder_name = clean_folder_name(Path(img2img_frames.name).stem)
+            in_vid_fps, _, _ = get_quick_vid_info(img2img_frames_path)
+            folder_name = clean_folder_name(Path(img2img_frames_path).stem)
             outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name)
             i = 1
             while os.path.exists(outdir_no_tmp):
@@ -95,7 +99,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             outdir_v2v = os.path.join(outdir_no_tmp, 'tmp_input_frames')
             os.makedirs(outdir, exist_ok=True)
             
-            vid2frames(video_path=img2img_frames.name, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=img2img_startFrame, extract_to_frame=img2img_startFrame+frames, numeric_files_output=True, out_img_format='png')
+            vid2frames(video_path=img2img_frames_path, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=img2img_startFrame, extract_to_frame=img2img_startFrame+frames, numeric_files_output=True, out_img_format='png')
             
             temp_convert_raw_png_path = os.path.join(outdir_v2v, "tmp_vid2vid_folder")
             duplicate_pngs_from_folder(outdir_v2v, temp_convert_raw_png_path, None, folder_name)
@@ -237,7 +241,13 @@ def on_ui_tabs():
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = setup_common_values()
 
                     with gr.Tab('vid2vid') as tab_vid2vid:
+                        with gr.Row():
+                            gr.HTML('Put your video here')
                         img2img_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
+                        with gr.Row():
+                            gr.HTML('Alternative: enter the relative (to the webui) path to the file')
+                        with gr.Row():
+                            img2img_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path")
                         # TODO: here too
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values()
                         with gr.Row():
@@ -307,7 +317,7 @@ def on_ui_tabs():
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
                         cpu_vae, keep_pipe_in_vram,
-                        do_img2img, img2img_frames, img2img_steps,img2img_startFrame
+                        do_img2img, img2img_frames, img2img_frames_path, img2img_steps,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
