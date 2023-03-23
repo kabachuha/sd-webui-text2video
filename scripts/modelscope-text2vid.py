@@ -97,7 +97,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 i += 1
 
             outdir_v2v = os.path.join(outdir_no_tmp, 'tmp_input_frames')
-            os.makedirs(outdir, exist_ok=True)
+            os.makedirs(outdir_v2v, exist_ok=True)
             
             vid2frames(video_path=img2img_frames_path, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=img2img_startFrame, extract_to_frame=img2img_startFrame+frames, numeric_files_output=True, out_img_format='png')
             
