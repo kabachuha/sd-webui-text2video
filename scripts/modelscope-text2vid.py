@@ -139,7 +139,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             latents = None
             img2img_steps=0
 
-        print('Starting text2video' if not do_img2img else 'Starting video2video')
+        print('Working in txt2vid mode' if not do_img2img else 'Working in vid2vid mode')
 
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
                                 width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
