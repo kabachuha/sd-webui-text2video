@@ -14,7 +14,8 @@ import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
 from scripts.t2v_model import UNetSD, AutoencoderKL, FrozenOpenCLIPEmbedder, GaussianDiffusion, beta_schedule
-
+from modules.shared import devices
+from modules import prompt_parser
 
 __all__ = ['TextToVideoSynthesis']
 
@@ -225,11 +226,10 @@ class TextToVideoSynthesis():
 
         self.device = device
         self.clip_encoder.to(self.device)
-        y, zero_y = self.preprocess(prompt, n_prompt)
+        c, uc = self.preprocess(prompt, n_prompt, steps)
         self.clip_encoder.to("cpu")
         torch_gc()
 
-        context = torch.cat([zero_y, y], dim=0).to(self.device)
         # synthesis
         strength = None if strength == 0.0 else strength
         with torch.no_grad():
@@ -253,22 +253,15 @@ class TextToVideoSynthesis():
                 x0 = self.diffusion.ddim_sample_loop(
                     noise=latents,  # shape: b c f h w
                     model=self.sd_model,
-                    model_kwargs=[{
-                        'y':
-                        context[1].unsqueeze(0).repeat(num_sample, 1, 1)
-                    }, {
-                        'y':
-                        context[0].unsqueeze(0).repeat(num_sample, 1, 1)
-                    }],
+                    c=c,
+                    uc=uc,
+                    num_sample=1,
                     guide_scale=scale,
                     ddim_timesteps=steps,
                     eta=eta,
                     percentile=strength,
-                  
-                  
                     skip_steps=skip_steps,
                 )
-
 
                 self.last_tensor = x0
                 self.last_tensor.cpu()
@@ -349,7 +342,6 @@ class TextToVideoSynthesis():
         # self.autoencoder = None
         # del self.autoencoder
         del vd_out
-        del context
         del latents
         x0 = None
         del x0
@@ -362,13 +354,26 @@ class TextToVideoSynthesis():
     def cleanup(self):
         pass
 
-    def preprocess(self, prompt, n_prompt, offload=True):
-        self.clip_encoder.to(self.device)
-        text_emb = self.clip_encoder(prompt)
-        text_emb_zero = self.clip_encoder(n_prompt)
+    def preprocess(self, prompt, n_prompt, steps, offload=True):
+        cached_uc = [None, None]
+        cached_c = [None, None]
+
+        def get_conds_with_caching(function, model, required_prompts, steps, cache):
+            if cache[0] is not None and (required_prompts, steps) == cache[0]:
+                return cache[1]
+
+            with devices.autocast():
+                cache[1] = function(model, required_prompts, steps)
+
+            cache[0] = (required_prompts, steps)
+            return cache[1]
+
+        self.clip_encoder.to(self.device)        
+        uc = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, n_prompt, steps, cached_uc)
+        c = get_conds_with_caching(prompt_parser.get_multicond_learned_conditioning, self.clip_encoder, prompt, steps, cached_c)
         if offload:
             self.clip_encoder.to('cpu')
-        return text_emb.type(torch.float16), text_emb_zero.type(torch.float16)
+        return c, uc
 
     def postprocess_video(self, video_data):
         video = tensor2vid(video_data)

@@ -1166,6 +1166,9 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
     def encode(self, text):
         return self(text)
 
+    def get_learned_conditionin(self, text):
+        return self.encode(text)
+
     def from_pretrained(cls,
                         model_name_or_path: str,
                         revision: Optional[str] = DEFAULT_MODEL_REVISION,
@@ -1477,7 +1480,9 @@ class GaussianDiffusion(object):
     def ddim_sample_loop(self,
                          noise,
                          model,
-                         model_kwargs={},
+                         c_schedule=None,
+                         uc_schedule=None,
+                         num_sample=1,
                          clamp=None,
                          percentile=None,
                          condition_fn=None,
@@ -1486,6 +1491,7 @@ class GaussianDiffusion(object):
                          eta=0.0,
                          skip_steps=0,
                          ):
+
         # prepare input
         b = noise.size(0)
         xt = noise
@@ -1505,13 +1511,34 @@ class GaussianDiffusion(object):
             xt = self.add_noise(xt, noise_to_add, step0)
 
         pbar = tqdm(steps, desc="DDIM sampling")
+
+        i = 0
+        c_endstep, c = c_schedule[0]
+        uc_endstep, uc = uc_schedule[0]
+
         for step in pbar:
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
+            model_kwargs=[{
+                'y':
+                uc.unsqueeze(0).repeat(num_sample, 1, 1)
+            }, {
+                'y':
+                c.unsqueeze(0).repeat(num_sample, 1, 1)
+            }]
             xt = self.ddim_sample(xt, t, model, model_kwargs, clamp,
                                   percentile, condition_fn, guide_scale,
                                   ddim_timesteps, eta)
             t.cpu()
             t = None
+
+            # get the next c and uc from the schedule
+            # no need to worry about the last endstep < steps, it's handled in webui
+            i += 1
+
+            if i > c_endstep:
+                c_endstep, c = c_schedule[i]
+            if i > uc_endstep:
+                uc_endstep, uc = uc_schedule[i]
             pbar.set_description(f"DDIM sampling {str(step)}")
         pbar.close()
         return xt
