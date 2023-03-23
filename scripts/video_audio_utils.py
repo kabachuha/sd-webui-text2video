@@ -2,6 +2,7 @@ import time, math
 import subprocess
 import os, shutil
 import cv2
+from modules.shared import state
 from pkg_resources import resource_filename
 
 def get_frame_name(path):
