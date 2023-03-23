@@ -1,13 +1,12 @@
 # See https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
-
-from cv2 import imwrite
-from pathlib import Path
+import cv2
 import gc
 import os
 import random
 import subprocess
 import time
 from PIL import Image
+from pathlib import Path
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -20,7 +19,7 @@ from modules import devices, lowvram, script_callbacks, sd_hijack, shared
 from modules.shared import cmd_opts, opts, state
 from scripts.error_hardcode import get_error
 from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
-from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info, clean_folder_name, vid2frames
+from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
@@ -98,8 +97,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             
             vid2frames(video_path=img2img_frames.name, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=img2img_startFrame, extract_to_frame=img2img_startFrame+frames, numeric_files_output=True, out_img_format='png')
             
-            temp_convert_raw_png_path = os.path.join(raw_output_imgs_path, "tmp_vid2vid_folder")
-            duplicate_pngs_from_folder(raw_output_imgs_path, temp_convert_raw_png_path, img_batch_id, orig_vid_name)
+            temp_convert_raw_png_path = os.path.join(outdir_v2v, "tmp_vid2vid_folder")
+            duplicate_pngs_from_folder(outdir_v2v, temp_convert_raw_png_path, None, folder_name)
 
             videogen = []
             for f in os.listdir(temp_convert_raw_png_path):
@@ -150,7 +149,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         # just deleted the folder so we need to make it again
         os.makedirs(outdir_current, exist_ok=True)
         for i in range(len(samples)):
-            imwrite(outdir_current + os.path.sep +
+            cv2.imwrite(outdir_current + os.path.sep +
                         f"{i:06}.png", samples[i])
 
         # TODO: add params to the GUI
