@@ -285,7 +285,7 @@ def on_ui_tabs():
                         label="keep pipe in memory", value=False, interactive=True)
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(variant='compact'):
-                    run_button = gr.Button('Generate', variant='primary')
+                    run_button = gr.Button('Generate', elem_id=f"text2vid_generate", variant='primary')
                 with gr.Row(variant='compact'):
                     i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
                 with gr.Row(visible=False):
