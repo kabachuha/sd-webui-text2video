@@ -114,7 +114,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
             images=[]
             for file in tqdm(videogen, desc="Loading frames"):
-                image=Image.open(file)
+                image=Image.open(os.path.join(temp_convert_raw_png_path, file))
                 image=image.resize((width,height), Image.ANTIALIAS)
                 array = np.array(image)
                 images+=[array]
