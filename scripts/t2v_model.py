@@ -1515,8 +1515,8 @@ class GaussianDiffusion(object):
 
         i = 0
         for step in pbar:
-            conds_list, tensor = prompt_parser.reconstruct_multicond_batch(c, i)
-            uc = prompt_parser.reconstruct_cond_batch(uc, i)
+            conds_list, tensor = reconstruct_multicond_batch(c, i)
+            uc = reconstruct_cond_batch(uc, i)
 
             assert all([len(conds) == 1 for conds in conds_list]), 'composition via AND is not supported for DDIM/PLMS samplers'
             c = tensor
