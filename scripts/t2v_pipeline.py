@@ -61,7 +61,7 @@ class FrozenOpenCLIPEmbedderWithCustomWordsWrapper(sd_hijack_open_clip.FrozenOpe
         #self.wrapped_this = wrapped_this
     
     def get_learned_conditioning(self, c):
-        return self.encode(c)
+        return self(c)
 
 
 class TextToVideoSynthesis():

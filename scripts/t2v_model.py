@@ -1533,10 +1533,10 @@ class GaussianDiffusion(object):
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             model_kwargs=[{
                 'y':
-                uc
+                uc.sum(dim=0),
             }, {
                 'y':
-                c
+                c.sum(dim=0),
             }]
             xt = self.ddim_sample(xt, t, model, model_kwargs, clamp,
                                   percentile, condition_fn, guide_scale,
