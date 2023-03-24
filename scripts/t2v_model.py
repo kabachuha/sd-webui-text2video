@@ -1166,7 +1166,7 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
     def encode(self, text):
         return self(text)
 
-    def get_learned_conditionin(self, text):
+    def get_learned_conditioning(self, text):
         return self.encode(text)
 
     def from_pretrained(cls,
