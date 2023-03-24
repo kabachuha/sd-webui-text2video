@@ -55,6 +55,15 @@ class HijackDummy:
 
     embedding_db = textual_inversion.textual_inversion.EmbeddingDatabase()
 
+class FrozenOpenCLIPEmbedderWithCustomWordsWrapper(sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords):
+    def __init__(self, wrapped_this):
+        super().__init__(wrapped_this.wrapped, wrapped_this.hijack)
+        self.wrapped_this = wrapped_this
+    
+    def get_learned_conditioning(self, c):
+        return self.wrapped_this(c)
+
+
 class TextToVideoSynthesis():
     r"""
     task for text to video synthesis.
@@ -159,6 +168,7 @@ class TextToVideoSynthesis():
             layer='penultimate')
         
         self.clip_encoder = sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords(self.clip_encoder, HijackDummy())
+        self.clip_encoder = FrozenOpenCLIPEmbedderWithCustomWordsWrapper(self.clip_encoder)
 
         self.clip_encoder.wrapped.model.to('cpu')
 
@@ -382,8 +392,8 @@ class TextToVideoSynthesis():
             return cache[1]
 
         self.clip_encoder.wrapped.to(self.device)        
-        uc = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder.wrapped, n_prompt, steps, cached_uc)
-        c = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder.wrapped, prompt, steps, cached_c)
+        uc = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, n_prompt, steps, cached_uc)
+        c = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, prompt, steps, cached_c)
         if offload:
             self.clip_encoder.wrapped.to('cpu')
         return c, uc
