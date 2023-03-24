@@ -1515,8 +1515,8 @@ class GaussianDiffusion(object):
 
         i = 0
         for step in pbar:
-            conds_list, tensor = reconstruct_multicond_batch(c, i)
-            uc = reconstruct_cond_batch(uc, i)
+            conds_list, tensor = reconstruct_multicond_batch(num_sample*[c], i)
+            uc = reconstruct_cond_batch(num_sample*[uc], i)
 
             assert all([len(conds) == 1 for conds in conds_list]), 'composition via AND is not supported for DDIM/PLMS samplers'
             c = tensor
@@ -1524,10 +1524,10 @@ class GaussianDiffusion(object):
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             model_kwargs=[{
                 'y':
-                uc.unsqueeze(0).repeat(num_sample, 1, 1)
+                uc
             }, {
                 'y':
-                c.unsqueeze(0).repeat(num_sample, 1, 1)
+                c
             }]
             xt = self.ddim_sample(xt, t, model, model_kwargs, clamp,
                                   percentile, condition_fn, guide_scale,
