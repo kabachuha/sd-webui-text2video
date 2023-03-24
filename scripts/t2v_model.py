@@ -1515,28 +1515,28 @@ class GaussianDiffusion(object):
 
         i = 0
         for step in pbar:
-            c = reconstruct_cond_batch(c, i)
-            uc = reconstruct_cond_batch(uc, i)
+            c_i = reconstruct_cond_batch(c, i)
+            uc_i = reconstruct_cond_batch(uc, i)
 
             # for DDIM, shapes must match, we can't just process cond and uncond independently;
             # filling unconditional_conditioning with repeats of the last vector to match length is
             # not 100% correct but should work well enough
-            if uc.shape[1] < c.shape[1]:
-                last_vector = uc[:, -1:]
-                last_vector_repeated = last_vector.repeat([1, c.shape[1] - uc.shape[1], 1])
-                uc = torch.hstack([uc, last_vector_repeated])
-            elif uc.shape[1] > c.shape[1]:
-                uc = uc[:, :c.shape[1]]
+            if uc_i.shape[1] < c_i.shape[1]:
+                last_vector = uc_i[:, -1:]
+                last_vector_repeated = last_vector.repeat([1, c_i.shape[1] - uc.shape[1], 1])
+                uc_i = torch.hstack([uc_i, last_vector_repeated])
+            elif uc_i.shape[1] > c_i.shape[1]:
+                uc_i = uc_i[:, :c_i.shape[1]]
             
-            print(c.shape, uc.shape)
+            #print(c_i.shape, uc.shape)
 
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             model_kwargs=[{
                 'y':
-                uc.sum(dim=0).unsqueeze(0),
+                uc_i.sum(dim=0).unsqueeze(0),
             }, {
                 'y':
-                c.sum(dim=0).unsqueeze(0),
+                c_i.sum(dim=0).unsqueeze(0),
             }]
             xt = self.ddim_sample(xt, t, model, model_kwargs, clamp,
                                   percentile, condition_fn, guide_scale,
