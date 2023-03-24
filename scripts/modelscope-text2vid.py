@@ -4,7 +4,7 @@ import gc
 import os
 import random
 import subprocess
-import time
+import time, math
 from PIL import Image
 from pathlib import Path
 import numpy as np
@@ -45,7 +45,7 @@ import traceback
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
              prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
                 cpu_vae='GPU (half precision)', keep_pipe_in_vram=False,
-                do_img2img=False, img2img_frames=None, img2img_frames_path="", img2img_steps=0,img2img_startFrame=0
+                do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
             ):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
@@ -141,12 +141,12 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             latents = pipe.compute_latents(vd_out).to(device)
         else:
             latents = None
-            img2img_steps=0
+            strength=1
 
         print('Working in txt2vid mode' if not do_img2img else 'Working in vid2vid mode')
 
         samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
-                                width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
+                                width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
 
         print(f'text2video finished, saving frames to {outdir_current}')
 
@@ -251,8 +251,8 @@ def on_ui_tabs():
                         # TODO: here too
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values()
                         with gr.Row():
-                            img2img_steps = gr.Slider(
-                                label="img2img steps", value=dv.img2img_steps, minimum=0, maximum=100, step=1)
+                            strength = gr.Slider(
+                                label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05)
                             img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
                     
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
@@ -317,7 +317,7 @@ def on_ui_tabs():
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
                         cpu_vae, keep_pipe_in_vram,
-                        do_img2img, img2img_frames, img2img_frames_path, img2img_steps,img2img_startFrame
+                        do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
@@ -339,7 +339,7 @@ def get_t2v_version():
         return "Unknown"
 
 def DeforumOutputArgs():
-    img2img_steps = 0
+    strength = 1
     img2img_startFrame = 0
     skip_video_creation = False
     fps = 15
