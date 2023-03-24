@@ -153,13 +153,15 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         pbar = tqdm(range(batch_count), leave=False)
         if batch_count == 1:
             pbar.disable=True
+        
+        init_timestring = time.strftime('%Y%m%d%H%M%S')
 
         for batch in pbar:
             samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
                                     width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
 
             if batch > 0:
-                outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}_{batch}")
+                outdir_current = os.path.join(outdir, f"{init_timestring}_{batch}")
             print(f'text2video finished, saving frames to {outdir_current}')
 
             # just deleted the folder so we need to make it again
