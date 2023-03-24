@@ -43,6 +43,17 @@ except:
         """
         pass
 
+from modules import sd_hijack_open_clip, textual_inversion
+
+class HijackDummy:
+    fixes = None
+    comments = []
+    layers = None
+    circular_enabled = False
+    clip = None
+    optimization_method = None
+
+    embedding_db = textual_inversion.textual_inversion.EmbeddingDatabase()
 
 class TextToVideoSynthesis():
     r"""
@@ -146,6 +157,8 @@ class TextToVideoSynthesis():
             version=osp.join(self.model_dir,
                              self.config.model["model_args"]["ckpt_clip"]),
             layer='penultimate')
+        
+        self.clip_encoder = sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords(self.clip_encoder, HijackDummy())
 
         self.clip_encoder.model.to('cpu')
 
