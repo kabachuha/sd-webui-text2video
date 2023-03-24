@@ -1527,6 +1527,8 @@ class GaussianDiffusion(object):
                 uc = torch.hstack([uc, last_vector_repeated])
             elif uc.shape[1] > c.shape[1]:
                 uc = uc[:, :c.shape[1]]
+            
+            print(c.shape, uc.shape)
 
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             model_kwargs=[{
