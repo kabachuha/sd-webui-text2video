@@ -16,7 +16,7 @@ import open_clip
 from os import path as osp
 
 from tqdm import tqdm
-from modules.prompt_parser import reconstruct_cond_batch, reconstruct_multicond_batch
+from modules.prompt_parser import reconstruct_cond_batch
 
 __all__ = ['UNetSD']
 
@@ -1515,12 +1515,9 @@ class GaussianDiffusion(object):
 
         i = 0
         for step in pbar:
-            conds_list, tensor = reconstruct_multicond_batch(num_sample*[c], i)
-            uc = reconstruct_cond_batch(num_sample*[uc], i)
+            c = reconstruct_cond_batch(c, i)
+            uc = reconstruct_cond_batch(uc, i)
 
-            assert all([len(conds) == 1 for conds in conds_list]), 'composition via AND is not supported for DDIM/PLMS samplers'
-            c = tensor
-            
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             model_kwargs=[{
                 'y':
