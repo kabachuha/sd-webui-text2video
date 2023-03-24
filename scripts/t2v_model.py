@@ -1518,6 +1518,8 @@ class GaussianDiffusion(object):
             c = reconstruct_cond_batch(c, i)
             uc = reconstruct_cond_batch(uc, i)
 
+            print(c.shape, uc.shape)
+
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             model_kwargs=[{
                 'y':
