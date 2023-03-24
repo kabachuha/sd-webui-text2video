@@ -4,7 +4,7 @@ import gc
 import os
 import random
 import subprocess
-import time
+import time, math
 from PIL import Image
 from pathlib import Path
 import numpy as np
@@ -40,11 +40,11 @@ Join the development or report issues and feature requests here <a style="color:
 <italic>If you liked this extension, please <a style="color:SteelBlue" href="https://github.com/deforum-art/sd-webui-modelscope-text2video">give it a star on GitHub</a>!</italic> 😊
 
 '''
-
 import traceback
-def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
-             prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
-                batch_count=1, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False,
+def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
+                batch_count=1, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False, \
                 do_img2img=False, img2img_frames=None, img2img_frames_path="", img2img_steps=0,img2img_startFrame=0
             ):
     global pipe
@@ -141,11 +141,14 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             latents = pipe.compute_latents(vd_out).to(device)
         else:
             latents = None
-            img2img_steps=0
+            strength=1
 
         print('Working in txt2vid mode' if not do_img2img else 'Working in vid2vid mode')
 
+
         # Start the batch count loop
+        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
+                                width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
 
         pbar = tqdm(range(batch_count), leave=False)
         if batch_count == 1:
@@ -261,8 +264,8 @@ def on_ui_tabs():
                         # TODO: here too
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values()
                         with gr.Row():
-                            img2img_steps = gr.Slider(
-                                label="img2img steps", value=dv.img2img_steps, minimum=0, maximum=100, step=1)
+                            strength = gr.Slider(
+                                label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05)
                             img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
                     
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
@@ -328,8 +331,7 @@ def on_ui_tabs():
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
-                        batch_count, cpu_vae, keep_pipe_in_vram,
-                        do_img2img, img2img_frames, img2img_frames_path, img2img_steps,img2img_startFrame
+                        batch_count, cpu_vae, keep_pipe_in_vram, \
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
@@ -351,7 +353,7 @@ def get_t2v_version():
         return "Unknown"
 
 def DeforumOutputArgs():
-    img2img_steps = 0
+    strength = 1
     img2img_startFrame = 0
     skip_video_creation = False
     fps = 15
