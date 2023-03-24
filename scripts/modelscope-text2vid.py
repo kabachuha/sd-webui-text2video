@@ -266,7 +266,7 @@ def on_ui_tabs():
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values()
                         with gr.Row():
                             strength = gr.Slider(
-                                label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05)
+                                label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05, interactive=True)
                             img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
                     
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
