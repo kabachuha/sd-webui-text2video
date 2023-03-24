@@ -354,7 +354,7 @@ def get_t2v_version():
         return "Unknown"
 
 def DeforumOutputArgs():
-    strength = 1
+    strength = 0.75
     img2img_startFrame = 0
     skip_video_creation = False
     fps = 15
