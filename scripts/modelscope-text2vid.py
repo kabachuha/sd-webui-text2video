@@ -141,7 +141,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             latents = pipe.compute_latents(vd_out).to(device)
         else:
             latents = None
-            strength=0
+            strength=1
 
         print('Working in txt2vid mode' if not do_img2img else 'Working in vid2vid mode')
 
