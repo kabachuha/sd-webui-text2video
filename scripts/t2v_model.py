@@ -1518,7 +1518,15 @@ class GaussianDiffusion(object):
             c = reconstruct_cond_batch(c, i)
             uc = reconstruct_cond_batch(uc, i)
 
-            print(c.shape, uc.shape)
+            # for DDIM, shapes must match, we can't just process cond and uncond independently;
+            # filling unconditional_conditioning with repeats of the last vector to match length is
+            # not 100% correct but should work well enough
+            if uc.shape[1] < c.shape[1]:
+                last_vector = uc[:, -1:]
+                last_vector_repeated = last_vector.repeat([1, c.shape[1] - uc.shape[1], 1])
+                uc = torch.hstack([uc, last_vector_repeated])
+            elif uc.shape[1] > c.shape[1]:
+                uc = uc[:, :c.shape[1]]
 
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             model_kwargs=[{
