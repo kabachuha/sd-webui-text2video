@@ -370,7 +370,7 @@ class TextToVideoSynthesis():
 
         self.clip_encoder.to(self.device)        
         uc = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, n_prompt, steps, cached_uc)
-        c = get_conds_with_caching(prompt_parser.get_multicond_learned_conditioning, self.clip_encoder, prompt, steps, cached_c)
+        c = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, prompt, steps, cached_c)
         if offload:
             self.clip_encoder.to('cpu')
         return c, uc
