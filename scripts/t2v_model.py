@@ -1481,8 +1481,8 @@ class GaussianDiffusion(object):
     def ddim_sample_loop(self,
                          noise,
                          model,
-                         c_schedule=None,
-                         uc_schedule=None,
+                         c=None,
+                         uc=None,
                          num_sample=1,
                          clamp=None,
                          percentile=None,
@@ -1514,12 +1514,9 @@ class GaussianDiffusion(object):
         pbar = tqdm(steps, desc="DDIM sampling")
 
         i = 0
-
-
-
         for step in pbar:
-            conds_list, tensor = prompt_parser.reconstruct_multicond_batch(c_schedule, i)
-            uc = prompt_parser.reconstruct_cond_batch(uc_schedule, i)
+            conds_list, tensor = prompt_parser.reconstruct_multicond_batch(c, i)
+            uc = prompt_parser.reconstruct_cond_batch(uc, i)
 
             assert all([len(conds) == 1 for conds in conds_list]), 'composition via AND is not supported for DDIM/PLMS samplers'
             c = tensor
@@ -1537,15 +1534,7 @@ class GaussianDiffusion(object):
                                   ddim_timesteps, eta)
             t.cpu()
             t = None
-
-            # get the next c and uc from the schedule
-            # no need to worry about the last endstep < steps, it's handled in webui
             i += 1
-
-            if i > c_endstep:
-                c_endstep, c = c_schedule[i]
-            if i > uc_endstep:
-                uc_endstep, uc = uc_schedule[i]
             pbar.set_description(f"DDIM sampling {str(step)}")
         pbar.close()
         return xt
