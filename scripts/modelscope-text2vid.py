@@ -51,7 +51,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
     global i1_store_t2v
-    outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
+    init_timestring = time.strftime('%Y%m%d%H%M%S')
+    outdir_current = os.path.join(outdir, f"{init_timestring}")
     dataurl = get_error()
     try:
         if shared.sd_model is not None:
@@ -154,8 +155,6 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         if batch_count == 1:
             pbar.disable=True
         
-        init_timestring = time.strftime('%Y%m%d%H%M%S')
-
         for batch in pbar:
             samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
                                     width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
