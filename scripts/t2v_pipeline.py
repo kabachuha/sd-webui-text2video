@@ -58,10 +58,10 @@ class HijackDummy:
 class FrozenOpenCLIPEmbedderWithCustomWordsWrapper(sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords):
     def __init__(self, wrapped_this):
         super().__init__(wrapped_this.wrapped, wrapped_this.hijack)
-        self.wrapped_this = wrapped_this
+        #self.wrapped_this = wrapped_this
     
     def get_learned_conditioning(self, c):
-        return self.wrapped_this(c)
+        return self(c)
 
 
 class TextToVideoSynthesis():
