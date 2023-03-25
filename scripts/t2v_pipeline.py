@@ -231,10 +231,11 @@ class TextToVideoSynthesis():
         """
 
         self.device = device
-        self.clip_encoder.wrapped.to(self.device)
-        self.clip_encoder.wrapped.device = self.device
-        c, uc = self.preprocess(prompt, n_prompt, steps)
-        self.clip_encoder.wrapped.to("cpu")
+        if uc is None and c is None:
+            self.clip_encoder.wrapped.to(self.device)
+            self.clip_encoder.wrapped.device = self.device
+            c, uc = self.preprocess(prompt, n_prompt, steps)
+            self.clip_encoder.wrapped.to("cpu")
         torch_gc()
 
         # synthesis
