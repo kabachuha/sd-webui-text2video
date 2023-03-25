@@ -26,9 +26,6 @@ outdir = os.path.join(os.getcwd(), outdir)
 
 pipe = None
 
-use_internal_clip = True
-from scripts.from_webui import preprocess_webui_inner
-
 def setup_pipeline():
     return TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
 
@@ -64,9 +61,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 lowvram.send_everything_to_cpu()
             except e:
                 ...
-            if not use_internal_clip:
-                del shared.sd_model
-                shared.sd_model = None
+            del shared.sd_model
+            shared.sd_model = None
         gc.collect()
         devices.torch_gc()
 
@@ -158,16 +154,10 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         pbar = tqdm(range(batch_count), leave=False)
         if batch_count == 1:
             pbar.disable=True
-
-        if use_internal_clip:
-            uc, c = preprocess_webui_inner(prompt, n_prompt, steps)
-        else:
-            uc, c = None, None
         
         for batch in pbar:
             samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
-                                    width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))),
-                                    uc=uc, c=c)
+                                    width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
 
             if batch > 0:
                 outdir_current = os.path.join(outdir, f"{init_timestring}_{batch}")
