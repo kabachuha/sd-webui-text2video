@@ -147,6 +147,7 @@ class TextToVideoSynthesis():
         self.clip_encoder = FrozenOpenCLIPEmbedder(
             version=osp.join(self.model_dir,
                              self.config.model["model_args"]["ckpt_clip"]),
+                             device='cpu',
             layer='penultimate')
 
         self.clip_encoder.model.to('cpu')
@@ -228,6 +229,7 @@ class TextToVideoSynthesis():
 
         self.device = device
         self.clip_encoder.to(self.device)
+        self.clip_encoder.device = self.device
         y, zero_y = self.preprocess(prompt, n_prompt)
         self.clip_encoder.to("cpu")
         torch_gc()
@@ -367,6 +369,7 @@ class TextToVideoSynthesis():
 
     def preprocess(self, prompt, n_prompt, offload=True):
         self.clip_encoder.to(self.device)
+        self.clip_encoder.device = self.device
         text_emb = self.clip_encoder(prompt)
         text_emb_zero = self.clip_encoder(n_prompt)
         if offload:
