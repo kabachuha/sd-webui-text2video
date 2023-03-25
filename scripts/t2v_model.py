@@ -1171,7 +1171,9 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
         return self(text)
 
     def get_learned_conditioning(self, text):
-        return self.encode(text)
+        c = self.encode(text)
+        assert isinstance(c, DiagonalGaussianDistribution)
+        return c.mode()
 
     def from_pretrained(cls,
                         model_name_or_path: str,
