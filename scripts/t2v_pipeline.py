@@ -33,13 +33,17 @@ class HijackDummy:
 
     embedding_db = textual_inversion.textual_inversion.EmbeddingDatabase()
 
+from ldm.modules.distributions.distributions import DiagonalGaussianDistribution
+
 class FrozenOpenCLIPEmbedderWithCustomWordsWrapper(sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords):
     def __init__(self, wrapped_this):
         super().__init__(wrapped_this.wrapped, wrapped_this.hijack)
         #self.wrapped_this = wrapped_this
     
     def get_learned_conditioning(self, c):
-        return self(c)
+        c = self(c)
+        assert isinstance(c, DiagonalGaussianDistribution)
+        return c.mode()
 
 
 class TextToVideoSynthesis():
