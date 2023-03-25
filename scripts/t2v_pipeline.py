@@ -14,7 +14,7 @@ import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
 from scripts.t2v_model import UNetSD, AutoencoderKL, FrozenOpenCLIPEmbedder, GaussianDiffusion, beta_schedule
-
+from modules import devices
 
 __all__ = ['TextToVideoSynthesis']
 
@@ -103,8 +103,11 @@ class TextToVideoSynthesis():
             temporal_attention=cfg['temporal_attention'])
         self.sd_model.load_state_dict(
             torch.load(
-                osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"])),
-            strict=True)
+                osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"]),
+                map_location='cpu' if devices.has_mps() else None, # default to cpu when macos, else default behaviour
+            ),
+            strict=True,
+        )
         self.sd_model.eval()
         self.sd_model.half()
 

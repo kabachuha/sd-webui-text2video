@@ -190,7 +190,6 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             pipe = None
         devices.torch_gc()
         gc.collect()
-        devices.torch_gc()
         i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     return f'Video at {outdir_current} ready!'
 
