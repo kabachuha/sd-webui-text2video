@@ -1516,6 +1516,9 @@ class GaussianDiffusion(object):
 
         pbar = tqdm(steps, desc="DDIM sampling")
 
+        print(c)
+        print(uc)
+
         i = 0
         for step in pbar:
             c_i = reconstruct_cond_batch(c, i)
