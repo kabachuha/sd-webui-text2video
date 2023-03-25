@@ -328,7 +328,7 @@ def on_ui_tabs():
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
-                        batch_count, cpu_vae, keep_pipe_in_vram, \
+                        batch_count, cpu_vae, keep_pipe_in_vram, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
