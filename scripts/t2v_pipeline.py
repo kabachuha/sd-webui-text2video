@@ -86,7 +86,8 @@ class TextToVideoSynthesis():
             strict=True,
         )
         self.sd_model.eval()
-        self.sd_model.half()
+        if not devices.has_mps():
+            self.sd_model.half()
 
         # Initialize diffusion
         betas = beta_schedule(
