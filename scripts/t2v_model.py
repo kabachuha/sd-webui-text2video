@@ -22,6 +22,7 @@ __all__ = ['UNetSD']
 try:
     import gc
     import torch
+    import torch.cuda
 
     def torch_gc():
         """Performs garbage collection for both Python and PyTorch CUDA tensors.
@@ -30,8 +31,9 @@ try:
         and IPC (Inter-Process Communication) resources.
         """
         gc.collect()  # Collect Python garbage
-        torch.cuda.empty_cache()  # Clear PyTorch CUDA cache
-        torch.cuda.ipc_collect()  # Clear PyTorch CUDA IPC resources
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()  # Clear PyTorch CUDA cache
+            torch.cuda.ipc_collect()  # Clear PyTorch CUDA IPC resources
 
 except:
 
@@ -41,6 +43,7 @@ except:
         This function does nothing and serves as a placeholder when torch is
         not available, allowing the rest of the code to run without errors.
         """
+        gc.collect()
         pass
 
 from ldm.modules.diffusionmodules.model import Decoder, Encoder
