@@ -207,15 +207,13 @@ def setup_common_values():
             minimum=1,
             maximum=100,
             step=1,
-            value=30,
-            info='Steps')
+            value=30)
         cfg_scale = gr.Slider(
             label='cfg_scale',
             minimum=1,
             maximum=100,
             step=1,
-            value=12.5,
-            info='Steps')
+            value=12.5)
     with gr.Row():
         frames = gr.Slider(
             label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
@@ -226,15 +224,13 @@ def setup_common_values():
             minimum=64,
             maximum=1024,
             step=64,
-            value=256,
-            info='If set to -1, a different seed will be used each time.')
+            value=256)
         height = gr.Slider(
             label='height',
             minimum=64,
             maximum=1024,
             step=64,
-            value=256,
-            info='If set to -1, a different seed will be used each time.')
+            value=256)
     with gr.Row():
         eta = gr.Number(
             label="eta", value=0, interactive=True)
