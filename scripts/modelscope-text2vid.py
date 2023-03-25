@@ -45,7 +45,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
                 batch_count=1, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False, \
-                do_img2img=False, img2img_frames=None, img2img_frames_path="", img2img_steps=0,img2img_startFrame=0
+                do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
             ):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
@@ -148,8 +148,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
 
         # Start the batch count loop
-        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
-                                width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
+        #samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
+        #                        width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
 
         pbar = tqdm(range(batch_count), leave=False)
         if batch_count == 1:
@@ -157,7 +157,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         
         for batch in pbar:
             samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
-                                    width, height, eta, cpu_vae, device, latents,skip_steps=img2img_steps)
+                                    width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
 
             if batch > 0:
                 outdir_current = os.path.join(outdir, f"{init_timestring}_{batch}")
