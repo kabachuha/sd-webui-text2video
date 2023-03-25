@@ -40,18 +40,19 @@ Join the development or report issues and feature requests here <a style="color:
 <italic>If you liked this extension, please <a style="color:SteelBlue" href="https://github.com/deforum-art/sd-webui-modelscope-text2video">give it a star on GitHub</a>!</italic> 😊
 
 '''
-
 import traceback
-def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
-             prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
-                cpu_vae='GPU (half precision)', keep_pipe_in_vram=False,
+def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
+                batch_count=1, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False, \
                 do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
             ):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
     global i1_store_t2v
-    outdir_current = os.path.join(outdir, f"{time.strftime('%Y%m%d%H%M%S')}")
+    init_timestring = time.strftime('%Y%m%d%H%M%S')
+    outdir_current = os.path.join(outdir, f"{init_timestring}")
     dataurl = get_error()
     try:
         if shared.sd_model is not None:
@@ -145,25 +146,38 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
         print('Working in txt2vid mode' if not do_img2img else 'Working in vid2vid mode')
 
-        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
-                                width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
 
-        print(f'text2video finished, saving frames to {outdir_current}')
+        # Start the batch count loop
+        #samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
+        #                        width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
 
-        # just deleted the folder so we need to make it again
-        os.makedirs(outdir_current, exist_ok=True)
-        for i in range(len(samples)):
-            cv2.imwrite(outdir_current + os.path.sep +
-                        f"{i:06}.png", samples[i])
+        pbar = tqdm(range(batch_count), leave=False)
+        if batch_count == 1:
+            pbar.disable=True
+        
+        for batch in pbar:
+            samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
+                                    width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
 
-        # TODO: add params to the GUI
-        if not skip_video_creation:
-            ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
-                                "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=img2img_frames_path if add_soundtrack == 'Init Video' else soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
-        print(f't2v complete, result saved at {outdir_current}')
+            if batch > 0:
+                outdir_current = os.path.join(outdir, f"{init_timestring}_{batch}")
+            print(f'text2video finished, saving frames to {outdir_current}')
 
-        mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
-        dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
+            # just deleted the folder so we need to make it again
+            os.makedirs(outdir_current, exist_ok=True)
+            for i in range(len(samples)):
+                cv2.imwrite(outdir_current + os.path.sep +
+                            f"{i:06}.png", samples[i])
+
+            # TODO: add params to the GUI
+            if not skip_video_creation:
+                ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
+                                    "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=img2img_frames_path if add_soundtrack == 'Init Video' else soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
+            print(f't2v complete, result saved at {outdir_current}')
+
+            mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
+            dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
+        pbar.close()
     except Exception as e:
         traceback.print_exc()
         print('Exception occurred:', e)
@@ -176,7 +190,6 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             pipe = None
         devices.torch_gc()
         gc.collect()
-        devices.torch_gc()
         i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     return f'Video at {outdir_current} ready!'
 
@@ -193,15 +206,13 @@ def setup_common_values():
             minimum=1,
             maximum=100,
             step=1,
-            value=30,
-            info='Steps')
+            value=30)
         cfg_scale = gr.Slider(
             label='cfg_scale',
             minimum=1,
             maximum=100,
             step=1,
-            value=12.5,
-            info='Steps')
+            value=12.5)
     with gr.Row():
         frames = gr.Slider(
             label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
@@ -212,15 +223,13 @@ def setup_common_values():
             minimum=64,
             maximum=1024,
             step=64,
-            value=256,
-            info='If set to -1, a different seed will be used each time.')
+            value=256)
         height = gr.Slider(
             label='height',
             minimum=64,
             maximum=1024,
             step=64,
-            value=256,
-            info='If set to -1, a different seed will be used each time.')
+            value=256)
     with gr.Row():
         eta = gr.Number(
             label="eta", value=0, interactive=True)
@@ -252,7 +261,7 @@ def on_ui_tabs():
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values()
                         with gr.Row():
                             strength = gr.Slider(
-                                label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05)
+                                label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05, interactive=True)
                             img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
                     
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
@@ -277,6 +286,8 @@ def on_ui_tabs():
                     with gr.Tab('How to install? Where to get help, how to help?'):
                         gr.Markdown(welcome_text)
                 
+                with gr.Row():
+                    batch_count = gr.Slider(label="Batch count", value=1, minimum=1, maximum=100, step=1)
                 with gr.Row():
                     cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=[
                                         'GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
@@ -316,8 +327,7 @@ def on_ui_tabs():
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
-                        cpu_vae, keep_pipe_in_vram,
-                        do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
+                        batch_count, cpu_vae, keep_pipe_in_vram, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
@@ -339,7 +349,7 @@ def get_t2v_version():
         return "Unknown"
 
 def DeforumOutputArgs():
-    strength = 1
+    strength = 0.75
     img2img_startFrame = 0
     skip_video_creation = False
     fps = 15

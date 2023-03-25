@@ -14,34 +14,12 @@ import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
 from scripts.t2v_model import UNetSD, AutoencoderKL, FrozenOpenCLIPEmbedder, GaussianDiffusion, beta_schedule
-from modules.shared import devices
+from modules import devices
 from modules import prompt_parser
 
 __all__ = ['TextToVideoSynthesis']
 
-try:
-    import gc
-    import torch
-
-    def torch_gc():
-        """Performs garbage collection for both Python and PyTorch CUDA tensors.
-
-        This function collects Python garbage and clears the PyTorch CUDA cache
-        and IPC (Inter-Process Communication) resources.
-        """
-        gc.collect()  # Collect Python garbage
-        torch.cuda.empty_cache()  # Clear PyTorch CUDA cache
-        torch.cuda.ipc_collect()  # Clear PyTorch CUDA IPC resources
-
-except:
-
-    def torch_gc():
-        """Dummy function when torch is not available.
-
-        This function does nothing and serves as a placeholder when torch is
-        not available, allowing the rest of the code to run without errors.
-        """
-        pass
+from scripts.t2v_model import torch_gc
 
 from modules import sd_hijack_open_clip, textual_inversion
 
@@ -124,10 +102,14 @@ class TextToVideoSynthesis():
             temporal_attention=cfg['temporal_attention'])
         self.sd_model.load_state_dict(
             torch.load(
-                osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"])),
-            strict=True)
+                osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"]),
+                map_location='cpu' if devices.has_mps() else None, # default to cpu when macos, else default behaviour
+            ),
+            strict=True,
+        )
         self.sd_model.eval()
-        self.sd_model.half()
+        if not devices.has_mps():
+            self.sd_model.half()
 
         # Initialize diffusion
         betas = beta_schedule(
@@ -165,6 +147,7 @@ class TextToVideoSynthesis():
         self.clip_encoder = FrozenOpenCLIPEmbedder(
             version=osp.join(self.model_dir,
                              self.config.model["model_args"]["ckpt_clip"]),
+                             device='cpu',
             layer='penultimate')
         
         self.clip_encoder = sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords(self.clip_encoder, HijackDummy())
@@ -249,6 +232,7 @@ class TextToVideoSynthesis():
 
         self.device = device
         self.clip_encoder.wrapped.to(self.device)
+        self.clip_encoder.wrapped.device = self.device
         c, uc = self.preprocess(prompt, n_prompt, steps)
         self.clip_encoder.wrapped.to("cpu")
         torch_gc()
@@ -391,7 +375,8 @@ class TextToVideoSynthesis():
             cache[0] = (required_prompts, steps)
             return cache[1]
 
-        self.clip_encoder.wrapped.to(self.device)        
+        self.clip_encoder.wrapped.to(self.device) 
+        self.clip_encoder.wrapped.device = self.device       
         uc = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, [n_prompt], steps, cached_uc)
         c = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, [prompt], steps, cached_c)
         if offload:
