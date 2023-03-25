@@ -11,7 +11,7 @@ def preprocess_webui_inner(prompt, negative_prompt, steps):
 
     prompt = [prompt]
     negative_prompt = [negative_prompt]
-    
+
     n = 0
 
     if type(prompt) == list:
@@ -50,6 +50,6 @@ def preprocess_webui_inner(prompt, negative_prompt, steps):
             return
 
         uc = get_conds_with_caching(prompt_parser.get_learned_conditioning, negative_prompt, steps, cached_uc)
-        c = get_conds_with_caching(prompt_parser.get_multicond_learned_conditioning, prompt, steps, cached_c)
+        c = get_conds_with_caching(prompt_parser.get_learned_conditioning, prompt, steps, cached_c)
 
     return uc, c
