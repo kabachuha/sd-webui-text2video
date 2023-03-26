@@ -120,7 +120,7 @@ def find_ffmpeg_binary():
             return 'ffmpeg'
             
 # Stitch images to a h264 mp4 video using ffmpeg
-def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
+def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow', metadata=None):
     start_time = time.time()
 
     print(f"Got a request to stitch frames to video using FFmpeg.\nFrames:\n{imgs_path}\nTo Video:\n{outmp4_path}")
@@ -144,8 +144,14 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
             '-crf', str(crf),
             '-preset', preset,
             '-pattern_type', 'sequence',
-            outmp4_path
         ]
+
+        if metadata is not None:
+            for key, value in metadata.items():
+                cmd.append(f'-metadata:{key}={value}')
+
+        cmd.append(outmp4_path)
+        
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()

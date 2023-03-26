@@ -16,6 +16,7 @@ import cv2
 from scripts.t2v_model import UNetSD, AutoencoderKL, GaussianDiffusion, beta_schedule
 from modules import devices
 from modules import prompt_parser
+import math
 
 __all__ = ['TextToVideoSynthesis']
 
@@ -183,7 +184,7 @@ class TextToVideoSynthesis():
         return out
 
     # @torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, seed, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device=torch.device('cpu'), latents=None, skip_steps=0,strength=0):
+    def infer(self, prompt, n_prompt, steps, frames, seed, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device=torch.device('cpu'), latents=None, strength=0, percentile=0):
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
@@ -206,6 +207,7 @@ class TextToVideoSynthesis():
             A generated video (as list of np.arrays).
         """
 
+        seed = seed if seed != -1 else random.randint(0, 2**32 - 1)
         self.device = device
         self.clip_encoder.to(self.device)
         self.clip_encoder.device = self.device
@@ -214,14 +216,14 @@ class TextToVideoSynthesis():
         torch_gc()
 
         # synthesis
-        strength = None if strength == 0.0 else strength
+        percentile = None if percentile == 0.0 else percentile
         with torch.no_grad():
             num_sample = 1
             max_frames = frames
             latent_h, latent_w = height // 8, width // 8
             self.sd_model.to(self.device)
             if latents == None:
-                self.noise_gen.manual_seed(seed if seed!=-1 else random.randint(0, 2**32 - 1))
+                self.noise_gen.manual_seed(seed)
                 latents = torch.randn(num_sample, 4, max_frames, latent_h,
                                           latent_w, generator=self.noise_gen).to(
                                               self.device)
@@ -242,8 +244,8 @@ class TextToVideoSynthesis():
                     guide_scale=scale,
                     ddim_timesteps=steps,
                     eta=eta,
-                    percentile=strength,
-                    skip_steps=skip_steps,
+                    percentile=percentile,
+                    skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))),
                 )
 
                 self.last_tensor = x0
@@ -332,7 +334,7 @@ class TextToVideoSynthesis():
         del video_data
         torch_gc()
         last_tensor = self.last_tensor
-        return video_path, last_tensor
+        return video_path, last_tensor, create_infotext(prompt, n_prompt, steps, frames, seed, scale, width, height, eta, strength)
 
     def cleanup(self):
         pass
@@ -407,3 +409,36 @@ def tensor2vid(video, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]):
     images = [(image.numpy() * 255).astype('uint8')
               for image in images]  # f h w c
     return images
+
+from modules import generation_parameters_copypaste
+
+def create_infotext(prompt, n_prompt, steps, frames, seed, scale, width=256, height=256, eta=0.0, strength=0, comments=None):
+
+    generation_params = {
+        "Frames": frames,
+        "Steps": steps,
+        "Sampler": 'DDIM', # only DDIM is currently supported
+        "CFG scale": scale,
+        #"Image CFG scale": getattr(p, 'image_cfg_scale', None),
+        "Seed": seed,
+        #"Face restoration": (opts.face_restoration_model if p.restore_faces else None),
+        "Size": f"{width}x{height}",
+        #"Model hash": getattr(p, 'sd_model_hash', None if not opts.add_model_hash_to_info or not shared.sd_model.sd_model_hash else shared.sd_model.sd_model_hash),
+        #"Model": (None if not opts.add_model_name_to_info or not shared.sd_model.sd_checkpoint_info.model_name else shared.sd_model.sd_checkpoint_info.model_name.replace(',', '').replace(':', '')),
+        #"Variation seed": (None if p.subseed_strength == 0 else all_subseeds[index]),
+        #"Variation seed strength": (None if p.subseed_strength == 0 else p.subseed_strength),
+        #"Seed resize from": (None if p.seed_resize_from_w == 0 or p.seed_resize_from_h == 0 else f"{p.seed_resize_from_w}x{p.seed_resize_from_h}"),
+        "Denoising strength": strength,
+        "Eta": eta,
+        #"Conditional mask weight": getattr(p, "inpainting_mask_weight", shared.opts.inpainting_mask_weight) if p.is_using_inpainting_conditioning else None,
+        #"Clip skip": None if clip_skip <= 1 else clip_skip,
+        #"ENSD": None if opts.eta_noise_seed_delta == 0 else opts.eta_noise_seed_delta,
+    }
+
+    #generation_params.update(p.extra_generation_params)
+
+    generation_params_text = ", ".join([k if k == v else f'{k}: {generation_parameters_copypaste.quote(v)}' for k, v in generation_params.items() if v is not None])
+
+    negative_prompt_text = "\nNegative prompt: " + n_prompt if len(n_prompt) > 0 else ""
+
+    return f"{prompt}{negative_prompt_text}\n{generation_params_text}".strip()
