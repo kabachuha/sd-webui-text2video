@@ -1371,8 +1371,8 @@ class GaussianDiffusion(object):
 
         pbar = tqdm(steps, desc="DDIM sampling")
 
-        print(c)
-        print(uc)
+        #print(c)
+        #print(uc)
 
         i = 0
         for step in pbar:
@@ -1392,8 +1392,10 @@ class GaussianDiffusion(object):
             #print(c_i.shape, uc_i.shape)
 
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
-            #print(uc_i)
-            #print(c_i)
+            uc_i = uc_i.type(torch.float16)
+            c_i = c_i.type(torch.float16)
+            print(uc_i)
+            print(c_i)
             model_kwargs=[{
                 'y':
                 uc_i,
