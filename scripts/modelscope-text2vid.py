@@ -212,7 +212,7 @@ def setup_common_values():
             minimum=1,
             maximum=100,
             step=1,
-            value=12.5)
+            value=7)
     with gr.Row():
         frames = gr.Slider(
             label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
