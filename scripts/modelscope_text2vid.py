@@ -254,7 +254,7 @@ def on_ui_tabs():
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
                     tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_img2img])
 
-                    with gr.Tab('Output settings'):
+                    with gr.Tab('Output'):
                         with gr.Row(variant='compact') as fps_out_format_row:
                             fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
                         with gr.Row(variant='compact') as soundtrack_row:
@@ -270,8 +270,8 @@ def on_ui_tabs():
                             ffmpeg_preset = gr.Dropdown(label="Preset", choices=['veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value=dv.ffmpeg_preset, type="value")
                         with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_location_row:
                             ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value=dv.ffmpeg_location)
-                        with gr.Accordion('Extras', open=False):
-                            setup_extras_ui(fps, add_soundtrack, soundtrack_path, skip_video_creation, ffmpeg_crf, ffmpeg_preset, ffmpeg_location)
+                    with gr.Tab('Extras'):
+                        setup_extras_ui(fps, add_soundtrack, soundtrack_path, skip_video_creation, ffmpeg_crf, ffmpeg_preset, ffmpeg_location)
                     with gr.Tab('How to install? Where to get help, how to help?'):
                         gr.Markdown(welcome_text)
                 
