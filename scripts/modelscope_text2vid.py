@@ -20,12 +20,12 @@ from modules.shared import cmd_opts, opts, state
 from scripts.error_hardcode import get_error
 from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid, create_infotext
 from scripts.deforum_tools.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
-from deforum_tools.video_extras import setup_extras_ui
+from scripts.deforum_tools.video_extras import setup_extras_ui
+from scripts.t2v_pipeline import unload_sd_model
+import scripts.t2v_pipeline
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
 outdir = os.path.join(os.getcwd(), outdir)
-
-pipe = None
 
 def setup_pipeline():
     return TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
@@ -48,7 +48,6 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 batch_count=1, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False, \
                 do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
             ):
-    global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
     global i1_store_t2v
@@ -56,23 +55,14 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     outdir_current = os.path.join(outdir, f"{init_timestring}")
     dataurl = get_error()
     try:
-        if shared.sd_model is not None:
-            sd_hijack.model_hijack.undo_hijack(shared.sd_model)
-            try:
-                lowvram.send_everything_to_cpu()
-            except e:
-                ...
-            del shared.sd_model
-            shared.sd_model = None
-        gc.collect()
-        devices.torch_gc()
+        unload_sd_model()
 
         print('Starting text2video')
         print('Pipeline setup')
 
         # optionally store pipe in global between runs
-        if pipe is None:
-            pipe = setup_pipeline()
+        if scripts.t2v_pipeline.pipe is None:
+            scripts.t2v_pipeline.pipe = setup_pipeline()
 
         device=devices.get_optimal_device()
         print('device',device)
@@ -140,7 +130,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
             #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
             print("Computing latents")
-            latents = pipe.compute_latents(vd_out).to(device)
+            latents = scripts.t2v_pipeline.pipe.compute_latents(vd_out).to(device)
         else:
             latents = None
             strength=1
@@ -152,7 +142,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             pbar.disable=True
         
         for batch in pbar:
-            samples, _, infotext = pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
+            samples, _, infotext = scripts.t2v_pipeline.pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
                                     width, height, eta, cpu_vae, device, latents,strength=strength)
 
             if batch > 0:
@@ -184,7 +174,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     finally:
         #optionally store pipe in global between runs, if not, remove it
         if not keep_pipe_in_vram:
-            pipe = None
+            scripts.t2v_pipeline.pipe = None
         devices.torch_gc()
         gc.collect()
         i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
@@ -280,8 +270,8 @@ def on_ui_tabs():
                             ffmpeg_preset = gr.Dropdown(label="Preset", choices=['veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value=dv.ffmpeg_preset, type="value")
                         with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_location_row:
                             ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value=dv.ffmpeg_location)
-                    with gr.Accordion('Extras', open=False):
-                        setup_extras_ui(fps, add_soundtrack, soundtrack_path, skip_video_creation, ffmpeg_crf, ffmpeg_preset, ffmpeg_location)
+                        with gr.Accordion('Extras', open=False):
+                            setup_extras_ui(fps, add_soundtrack, soundtrack_path, skip_video_creation, ffmpeg_crf, ffmpeg_preset, ffmpeg_location)
                     with gr.Tab('How to install? Where to get help, how to help?'):
                         gr.Markdown(welcome_text)
                 

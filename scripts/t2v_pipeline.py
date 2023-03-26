@@ -442,3 +442,20 @@ def create_infotext(prompt, n_prompt, steps, frames, seed, scale, width=256, hei
     negative_prompt_text = "\nNegative prompt: " + n_prompt if len(n_prompt) > 0 else ""
 
     return f"{prompt}{negative_prompt_text}\n{generation_params_text}".strip()
+
+from modules import shared
+from modules import devices, lowvram, script_callbacks, sd_hijack, shared
+import gc
+def unload_sd_model():
+    if shared.sd_model is not None:
+        sd_hijack.model_hijack.undo_hijack(shared.sd_model)
+        try:
+            lowvram.send_everything_to_cpu()
+        except Exception as e:
+            ...
+        del shared.sd_model
+        shared.sd_model = None
+    gc.collect()
+    devices.torch_gc()
+
+pipe = None

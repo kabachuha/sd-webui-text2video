@@ -1,14 +1,15 @@
 import os
 import gradio as gr
-from gradio_funcs import *
+from .gradio_funcs import *
 import tempfile
 from .general_utils import get_os, get_deforum_version, custom_placeholder_format, test_long_path_support, get_max_path_length, substitute_placeholders
 from .upscaling import process_ncnn_upscale_vid_upload_logic
 from .frame_interpolation import set_interp_out_fps, gradio_f_interp_get_fps_and_fcount, process_interp_vid_upload_logic, process_interp_pics_upload_logic
 from .face_restore import process_face_restore_vid_upload_logic
+from types import SimpleNamespace
 
 def setup_extras_ui(fps, add_soundtrack, soundtrack_path, skip_video_creation, ffmpeg_crf, ffmpeg_preset, ffmpeg_location):
-    dv = DeforumExtrasArgs()
+    dv = SimpleNamespace(**DeforumExtrasArgs())
     with gr.TabItem('Upscaling'):
         vid_to_upscale_chosen_file = gr.File(label="Video to Upscale", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_upscale_chosen_file")
         with gr.Column():

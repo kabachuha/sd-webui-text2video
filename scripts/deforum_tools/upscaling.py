@@ -17,6 +17,8 @@ from .rich import console
 import time
 import subprocess
 from modules.shared import opts
+import scripts
+from scripts.t2v_pipeline import unload_sd_model
 
 def stitch_video(img_batch_id, fps, img_folder_path, audio_path, ffmpeg_location, resize_mode, upscaling_resize, upscaling_resize_w, upscaling_resize_h, extras_upscaler_1, extras_upscaler_2, extras_upscaler_2_visibility, f_crf, f_preset, keep_imgs, orig_vid_name):        
     parent_folder = os.path.dirname(img_folder_path)
@@ -78,6 +80,13 @@ def process_ncnn_video_upscaling(vid_path, outdir, in_vid_fps, in_vid_res, out_v
     out_upscaled_mp4_path = os.path.join(os.path.dirname(outdir), f"{vid_path.orig_name}_Upscaled_{upscale_factor}.mp4")
     # download upscaling model if needed
     check_and_download_realesrgan_ncnn(models_path, current_user_os)
+
+    # Unload the SD and MS checkpoint
+    # TODO: add lowvram option, so it will be possible to do the process in parallel
+    unload_sd_model()
+    scripts.t2v_pipeline.pipe = None
+    devices.torch_gc()
+
     # set cmd command
     cmd = [realesrgan_ncnn_location, '-i', outdir, '-o', upscaled_folder_path, '-s', str(clean_num_r_up_factor), '-n', upscale_model]
     # msg to print - need it to hide that text later on (!)

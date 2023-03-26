@@ -7,6 +7,9 @@ import requests
 from .rich import console
 from pkg_resources import resource_filename
 
+def extract_number(string):
+    return int(string[1:]) if len(string) > 1 and string[1:].isdigit() else -1
+
 def get_frame_name(path):
     name = os.path.basename(path)
     name = os.path.splitext(name)[0]
@@ -241,3 +244,9 @@ def duplicate_pngs_from_folder(from_folder, to_folder, img_batch_id, orig_vid_na
                 new_path = os.path.join(temp_convert_raw_png_path, f)
                 cv2.imwrite(new_path, image, [cv2.IMWRITE_PNG_COMPRESSION, 0])
     return frames_handled
+
+# returns True if filename (could be also media URL) contains an audio stream, othehrwise False
+def media_file_has_audio(filename, ffmpeg_location):
+    result = subprocess.run([ffmpeg_location, "-i", filename, "-af", "volumedetect", "-f", "null", "-"], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    output = result.stderr.decode()
+    return True if "Stream #0:1: Audio: " in output or "Stream #0:1(und): Audio" in output else False

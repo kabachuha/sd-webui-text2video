@@ -94,7 +94,7 @@ def process_frame(image):
 
     devices.torch_gc()
 
-    x_sample = modules.face_restoration.restore_faces(x_sample)
+    x_sample = modules.face_restoration.restore_faces(image)
     devices.torch_gc()
 
     image = Image.fromarray(x_sample)
