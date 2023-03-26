@@ -4,6 +4,8 @@ Auto1111 extension consisting of implementation of ModelScope text2video using o
 
 8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
 
+Update 2023-03-26: prompt weights **implemented**!
+
 Test examples:
 
 Prompt: `flowers turning into lava`

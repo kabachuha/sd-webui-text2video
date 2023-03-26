@@ -12,16 +12,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, repeat
-import open_clip
 from os import path as osp
 
 from tqdm import tqdm
+from modules.prompt_parser import reconstruct_cond_batch
 
 __all__ = ['UNetSD']
 
 try:
     import gc
     import torch
+    import torch.cuda
 
     def torch_gc():
         """Performs garbage collection for both Python and PyTorch CUDA tensors.
@@ -30,8 +31,9 @@ try:
         and IPC (Inter-Process Communication) resources.
         """
         gc.collect()  # Collect Python garbage
-        torch.cuda.empty_cache()  # Clear PyTorch CUDA cache
-        torch.cuda.ipc_collect()  # Clear PyTorch CUDA IPC resources
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()  # Clear PyTorch CUDA cache
+            torch.cuda.ipc_collect()  # Clear PyTorch CUDA IPC resources
 
 except:
 
@@ -41,6 +43,7 @@ except:
         This function does nothing and serves as a placeholder when torch is
         not available, allowing the rest of the code to run without errors.
         """
+        gc.collect()
         pass
 
 from ldm.modules.diffusionmodules.model import Decoder, Encoder
@@ -1105,147 +1108,6 @@ class TemporalConvBlock_v2(nn.Module):
         return x
 
 
-class FrozenOpenCLIPEmbedder(torch.nn.Module):
-    """
-    Uses the OpenCLIP transformer encoder for text
-    """
-    LAYERS = ['last', 'penultimate']
-
-    def __init__(self,
-                 arch='ViT-H-14',
-                 version='open_clip_pytorch_model.bin',
-                 device='cuda',
-                 max_length=77,
-                 freeze=True,
-                 layer='last'):
-        super().__init__()
-        assert layer in self.LAYERS
-        model, _, _ = open_clip.create_model_and_transforms(
-            arch, device=torch.device('cpu'), pretrained=version)
-        del model.visual
-        self.model = model
-
-        self.device = device
-        self.max_length = max_length
-        if freeze:
-            self.freeze()
-        self.layer = layer
-        if self.layer == 'last':
-            self.layer_idx = 0
-        elif self.layer == 'penultimate':
-            self.layer_idx = 1
-        else:
-            raise NotImplementedError()
-
-    def freeze(self):
-        self.model = self.model.eval()
-        for param in self.parameters():
-            param.requires_grad = False
-
-    def forward(self, text):
-        tokens = open_clip.tokenize(text)
-        z = self.encode_with_transformer(tokens.to(self.device))
-        return z
-
-    def encode_with_transformer(self, text):
-        x = self.model.token_embedding(text)  # [batch_size, n_ctx, d_model]
-        x = x + self.model.positional_embedding
-        x = x.permute(1, 0, 2)  # NLD -> LND
-        x = self.text_transformer_forward(x, attn_mask=self.model.attn_mask)
-        x = x.permute(1, 0, 2)  # LND -> NLD
-        x = self.model.ln_final(x)
-        return x
-
-    def text_transformer_forward(self, x: torch.Tensor, attn_mask=None):
-        for i, r in enumerate(self.model.transformer.resblocks):
-            if i == len(self.model.transformer.resblocks) - self.layer_idx:
-                break
-            x = r(x, attn_mask=attn_mask)
-        return x
-
-    def encode(self, text):
-        return self(text)
-
-    def from_pretrained(cls,
-                        model_name_or_path: str,
-                        revision: Optional[str] = DEFAULT_MODEL_REVISION,
-                        cfg_dict=None,
-                        device: str = None,
-                        **kwargs):
-        """Instantiate a model from local directory or remote model repo. Note
-        that when loading from remote, the model revision can be specified.
-
-        Args:
-            model_name_or_path(str): A model dir or a model id to be loaded
-            revision(str, `optional`): The revision used when the model_name_or_path is
-                a model id of the remote hub. default `master`.
-            cfg_dict(Config, `optional`): An optional model config. If provided, it will replace
-                the config read out of the `model_name_or_path`
-            device(str, `optional`): The device to load the model.
-            **kwargs:
-                task(str, `optional`): The `Tasks` enumeration value to replace the task value
-                read out of config in the `model_name_or_path`. This is useful when the model to be loaded is not
-                equal to the model saved.
-                For example, load a `backbone` into a `text-classification` model.
-                Other kwargs will be directly fed into the `model` key, to replace the default configs.
-        Returns:
-            A model instance.
-
-        """
-        prefetched = kwargs.get('model_prefetched')
-        if prefetched is not None:
-            kwargs.pop('model_prefetched')
-        invoked_by = kwargs.get(Invoke.KEY)
-        if invoked_by is not None:
-            kwargs.pop(Invoke.KEY)
-        else:
-            invoked_by = Invoke.PRETRAINED
-
-        if osp.exists(model_name_or_path):
-            local_model_dir = model_name_or_path
-        if cfg_dict is not None:
-            cfg = cfg_dict
-            """else:
-            cfg = Config.from_file(
-                osp.join(local_model_dir, ModelFile.CONFIGURATION))"""
-        task_name = cfg.task
-        if 'task' in kwargs:
-            task_name = kwargs.pop('task')
-        model_cfg = cfg.model
-        if hasattr(model_cfg, 'model_type') and not hasattr(model_cfg, 'type'):
-            model_cfg.type = model_cfg.model_type
-        model_cfg.model_dir = local_model_dir
-
-        print("plugins", cfg.safe_get('plugins'))
-
-        # install and import remote repos before build
-        # register_plugins_repo(cfg.safe_get('plugins'))
-        # register_modelhub_repo(local_model_dir, cfg.get('allow_remote', False))
-
-        for k, v in kwargs.items():
-            model_cfg[k] = v
-        if device is not None:
-            model_cfg.device = device
-        """if task_name is Tasks.backbone:
-            model_cfg.init_backbone = True
-            model = build_backbone(model_cfg)
-        else:"""
-        model = instantiate_from_config(model_cfg)
-        # model = build_model(model_cfg, task_name=task_name)
-
-        # dynamically add pipeline info to model for pipeline inference
-        if hasattr(cfg, 'pipeline'):
-            model.pipeline = cfg.pipeline
-
-        if not hasattr(model, 'cfg'):
-            model.cfg = cfg
-
-        model_cfg.pop('model_dir', None)
-        model.name = model_name_or_path
-        model.model_dir = local_model_dir
-        return model
-
-
 def _i(tensor, t, x):
     r"""Index tensor using t and format the output according to x.
     """
@@ -1477,7 +1339,9 @@ class GaussianDiffusion(object):
     def ddim_sample_loop(self,
                          noise,
                          model,
-                         model_kwargs={},
+                         c=None,
+                         uc=None,
+                         num_sample=1,
                          clamp=None,
                          percentile=None,
                          condition_fn=None,
@@ -1486,6 +1350,7 @@ class GaussianDiffusion(object):
                          eta=0.0,
                          skip_steps=0,
                          ):
+
         # prepare input
         b = noise.size(0)
         xt = noise
@@ -1505,13 +1370,45 @@ class GaussianDiffusion(object):
             xt = self.add_noise(xt, noise_to_add, step0)
 
         pbar = tqdm(steps, desc="DDIM sampling")
+
+        #print(c)
+        #print(uc)
+
+        i = 0
         for step in pbar:
+            c_i = reconstruct_cond_batch(c, i)
+            uc_i = reconstruct_cond_batch(uc, i)
+
+            # for DDIM, shapes must match, we can't just process cond and uncond independently;
+            # filling unconditional_conditioning with repeats of the last vector to match length is
+            # not 100% correct but should work well enough
+            if uc_i.shape[1] < c_i.shape[1]:
+                last_vector = uc_i[:, -1:]
+                last_vector_repeated = last_vector.repeat([1, c_i.shape[1] - uc.shape[1], 1])
+                uc_i = torch.hstack([uc_i, last_vector_repeated])
+            elif uc_i.shape[1] > c_i.shape[1]:
+                uc_i = uc_i[:, :c_i.shape[1]]
+            
+            #print(c_i.shape, uc_i.shape)
+
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
+            uc_i = uc_i.type(torch.float16)
+            c_i = c_i.type(torch.float16)
+            #print(uc_i)
+            #print(c_i)
+            model_kwargs=[{
+                'y':
+                c_i,
+            }, {
+                'y':
+                uc_i,
+            }]
             xt = self.ddim_sample(xt, t, model, model_kwargs, clamp,
                                   percentile, condition_fn, guide_scale,
                                   ddim_timesteps, eta)
             t.cpu()
             t = None
+            i += 1
             pbar.set_description(f"DDIM sampling {str(step)}")
         pbar.close()
         return xt
