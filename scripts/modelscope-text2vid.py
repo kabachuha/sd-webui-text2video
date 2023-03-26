@@ -193,13 +193,13 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     return f'Video at {outdir_current} ready!'
 
-def setup_common_values():
-    with gr.Row():
-        prompt = gr.Text(
-            label='Prompt', max_lines=1, interactive=True)
-    with gr.Row():
-        n_prompt = gr.Text(label='Negative prompt', max_lines=1,
-                            interactive=True, value='text, watermark, copyright, blurry')
+def setup_common_values(mode):
+    with gr.Row(elem_id=f'{mode}_prompt_toprow'):
+        prompt = gr.Textbox(
+            label='Prompt', lines=3, interactive=True, elem_id=f"{mode}_prompt")
+    with gr.Row(elem_id=f'{mode}_n_prompt_toprow'):
+        n_prompt = gr.Textbox(label='Negative prompt', lines=2,
+                            interactive=True, elem_id=f"{mode}_n_prompt", value='text, watermark, copyright, blurry')
     with gr.Row():
         steps = gr.Slider(
             label='Steps',
@@ -212,7 +212,7 @@ def setup_common_values():
             minimum=1,
             maximum=100,
             step=1,
-            value=12.5)
+            value=7)
     with gr.Row():
         frames = gr.Slider(
             label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
@@ -247,7 +247,7 @@ def on_ui_tabs():
                     do_img2img = gr.State(value=0)
                     with gr.Tab('txt2vid') as tab_txt2vid:
                         # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
-                        prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = setup_common_values()
+                        prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = setup_common_values('txt2vid')
 
                     with gr.Tab('vid2vid') as tab_vid2vid:
                         with gr.Row():
@@ -258,7 +258,7 @@ def on_ui_tabs():
                         with gr.Row():
                             img2img_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path")
                         # TODO: here too
-                        prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values()
+                        prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values('vid2vid')
                         with gr.Row():
                             strength = gr.Slider(
                                 label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05, interactive=True)
@@ -296,7 +296,7 @@ def on_ui_tabs():
                         label="keep pipe in memory", value=False, interactive=True)
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(variant='compact'):
-                    run_button = gr.Button('Generate', variant='primary')
+                    run_button = gr.Button('Generate', elem_id=f"text2vid_generate", variant='primary')
                 with gr.Row(variant='compact'):
                     i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
                 with gr.Row(visible=False):
