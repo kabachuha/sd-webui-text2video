@@ -76,7 +76,6 @@ def process_video_face_restore(orig_vid_fps, real_audio_track, raw_output_imgs_p
         image.save(filename)
     
     # Cleaning up and freeing the memory before stitching
-    model = None
     gc.collect()
     devices.torch_gc()
 
@@ -110,7 +109,6 @@ def process_frame(image):
 def stitch_video(img_batch_id, fps, img_folder_path, audio_path, ffmpeg_location, f_crf, f_preset, keep_imgs, orig_vid_name):        
     parent_folder = os.path.dirname(img_folder_path)
     grandparent_folder = os.path.dirname(parent_folder)
-    mode = str(mode).replace('\\', '_').replace(' ', '_').replace('(', '_').replace(')', '_')
     mp4_path = os.path.join(grandparent_folder, str(orig_vid_name if orig_vid_name is not None else img_batch_id) +'_face_restore')
     
     mp4_path = mp4_path + '.mp4'
