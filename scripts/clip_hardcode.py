@@ -100,7 +100,7 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
         return tokenized
     
     def encode_with_transformers(self, tokens):
-        outputs = self.model.transformer(input_ids=tokens, output_hidden_states=-opts.CLIP_stop_at_last_layers)
+        outputs = self.model.transformer(tokens)
 
         if opts.CLIP_stop_at_last_layers > 1:
             z = outputs.hidden_states[-opts.CLIP_stop_at_last_layers]
