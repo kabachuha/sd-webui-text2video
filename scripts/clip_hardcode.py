@@ -110,7 +110,7 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
     
     def encode_with_transformers(self, tokens):
         # set self.wrapped.layer_idx here according to opts.CLIP_stop_at_last_layers
-        z = self.model.encode_with_transformer(tokens)
+        z = self.encode_with_transformer(tokens)
 
         return z
     
