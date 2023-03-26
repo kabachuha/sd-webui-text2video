@@ -1394,8 +1394,8 @@ class GaussianDiffusion(object):
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             uc_i = uc_i.type(torch.float16)
             c_i = c_i.type(torch.float16)
-            print(uc_i)
-            print(c_i)
+            #print(uc_i)
+            #print(c_i)
             model_kwargs=[{
                 'y':
                 c_i,
