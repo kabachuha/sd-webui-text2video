@@ -5,10 +5,11 @@ import tempfile
 from .general_utils import get_os, get_deforum_version, custom_placeholder_format, test_long_path_support, get_max_path_length, substitute_placeholders
 from .upscaling import process_ncnn_upscale_vid_upload_logic
 from .frame_interpolation import set_interp_out_fps, gradio_f_interp_get_fps_and_fcount, process_interp_vid_upload_logic, process_interp_pics_upload_logic
+from .face_restore import process_face_restore_vid_upload_logic
 
 def setup_extras_ui(fps, add_soundtrack, soundtrack_path, skip_video_creation, ffmpeg_crf, ffmpeg_preset, ffmpeg_location):
     dv = DeforumExtrasArgs()
-    with gr.TabItem('Video Upscaling'):
+    with gr.TabItem('Upscaling'):
         vid_to_upscale_chosen_file = gr.File(label="Video to Upscale", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_upscale_chosen_file")
         with gr.Column():
             # NCNN UPSCALE TAB
@@ -25,7 +26,7 @@ def setup_extras_ui(fps, add_soundtrack, soundtrack_path, skip_video_creation, f
             ncnn_upscale_btn = gr.Button(value="*Upscale uploaded video*")
             ncnn_upscale_btn.click(ncnn_upload_vid_to_upscale,inputs=[vid_to_upscale_chosen_file, ncnn_upscale_in_vid_fps_ui_window, ncnn_upscale_in_vid_res, ncnn_upscale_out_vid_res, ncnn_upscale_model, ncnn_upscale_factor, ncnn_upscale_keep_imgs, ffmpeg_location, ffmpeg_crf, ffmpeg_preset])
     # FRAME INTERPOLATION TAB
-    with gr.Tab('Frame Interpolation') as frame_interp_tab:
+    with gr.TabItem('Interpolation') as frame_interp_tab:
         with gr.Accordion('Important notes and Help', open=False):
             gr.HTML("""
             Use <a href="https://github.com/megvii-research/ECCV2022-RIFE">RIFE</a> / <a href="https://film-net.github.io/">FILM</a> Frame Interpolation to smooth out, slow-mo (or both) any video.</p>
@@ -83,6 +84,17 @@ def setup_extras_ui(fps, add_soundtrack, soundtrack_path, skip_video_creation, f
                     # make the functin call when the interpolation button is clicked
                     interpolate_button.click(upload_vid_to_interpolate,inputs=[vid_to_interpolate_chosen_file, frame_interpolation_engine, frame_interpolation_x_amount, frame_interpolation_slow_mo_enabled, frame_interpolation_slow_mo_amount, frame_interpolation_keep_imgs, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, in_vid_fps_ui_window])
                     interpolate_pics_button.click(upload_pics_to_interpolate,inputs=[pics_to_interpolate_chosen_file, frame_interpolation_engine, frame_interpolation_x_amount, frame_interpolation_slow_mo_enabled, frame_interpolation_slow_mo_amount, frame_interpolation_keep_imgs, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path])
+    with gr.TabItem('Face restore'):
+        vid_to_face_restore_chosen_file = gr.File(label="Video to Face restore", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_face_restore_chosen_file")
+        with gr.Column():
+            with gr.Column():
+                with gr.Row(variant='compact', visible=True):
+                    gr.HTML("Face restoration settings are in the webui's core 'Settings' tab")
+                with gr.Row(variant='compact', visible=True):
+                    face_restore_keep_imgs = gr.Checkbox(label="Keep Imgs", value=True, interactive=True) # fix value
+            face_restore_btn = gr.Button(value="*Face restore uploaded video*")
+            face_restore_btn.click(upload_vid_to_face_restore,inputs=[vid_to_face_restore_chosen_file, face_restore_keep_imgs, ffmpeg_location, ffmpeg_crf, ffmpeg_preset])
+
     ncnn_upscale_model.change(fn=update_r_upscale_factor, inputs=ncnn_upscale_model, outputs=ncnn_upscale_factor)
     ncnn_upscale_model.change(update_upscale_out_res_by_model_name, inputs=[ncnn_upscale_in_vid_res, ncnn_upscale_model], outputs=ncnn_upscale_out_vid_res)
     ncnn_upscale_factor.change(update_upscale_out_res, inputs=[ncnn_upscale_in_vid_res, ncnn_upscale_factor], outputs=ncnn_upscale_out_vid_res)
@@ -136,7 +148,13 @@ def ncnn_upload_vid_to_upscale(vid_path, in_vid_fps, in_vid_res, out_vid_res, up
     f_models_path = root_params['models_path']
     current_user = root_params['current_user_os']
     process_ncnn_upscale_vid_upload_logic(vid_path, in_vid_fps, in_vid_res, out_vid_res, f_models_path, upscale_model, upscale_factor, keep_imgs, f_location, f_crf, f_preset, current_user)
+
+def upload_vid_to_face_restore(vid_to_face_restore_chosen_file, depth_keep_imgs, ffmpeg_location, ffmpeg_crf, ffmpeg_preset):
+    # print msg and do nothing if vid not uploaded
+    if not vid_to_face_restore_chosen_file:
+        return print("Please upload a video :(")
     
+    process_face_restore_vid_upload_logic(vid_to_face_restore_chosen_file, vid_to_face_restore_chosen_file.orig_name, depth_keep_imgs, ffmpeg_location, ffmpeg_crf, ffmpeg_preset)    
 
 def DeforumExtrasArgs():
     # End-Run upscaling
