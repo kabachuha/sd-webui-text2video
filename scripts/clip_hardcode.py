@@ -99,7 +99,7 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
 
         return tokenized
     
-    def encode_with_transformer(self, text):
+    def encode_with_transformers(self, text):
         x = self.model.token_embedding(text)  # [batch_size, n_ctx, d_model]
         x = x + self.model.positional_embedding
         x = x.permute(1, 0, 2)  # NLD -> LND
