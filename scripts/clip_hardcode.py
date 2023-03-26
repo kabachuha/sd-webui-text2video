@@ -99,14 +99,18 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
 
         return tokenized
     
+    def encode_with_transformer(self, text):
+        x = self.model.token_embedding(text)  # [batch_size, n_ctx, d_model]
+        x = x + self.model.positional_embedding
+        x = x.permute(1, 0, 2)  # NLD -> LND
+        x = self.text_transformer_forward(x, attn_mask=self.model.attn_mask)
+        x = x.permute(1, 0, 2)  # LND -> NLD
+        x = self.model.ln_final(x)
+        return x
+    
     def encode_with_transformers(self, tokens):
-        outputs = self.model.transformer(tokens)
-
-        if opts.CLIP_stop_at_last_layers > 1:
-            z = outputs.hidden_states[-opts.CLIP_stop_at_last_layers]
-            z = self.model.transformer.text_model.final_layer_norm(z)
-        else:
-            z = outputs.last_hidden_state
+        # set self.wrapped.layer_idx here according to opts.CLIP_stop_at_last_layers
+        z = self.model.encode_with_transformer(tokens)
 
         return z
     
