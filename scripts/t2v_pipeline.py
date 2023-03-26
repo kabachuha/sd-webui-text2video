@@ -13,38 +13,14 @@ import random
 import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
-from scripts.t2v_model import UNetSD, AutoencoderKL, FrozenOpenCLIPEmbedder, GaussianDiffusion, beta_schedule
+from scripts.t2v_model import UNetSD, AutoencoderKL, GaussianDiffusion, beta_schedule
 from modules import devices
 from modules import prompt_parser
 
 __all__ = ['TextToVideoSynthesis']
 
 from scripts.t2v_model import torch_gc
-
-from modules import sd_hijack_open_clip, textual_inversion
-
-class HijackDummy:
-    fixes = None
-    comments = []
-    layers = None
-    circular_enabled = False
-    clip = None
-    optimization_method = None
-
-    embedding_db = textual_inversion.textual_inversion.EmbeddingDatabase()
-
-from ldm.modules.distributions.distributions import DiagonalGaussianDistribution
-
-class FrozenOpenCLIPEmbedderWithCustomWordsWrapper(sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords):
-    def __init__(self, wrapped_this):
-        super().__init__(wrapped_this.wrapped, wrapped_this.hijack)
-        #self.wrapped_this = wrapped_this
-    
-    def get_learned_conditioning(self, c):
-        c = self(c)
-        assert isinstance(c, DiagonalGaussianDistribution)
-        return c.mode()
-
+from scripts.clip_hardcode import FrozenOpenCLIPEmbedder
 
 class TextToVideoSynthesis():
     r"""
@@ -153,13 +129,9 @@ class TextToVideoSynthesis():
                              self.config.model["model_args"]["ckpt_clip"]),
                              device='cpu',
             layer='penultimate')
-        
-        self.clip_encoder = sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords(self.clip_encoder, HijackDummy())
-        self.clip_encoder = FrozenOpenCLIPEmbedderWithCustomWordsWrapper(self.clip_encoder)
 
-        self.clip_encoder.wrapped.model.to('cpu')
-
-        self.clip_encoder.wrapped.to("cpu")
+        self.clip_encoder.model.to('cpu')
+        self.clip_encoder.to("cpu")
         self.noise_gen = torch.Generator(device='cpu')
 
     def compute_latents(self, vd_out, cpu_vae='GPU (half precision)', device=torch.device('cuda')):
@@ -235,10 +207,10 @@ class TextToVideoSynthesis():
         """
 
         self.device = device
-        self.clip_encoder.wrapped.to(self.device)
-        self.clip_encoder.wrapped.device = self.device
+        self.clip_encoder.to(self.device)
+        self.clip_encoder.device = self.device
         c, uc = self.preprocess(prompt, n_prompt, steps)
-        self.clip_encoder.wrapped.to("cpu")
+        self.clip_encoder.to("cpu")
         torch_gc()
 
         # synthesis
@@ -344,7 +316,7 @@ class TextToVideoSynthesis():
         vd_out = vd_out.type(torch.float32).cpu()
 
         video_path = self.postprocess_video(vd_out)
-        self.clip_encoder.wrapped.to("cpu")
+        self.clip_encoder.to("cpu")
         self.sd_model.to("cpu")
         self.autoencoder.to("cpu")
         self.autoencoder.encoder.to("cpu")
@@ -379,12 +351,12 @@ class TextToVideoSynthesis():
             cache[0] = (required_prompts, steps)
             return cache[1]
 
-        self.clip_encoder.wrapped.to(self.device) 
-        self.clip_encoder.wrapped.device = self.device       
+        self.clip_encoder.to(self.device) 
+        self.clip_encoder.device = self.device       
         uc = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, [n_prompt], steps, cached_uc)
         c = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, [prompt], steps, cached_c)
         if offload:
-            self.clip_encoder.wrapped.to('cpu')
+            self.clip_encoder.to('cpu')
         return c, uc
 
     def postprocess_video(self, video_data):
