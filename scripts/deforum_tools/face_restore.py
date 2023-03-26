@@ -10,6 +10,7 @@ from modules.shared import cmd_opts, device as sh_device
 from modules.scripts_postprocessing import PostprocessedImage
 from modules import devices
 import modules
+from modules import shared
 import shutil
 from queue import Queue, Empty
 import modules.scripts as scr
@@ -76,6 +77,7 @@ def process_video_face_restore(orig_vid_fps, real_audio_track, raw_output_imgs_p
         image.save(filename)
     
     # Cleaning up and freeing the memory before stitching
+    shared.face_restorers.clear()
     gc.collect()
     devices.torch_gc()
 
