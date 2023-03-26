@@ -1371,8 +1371,8 @@ class GaussianDiffusion(object):
 
         pbar = tqdm(steps, desc="DDIM sampling")
 
-        print(c)
-        print(uc)
+        #print(c)
+        #print(uc)
 
         i = 0
         for step in pbar:
@@ -1389,7 +1389,7 @@ class GaussianDiffusion(object):
             elif uc_i.shape[1] > c_i.shape[1]:
                 uc_i = uc_i[:, :c_i.shape[1]]
             
-            #print(c_i.shape, uc.shape)
+            print(c_i.shape, uc.shape)
 
             t = torch.full((b, ), step, dtype=torch.long, device=xt.device)
             print(uc_i)
