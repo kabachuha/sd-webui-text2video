@@ -16,6 +16,8 @@ import modules.scripts as scr
 from .frame_interpolation import clean_folder_name
 from rife.inference_video import duplicate_pngs_from_folder
 from .video_audio_utils import get_quick_vid_info, vid2frames, ffmpeg_stitch_video
+from scripts.t2v_pipeline import unload_sd_model
+import scripts
 
 def process_face_restore_vid_upload_logic(file, vid_file_name, keep_imgs, f_location, f_crf, f_preset):
     print("got a request to *face restore* an existing video.")
@@ -60,6 +62,10 @@ def process_video_face_restore(orig_vid_fps, real_audio_track, raw_output_imgs_p
 
     if not os.path.exists(custom_upscale_path):
         os.mkdir(custom_upscale_path)
+    
+    unload_sd_model()
+    scripts.t2v_pipeline.pipe = None
+    devices.torch_gc()
     
     # Upscaling is a slow and demanding operation, so we don't need as much parallelization here
     for i in tqdm(range(len(videogen)), desc="Face restore"):
