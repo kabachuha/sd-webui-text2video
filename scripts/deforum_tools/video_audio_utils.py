@@ -3,6 +3,8 @@ import subprocess
 import os, shutil
 import cv2
 from modules.shared import state
+import requests
+from .rich import console
 from pkg_resources import resource_filename
 
 def get_frame_name(path):
@@ -123,7 +125,7 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
 
     print(f"Got a request to stitch frames to video using FFmpeg.\nFrames:\n{imgs_path}\nTo Video:\n{outmp4_path}")
     msg_to_print = f"Stitching *video*..."
-    print(msg_to_print)
+    console.print(msg_to_print, style="blink yellow", end="") 
     if stitch_to_frame == -1:
         stitch_to_frame = 999999999
     try:
