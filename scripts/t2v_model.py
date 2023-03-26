@@ -1398,10 +1398,10 @@ class GaussianDiffusion(object):
             print(c_i)
             model_kwargs=[{
                 'y':
-                uc_i,
+                c_i,
             }, {
                 'y':
-                c_i,
+                uc_i,
             }]
             xt = self.ddim_sample(xt, t, model, model_kwargs, clamp,
                                   percentile, condition_fn, guide_scale,
