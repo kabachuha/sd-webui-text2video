@@ -45,7 +45,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
                 batch_count=1, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False, \
-                do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
+                do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0,
+                inpainting_image=None,do_inpainting=False,inpainting_frames=1
             ):
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
@@ -75,6 +76,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
         device=devices.get_optimal_device()
         print('device',device)
+
+        mask=None
 
         if do_img2img:
 
@@ -140,6 +143,56 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
             print("Computing latents")
             latents = pipe.compute_latents(vd_out).to(device)
+        
+        elif do_inpainting:
+            images=[]
+            print("gir",inpainting_image)
+            print(inpainting_image.name)
+            for i in range(inpainting_frames):
+                image=Image.open(inpainting_image.name)
+                image=image.resize((width,height), Image.ANTIALIAS)
+                array = np.array(image)
+                images+=[array]
+
+            images=np.stack(images)# f h w c
+            batches=1
+            n_images=np.tile(images[np.newaxis, ...], (batches, 1, 1, 1, 1)) # n f h w c
+            bcfhw=n_images.transpose(0,4,1,2,3)
+            #convert to 0-1 float
+            bcfhw=bcfhw.astype(np.float32)/255
+            bfchw=bcfhw.transpose(0,2,1,3,4)#b c f h w
+
+            print(f"Converted the frames to tensor {bfchw.shape}")
+
+            vd_out=torch.from_numpy(bcfhw).to("cuda")
+
+            #should be -1,1, not 0,1
+            vd_out=2*vd_out-1
+
+            #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
+            #but right now they have shape num_sample=1,4, 1 (only used 1 img), latent_h, latent_w
+            print("Computing latents")
+            image_latents = pipe.compute_latents(vd_out).numpy()
+            padding_width = [(0, 0), (0, 0), (0, frames-inpainting_frames), (0, 0), (0, 0)]
+            padded_latents = np.pad(image_latents, pad_width=padding_width, mode='constant', constant_values=0)
+
+            latent_h=height//8
+            latent_w=width//8
+            latent_noise=np.random.normal(size=(1,4,frames,latent_h,latent_w))
+            mask=np.ones(shape=(1,4,frames,latent_h,latent_w))
+
+            for i in range(inpainting_frames):
+                v=i/inpainting_frames
+                mask[:,:,i,:,:]=v
+
+            masked_latents=padded_latents*(1-mask)+latent_noise*mask
+
+            latents=torch.tensor(masked_latents).to(device)
+
+            mask=torch.tensor(mask).to(device)
+
+            strength=1
+        
         else:
             latents = None
             strength=1
@@ -157,7 +210,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         
         for batch in pbar:
             samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
-                                    width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
+                                    width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))),mask=mask)
 
             if batch > 0:
                 outdir_current = os.path.join(outdir, f"{init_timestring}_{batch}")
@@ -267,6 +320,12 @@ def on_ui_tabs():
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
                     tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_img2img])
 
+                    with gr.Tab('Inpainting'):
+                        inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
+                        do_inpainting = gr.Checkbox(label="Do inpainting", value=dv.do_inpainting, interactive=True)
+                        inpainting_frames=gr.Slider(label='inpainting frames',value=dv.inpainting_frames,minimum=1, maximum=200, step=1)
+
+
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
                             fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
@@ -327,7 +386,8 @@ def on_ui_tabs():
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
-                        batch_count, cpu_vae, keep_pipe_in_vram, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
+                        batch_count, cpu_vae, keep_pipe_in_vram, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame,
+                        inpainting_image,do_inpainting,inpainting_frames
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
@@ -379,4 +439,6 @@ def DeforumOutputArgs():
     frame_interpolation_slow_mo_amount = 2  # [2 to 10]
     frame_interpolation_keep_imgs = False
     keep_pipe_in_vram = False
+    do_inpainting=False
+    inpainting_frames=1
     return locals()

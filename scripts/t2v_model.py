@@ -1349,6 +1349,7 @@ class GaussianDiffusion(object):
                          ddim_timesteps=20,
                          eta=0.0,
                          skip_steps=0,
+                         mask=None,
                          ):
 
         # prepare input
@@ -1369,13 +1370,31 @@ class GaussianDiffusion(object):
             print("huh", step0, t)
             xt = self.add_noise(xt, noise_to_add, step0)
 
+        if mask is not None:
+            pass
+            step0 = steps[0]
+            original_latents=xt
+            noise_to_add = torch.randn_like(xt)
+            xt = self.add_noise(xt, noise_to_add, step0)
+            #convert mask to 0,1 valued based on step
+            v=0
+            binary_mask = torch.where(mask <= v, torch.zeros_like(mask), torch.ones_like(mask))
+            #print("about to die",xt,original_latents,mask,binary_mask)
+            
+
         pbar = tqdm(steps, desc="DDIM sampling")
 
         #print(c)
         #print(uc)
 
+        
+
         i = 0
         for step in pbar:
+
+            
+
+
             c_i = reconstruct_cond_batch(c, i)
             uc_i = reconstruct_cond_batch(uc, i)
 
@@ -1406,6 +1425,24 @@ class GaussianDiffusion(object):
             xt = self.ddim_sample(xt, t, model, model_kwargs, clamp,
                                   percentile, condition_fn, guide_scale,
                                   ddim_timesteps, eta)
+
+            
+            #inpainting
+            if mask is not None and i<len(steps)-1:
+                v=(ddim_timesteps-i-1)/ddim_timesteps
+                binary_mask = torch.where(mask <= v, torch.zeros_like(mask), torch.ones_like(mask))
+            
+                noise_to_add = torch.randn_like(xt)
+                #noise_to_add=xt
+                to_inpaint=self.add_noise(original_latents, noise_to_add, steps[i+1])
+                xt=to_inpaint*(1-binary_mask)+xt*binary_mask
+                print(mask.shape,i,ddim_timesteps,v)
+                print(mask[0,0,:,0,0])
+                print(binary_mask[0,0,:,0,0])
+                pass
+
+            
+
             t.cpu()
             t = None
             i += 1
