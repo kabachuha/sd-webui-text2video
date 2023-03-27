@@ -43,7 +43,7 @@ Join the development or report issues and feature requests here <a style="color:
 import traceback
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
-                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count=1 \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count=1, \
                 do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
             ):
     global pipe
