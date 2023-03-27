@@ -43,12 +43,10 @@ Join the development or report issues and feature requests here <a style="color:
 import traceback
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
-                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count=1, \
-                do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
+                 batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
             ):
-    print("***************")
-    print(batch_count)
-    print("***************")
+    
     global pipe
     print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
@@ -81,8 +79,10 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         print('device',device)
 
         if do_img2img:
-
+            
             prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v
+            
+            batch_count = batch_count_v # update generarl batch_count from batch_count_video
 
             if img2img_frames is None and img2img_frames_path == "":
                 raise FileNotFoundError("Please upload a video :()")
@@ -241,7 +241,7 @@ def on_ui_tabs():
                         with gr.Row():
                             img2img_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
                         # TODO: here too
-                        prompt_v, n_prompt_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, _ = setup_common_values('vid2vid')
+                        prompt_v, n_prompt_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid')
                         with gr.Row():
                             strength = gr.Slider(label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05, interactive=True)
                             img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
@@ -294,7 +294,7 @@ def on_ui_tabs():
                 # _js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
-                        prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
+                        prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                         batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
