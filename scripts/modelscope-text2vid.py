@@ -196,46 +196,26 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
 
 def setup_common_values(mode):
     with gr.Row(elem_id=f'{mode}_prompt_toprow'):
-        prompt = gr.Textbox(
-            label='Prompt', lines=3, interactive=True, elem_id=f"{mode}_prompt")
+        prompt = gr.Textbox(label='Prompt', lines=3, interactive=True, elem_id=f"{mode}_prompt", placeholder="Enter your prompt here...")
     with gr.Row(elem_id=f'{mode}_n_prompt_toprow'):
-        n_prompt = gr.Textbox(label='Negative prompt', lines=2,
-                            interactive=True, elem_id=f"{mode}_n_prompt", value='text, watermark, copyright, blurry')
+        n_prompt = gr.Textbox(label='Negative prompt', lines=2, interactive=True, elem_id=f"{mode}_n_prompt", value='text, watermark, copyright, blurry')
     with gr.Row():
-        steps = gr.Slider(
-            label='Steps',
-            minimum=1,
-            maximum=100,
-            step=1,
-            value=30)
-        cfg_scale = gr.Slider(
-            label='cfg_scale',
-            minimum=1,
-            maximum=100,
-            step=1,
-            value=7)
+        steps = gr.Slider(label='Steps', minimum=1, maximum=100, step=1, value=30)
+        cfg_scale = gr.Slider(label='CFG scale', minimum=1, maximum=100, step=1, value=7)
+    # with gr.Row():
+        # frames = gr.Slider(label="Frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
+        # seed = gr.Number(label='Seed', value = -1, Interactive = True, precision=0)
     with gr.Row():
-        frames = gr.Slider(
-            label="frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
+        width = gr.Slider(label='Width', minimum=64, maximum=1024, step=64, value=256)
+        height = gr.Slider(label='Height', minimum=64, maximum=1024, step=64, value=256)
+    with gr.Row():
         seed = gr.Number(label='Seed', value = -1, Interactive = True, precision=0)
+        eta = gr.Number(label="ETA", value=0, interactive=True)
     with gr.Row():
-        width = gr.Slider(
-            label='width',
-            minimum=64,
-            maximum=1024,
-            step=64,
-            value=256)
-        height = gr.Slider(
-            label='height',
-            minimum=64,
-            maximum=1024,
-            step=64,
-            value=256)
-    with gr.Row():
-        eta = gr.Number(
-            label="eta", value=0, interactive=True)
+        frames = gr.Slider(label="Frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
+        batch_count = gr.Slider(label="Batch count", value=1, minimum=1, maximum=100, step=1, interactive=True)
     
-    return prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta
+    return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
 
 def on_ui_tabs():
     global i1_store_t2v
@@ -248,8 +228,7 @@ def on_ui_tabs():
                     do_img2img = gr.State(value=0)
                     with gr.Tab('txt2vid') as tab_txt2vid:
                         # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
-                        prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = setup_common_values('txt2vid')
-
+                        prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid')
                     with gr.Tab('vid2vid') as tab_vid2vid:
                         with gr.Row():
                             gr.HTML('Put your video here')
@@ -257,12 +236,11 @@ def on_ui_tabs():
                         with gr.Row():
                             gr.HTML('Alternative: enter the relative (to the webui) path to the file')
                         with gr.Row():
-                            img2img_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path")
+                            img2img_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
                         # TODO: here too
-                        prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v = setup_common_values('vid2vid')
+                        prompt_v, n_prompt_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames, batch_count = setup_common_values('vid2vid')
                         with gr.Row():
-                            strength = gr.Slider(
-                                label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05, interactive=True)
+                            strength = gr.Slider(label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05, interactive=True)
                             img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
                     
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
@@ -272,10 +250,8 @@ def on_ui_tabs():
                         with gr.Row(variant='compact') as fps_out_format_row:
                             fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
                         with gr.Row(variant='compact') as soundtrack_row:
-                            add_soundtrack = gr.Radio(
-                                ['None', 'File', 'Init Video'], label="Add soundtrack", value=dv.add_soundtrack)
-                            soundtrack_path = gr.Textbox(
-                                label="Soundtrack path", lines=1, interactive=True, value=dv.soundtrack_path)
+                            add_soundtrack = gr.Radio(['None', 'File', 'Init Video'], label="Add soundtrack", value=dv.add_soundtrack)
+                            soundtrack_path = gr.Textbox(label="Soundtrack path", lines=1, interactive=True, value=dv.soundtrack_path)
 
                         with gr.Row(variant='compact'):
                             skip_video_creation = gr.Checkbox(label="Skip video creation", value=dv.skip_video_creation, interactive=True)
@@ -286,9 +262,6 @@ def on_ui_tabs():
                             ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value=dv.ffmpeg_location)
                     with gr.Tab('How to install? Where to get help, how to help?'):
                         gr.Markdown(welcome_text)
-                
-                with gr.Row():
-                    batch_count = gr.Slider(label="Batch count", value=1, minimum=1, maximum=100, step=1)
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(variant='compact'):
                     run_button = gr.Button('Generate', elem_id=f"text2vid_generate", variant='primary')
@@ -318,7 +291,7 @@ def on_ui_tabs():
                 # _js="submit_deforum",
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
-                        prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
+                        prompt_v, n_prompt_v, steps_v, frames, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
                         batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
