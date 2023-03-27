@@ -368,7 +368,6 @@ def DeforumOutputArgs():
     frame_interpolation_slow_mo_enabled = False
     frame_interpolation_slow_mo_amount = 2  # [2 to 10]
     frame_interpolation_keep_imgs = False
-    # keep_pipe_in_vram = False
     return locals()
     
 def on_ui_settings():
