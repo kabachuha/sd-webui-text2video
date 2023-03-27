@@ -43,8 +43,7 @@ Join the development or report issues and feature requests here <a style="color:
 import traceback
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
-                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, \
-                batch_count=1, cpu_vae='GPU (half precision)', keep_pipe_in_vram=False, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count=1 \
                 do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
             ):
     global pipe
@@ -55,6 +54,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     outdir_current = os.path.join(outdir, f"{init_timestring}")
     dataurl = get_error()
     try:
+        cpu_vae = opts.data.get("modelscope_deforum_vae_settings")
+        keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram")
         if shared.sd_model is not None:
             sd_hijack.model_hijack.undo_hijack(shared.sd_model)
             try:
@@ -288,12 +289,6 @@ def on_ui_tabs():
                 
                 with gr.Row():
                     batch_count = gr.Slider(label="Batch count", value=1, minimum=1, maximum=100, step=1)
-                with gr.Row():
-                    cpu_vae = gr.Radio(label='VAE Mode', value='GPU (half precision)', choices=[
-                                        'GPU (half precision)', 'GPU', 'CPU (Low VRAM)'], interactive=True)
-                with gr.Row():
-                    keep_pipe_in_vram = gr.Checkbox(
-                        label="keep pipe in memory", value=False, interactive=True)
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(variant='compact'):
                     run_button = gr.Button('Generate', elem_id=f"text2vid_generate", variant='primary')
@@ -306,14 +301,11 @@ def on_ui_tabs():
                     btn = gr.Button("Click here after the generation to show the video")
                 with gr.Row(variant='compact'):
                     i1 = gr.HTML(i1_store_t2v, elem_id='deforum_header')
-                    # Show video
-
-                    def show_vid():
+                    def show_vid(): # Show video
                         return {
                             i1: gr.update(value=i1_store_t2v, visible=True),
                             btn: gr.update(value="Update the video", visible=True),
                         }
-
                     btn.click(
                         show_vid,
                         [],
@@ -327,7 +319,7 @@ def on_ui_tabs():
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v,\
-                        batch_count, cpu_vae, keep_pipe_in_vram, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
+                        batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
                         ],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
@@ -335,8 +327,6 @@ def on_ui_tabs():
             )
 
     return [(deforum_interface, "ModelScope text2video", "t2v_interface")]
-
-script_callbacks.on_ui_tabs(on_ui_tabs)
 
 def get_t2v_version():
     from modules import extensions as mext
@@ -378,5 +368,14 @@ def DeforumOutputArgs():
     frame_interpolation_slow_mo_enabled = False
     frame_interpolation_slow_mo_amount = 2  # [2 to 10]
     frame_interpolation_keep_imgs = False
-    keep_pipe_in_vram = False
     return locals()
+    
+def on_ui_settings():
+    section = ('modelscope_deforum', "ModelScopeTxt2Vid")
+    shared.opts.add_option("modelscope_deforum_keep_model_in_vram", shared.OptionInfo(
+        False, "Keep model in VRAM between runs", gr.Checkbox, {"interactive": True, "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
+    shared.opts.add_option("modelscope_deforum_vae_settings", shared.OptionInfo(
+        "GPU (half precision)", "VAE Mode:", gr.Radio, {"interactive": True, "choices": ['GPU (half precision)', 'GPU', 'CPU (Low VRAM)']}, section=section))
+
+script_callbacks.on_ui_tabs(on_ui_tabs)
+script_callbacks.on_ui_settings(on_ui_settings)
