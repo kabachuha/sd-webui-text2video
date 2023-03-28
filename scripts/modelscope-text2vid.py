@@ -54,8 +54,8 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     outdir_current = os.path.join(outdir, f"{init_timestring}")
     dataurl = get_error()
     try:
-        cpu_vae = opts.data.get("modelscope_deforum_vae_settings")
-        keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram")
+        cpu_vae = opts.data.get("modelscope_deforum_vae_settings") if opts.data is not None and opts.data.get("modelscope_deforum_vae_settings") is not None else 'GPU (half precision)'
+        keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else False
         if shared.sd_model is not None:
             sd_hijack.model_hijack.undo_hijack(shared.sd_model)
             try:
