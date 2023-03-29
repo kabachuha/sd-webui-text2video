@@ -497,6 +497,7 @@ class CrossAttention(nn.Module):
 
                 del sim_buffer
             sim = rearrange(sim, '(b h) n d -> b n (h d)', h=h)
+            return self.to_out(sim)
         else:
             q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h),
                         (q, k, v))
@@ -514,7 +515,7 @@ class CrossAttention(nn.Module):
 
             out = torch.einsum('b i j, b j d -> b i d', sim, v)
             out = rearrange(out, '(b h) n d -> b n (h d)', h=h)
-        return self.to_out(out)
+            return self.to_out(out)
 
 
 class SpatialTransformer(nn.Module):
