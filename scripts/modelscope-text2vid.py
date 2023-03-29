@@ -376,6 +376,8 @@ def on_ui_settings():
         False, "Keep model in VRAM between runs", gr.Checkbox, {"interactive": True, "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
     shared.opts.add_option("modelscope_deforum_vae_settings", shared.OptionInfo(
         "GPU (half precision)", "VAE Mode:", gr.Radio, {"interactive": True, "choices": ['GPU (half precision)', 'GPU', 'CPU (Low VRAM)']}, section=section))
+    shared.opts.add_option("modelscope_deforum_attention_slicing", shared.OptionInfo(
+        True, "Enable attention slicing (make longer vids, but a bit slower)", gr.Checkbox, {"interactive": True, "visible": True}, section=section))
 
 script_callbacks.on_ui_tabs(on_ui_tabs)
 script_callbacks.on_ui_settings(on_ui_settings)

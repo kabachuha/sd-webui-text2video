@@ -16,6 +16,7 @@ from os import path as osp
 
 from tqdm import tqdm
 from modules.prompt_parser import reconstruct_cond_batch
+from modules.shared import cmd_opts, opts, state
 
 __all__ = ['UNetSD']
 
@@ -460,22 +461,59 @@ class CrossAttention(nn.Module):
         k = self.to_k(context)
         v = self.to_v(context)
 
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h),
-                      (q, k, v))
-        sim = torch.einsum('b i d, b j d -> b i j', q, k) * self.scale
-        del q, k
+        # Do opt from https://github.com/lllyasviel/ControlNet/blob/main/cldm/hack.py
+        do_opt = opts.data.get("modelscope_deforum_attention_slicing") if opts.data is not None and opts.data.get("modelscope_deforum_attention_slicing") is not None else True
 
-        if exists(mask):
-            mask = rearrange(mask, 'b ... -> b (...)')
-            max_neg_value = -torch.finfo(sim.dtype).max
-            mask = repeat(mask, 'b j -> (b h) () j', h=h)
-            sim.masked_fill_(~mask, max_neg_value)
+        if do_opt:
+            del context, x
 
-        # attention, what we cannot get enough of
-        sim = sim.softmax(dim=-1)
+            q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h), (q, k, v))
 
-        out = torch.einsum('b i j, b j d -> b i d', sim, v)
-        out = rearrange(out, '(b h) n d -> b n (h d)', h=h)
+            limit = k.shape[0]
+            att_step = 1
+            q_chunks = list(torch.tensor_split(q, limit // att_step, dim=0))
+            k_chunks = list(torch.tensor_split(k, limit // att_step, dim=0))
+            v_chunks = list(torch.tensor_split(v, limit // att_step, dim=0))
+
+            q_chunks.reverse()
+            k_chunks.reverse()
+            v_chunks.reverse()
+            sim = torch.zeros(q.shape[0], q.shape[1], v.shape[2], device=q.device)
+            del k, q, v
+            for i in range(0, limit, att_step):
+                q_buffer = q_chunks.pop()
+                k_buffer = k_chunks.pop()
+                v_buffer = v_chunks.pop()
+                sim_buffer = torch.einsum('b i d, b j d -> b i j', q_buffer, k_buffer) * self.scale
+
+                del k_buffer, q_buffer
+                # attention, what we cannot get enough of, by chunks
+
+                sim_buffer = sim_buffer.softmax(dim=-1)
+
+                sim_buffer = torch.einsum('b i j, b j d -> b i d', sim_buffer, v_buffer)
+                del v_buffer
+                sim[i:i + att_step, :, :] = sim_buffer
+
+                del sim_buffer
+            sim = rearrange(sim, '(b h) n d -> b n (h d)', h=h)
+        else:
+            q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h),
+                        (q, k, v))
+            sim = torch.einsum('b i d, b j d -> b i j', q, k) * self.scale
+            del q, k
+
+            if exists(mask):
+                mask = rearrange(mask, 'b ... -> b (...)')
+                max_neg_value = -torch.finfo(sim.dtype).max
+                mask = repeat(mask, 'b j -> (b h) () j', h=h)
+                sim.masked_fill_(~mask, max_neg_value)
+
+            # attention, what we cannot get enough of
+            sim = sim.softmax(dim=-1)
+
+            out = torch.einsum('b i j, b j d -> b i d', sim, v)
+            out = rearrange(out, '(b h) n d -> b n (h d)', h=h)
         return self.to_out(out)
 
 
