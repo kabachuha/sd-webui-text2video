@@ -1,4 +1,3 @@
 imageio_ffmpeg
 av
 moviepy
-pyyaml

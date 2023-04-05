@@ -20,7 +20,6 @@ from PIL import Image
 from pathlib import Path
 import numpy as np
 import torch
-import yaml
 from omegaconf import OmegaConf
 from tqdm import tqdm
 from base64 import b64encode
