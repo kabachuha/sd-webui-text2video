@@ -9,11 +9,11 @@ from omegaconf import OmegaConf
 import torch.distributed as dist
 from pytorch_lightning import seed_everything
 
-from scripts.videocrafter.lvdm.samplers.ddim import DDIMSampler
-from scripts.videocrafter.lvdm.utils.common_utils import str2bool
-from scripts.videocrafter.lvdm.utils.dist_utils import setup_dist, gather_data
-from scripts.videocrafter.lvdm.utils.saving_utils import npz_to_video_grid, npz_to_imgsheet_5d
-from scripts.videocrafter.sample_utils import load_model, get_conditions, make_model_input_shape, torch_to_np
+from videocrafter.lvdm.samplers.ddim import DDIMSampler
+from videocrafter.lvdm.utils.common_utils import str2bool
+from videocrafter.lvdm.utils.dist_utils import setup_dist, gather_data
+from videocrafter.lvdm.utils.saving_utils import npz_to_video_grid, npz_to_imgsheet_5d
+from videocrafter.sample_utils import load_model, get_conditions, make_model_input_shape, torch_to_np
 
 
 # ------------------------------------------------------------------------------------------

@@ -20,7 +20,7 @@ import modules.paths as ph
 from modules import devices, lowvram, script_callbacks, sd_hijack, shared
 from modules.shared import cmd_opts, opts, state
 from scripts.error_hardcode import get_error
-from scripts.modelscope.t2v_pipeline import TextToVideoSynthesis, tensor2vid
+from modelscope.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video')
@@ -263,9 +263,9 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
     config = OmegaConf.load(config_path)
     print("VideoCrafter config: \n", config)
 
-    from scripts.videocrafter.lvdm.samplers.ddim import DDIMSampler
-    from scripts.videocrafter.sample_utils import load_model, get_conditions, make_model_input_shape, torch_to_np
-    from scripts.videocrafter.sample_utils import sample_text2video
+    from videocrafter.lvdm.samplers.ddim import DDIMSampler
+    from videocrafter.sample_utils import load_model, get_conditions, make_model_input_shape, torch_to_np
+    from videocrafter.sample_utils import sample_text2video
 
     # get model & sampler
     model, _, _ = load_model(config, ph.models_path+'/VideoCrafter/model.ckpt', #TODO: support safetensors and stuff
