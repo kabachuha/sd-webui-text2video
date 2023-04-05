@@ -358,7 +358,7 @@ def on_ui_tabs():
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
                 with gr.Row(elem_id='model-switcher'):
-                    model_type = gr.Radio(label='Model type', options=['ModelScope', 'VideoCrafter'], value='ModelScope', elem_id='model-type')
+                    model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter'], value='ModelScope', elem_id='model-type')
                 with gr.Tabs():
                     do_img2img = gr.State(value=0)
                     with gr.Tab('txt2vid') as tab_txt2vid:
@@ -428,14 +428,14 @@ def on_ui_tabs():
                 inputs=[skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path,
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
-                        batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame
-                        ],  # [dummy_component, dummy_component] +
+                        batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame,
+                        model_type],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
                 ],
             )
 
-    return [(deforum_interface, "text2video", "t2v_interface")]
+    return [(deforum_interface, "txt2video", "t2v_interface")]
 
 def get_t2v_version():
     from modules import extensions as mext

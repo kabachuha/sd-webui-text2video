@@ -12,4 +12,4 @@ with open(req_file) as file:
 
         if not launch.is_installed(lib):
 
-            launch.run_pip(f"install {lib}", f"ModelScope-text2video requirement: {lib}")
+            launch.run_pip(f"install {lib}", f"text2video requirement: {lib}")
