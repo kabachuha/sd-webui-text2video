@@ -4,9 +4,9 @@ import torch.nn.functional as F
 import os
 from einops import rearrange
 
-from lvdm.models.modules.autoencoder_modules import Encoder, Decoder
-from lvdm.models.modules.distributions import DiagonalGaussianDistribution
-from lvdm.utils.common_utils import instantiate_from_config
+from scripts.videocrafter.lvdm.models.modules.autoencoder_modules import Encoder, Decoder
+from scripts.videocrafter.lvdm.models.modules.distributions import DiagonalGaussianDistribution
+from scripts.videocrafter.lvdm.utils.common_utils import instantiate_from_config
 
 class AutoencoderKL(pl.LightningModule):
     def __init__(self,
