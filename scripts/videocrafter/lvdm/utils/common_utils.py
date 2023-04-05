@@ -32,9 +32,9 @@ def instantiate_from_config(config):
 def get_obj_from_str(string, reload=False):
     module, cls = string.rsplit(".", 1)
     if reload:
-        module_imp = importlib.import_module(module)
+        module_imp = importlib.import_module('videocrafter.'+module)
         importlib.reload(module_imp)
-    return getattr(importlib.import_module(module, package=None), cls)
+    return getattr(importlib.import_module('videocrafter.'+module, package=None), cls)
 
 def log_txt_as_img(wh, xc, size=10):
     # wh a tuple of (width, height)
@@ -115,9 +115,9 @@ def instantiate_from_config(config):
 def get_obj_from_str(string, reload=False):
     module, cls = string.rsplit(".", 1)
     if reload:
-        module_imp = importlib.import_module(module)
+        module_imp = importlib.import_module('videocrafter.'+module)
         importlib.reload(module_imp)
-    return getattr(importlib.import_module(module, package=None), cls)
+    return getattr(importlib.import_module('videocrafter.'+module, package=None), cls)
 
 
 def check_istarget(name, para_list):
