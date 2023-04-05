@@ -319,9 +319,10 @@ class HybridConditioner(nn.Module):
         return {'c_concat': [c_concat], 'c_crossattn': [c_crossattn]}
 
 
-def noise_like(shape, device, repeat=False):
-    repeat_noise = lambda: torch.randn((1, *shape[1:]), device=device).repeat(shape[0], *((1,) * (len(shape) - 1)))
-    noise = lambda: torch.randn(shape, device=device)
+def noise_like(shape, device, repeat=False, noise_gen=None):
+    assert noise_gen is not None
+    repeat_noise = lambda: torch.randn((1, *shape[1:]), device=device, generator=noise_gen).repeat(shape[0], *((1,) * (len(shape) - 1)))
+    noise = lambda: torch.randn(shape, device=device, generator=noise_gen)
     return repeat_noise() if repeat else noise()
 
 

@@ -248,10 +248,6 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
     init_timestring = time.strftime('%Y%m%d%H%M%S')
     outdir_current = os.path.join(outdir, f"{init_timestring}")
 
-    # set random seed
-    if seed is not None:
-        torch.seed_everything(seed) # FIXME: may break determinism stuff for other plugins, needs testing
-
     os.makedirs(outdir_current, exist_ok=True)
 
     # load & merge config
@@ -291,6 +287,7 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
         pbar.disable=True
     
     for batch in pbar:
+        ddim_sampler.noise_gen.manual_seed(seed + batch if seed != -1 else -1)
         # sample
         samples = sample_text2video(model, prompt, n_prompt, 1, 1,# todo:add batch size support
                         sample_type='ddim', sampler=ddim_sampler,

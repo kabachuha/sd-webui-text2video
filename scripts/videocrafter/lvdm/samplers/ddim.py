@@ -14,6 +14,7 @@ class DDIMSampler(object):
         self.ddpm_num_timesteps = model.num_timesteps
         self.schedule = schedule
         self.counter = 0
+        self.noise_gen = torch.Generator(device='cpu')
 
     def register_buffer(self, name, attr):
         if type(attr) == torch.Tensor:
@@ -256,7 +257,7 @@ class DDIMSampler(object):
         dir_xt = (1. - a_prev - sigma_t**2).sqrt() * e_t
         
         if sample_noise is None:
-            noise = sigma_t * noise_like(x.shape, device, repeat_noise) * temperature
+            noise = sigma_t * noise_like(x.shape, device, repeat_noise, self.noise_gen) * temperature
             if noise_dropout > 0.:
                 noise = torch.nn.functional.dropout(noise, p=noise_dropout)
         else:
