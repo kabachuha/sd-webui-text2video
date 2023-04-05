@@ -272,7 +272,7 @@ class ResBlock(TimestepBlock):
 
 # ---------------------------------------------------------------------------------------------------
 def make_spatialtemporal_transformer(module_name='attention_temporal', class_name='SpatialTemporalTransformer'):
-    module = __import__(f"lvdm.models.modules.{module_name}", fromlist=[class_name])
+    module = __import__(f"videocrafter.lvdm.models.modules.{module_name}", fromlist=[class_name])
     global STTransformerClass
     STTransformerClass = getattr(module, class_name)
     return STTransformerClass
