@@ -233,3 +233,38 @@ def duplicate_pngs_from_folder(from_folder, to_folder, img_batch_id, orig_vid_na
                 new_path = os.path.join(temp_convert_raw_png_path, f)
                 cv2.imwrite(new_path, image, [cv2.IMWRITE_PNG_COMPRESSION, 0])
     return frames_handled
+
+def add_soundtrack(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
+    if add_soundtrack is None:
+        return
+    msg_to_print = f"Adding soundtrack to *video*..."
+    start_time = time.time()
+    try:
+        cmd = [
+            ffmpeg_location,
+            '-i',
+            outmp4_path,
+            '-i',
+            audio_path,
+            '-map', '0:v',
+            '-map', '1:a',
+            '-c:v', 'copy',
+            '-shortest',
+            outmp4_path+'.temp.mp4'
+        ]
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        if process.returncode != 0:
+            print("\r" + " " * len(msg_to_print), end="", flush=True)
+            print(f"\r{msg_to_print}", flush=True)
+            raise RuntimeError(stderr)
+        os.replace(outmp4_path+'.temp.mp4', outmp4_path)
+        print("\r" + " " * len(msg_to_print), end="", flush=True)
+        print(f"\r{msg_to_print}", flush=True)
+        print(f"\rFFmpeg Audio stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
+    except Exception as e:
+        print("\r" + " " * len(msg_to_print), end="", flush=True)
+        print(f"\r{msg_to_print}", flush=True)
+        print(f'\rError adding audio to video. Actual error: {e}', flush=True)
+        print(f"FFMPEG Video (sorry, no audio) stitching \033[33mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
