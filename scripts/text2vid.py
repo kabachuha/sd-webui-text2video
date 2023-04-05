@@ -261,7 +261,7 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
         raise FileNotFoundError(f'Could not find config file at {os.path.join(ph.models_path, "models/VideoCrafter/model_config.yaml")}, nor at {os.path.join(os.getcwd(), "extensions/sd-webui-modelscope-text2video/scripts/videocrafter/base_t2v/model_config.yaml")}, nor at {os.path.join(os.getcwd(), "extensions/sd-webui-text2video/scripts/videocrafter/base_t2v/model_config.yaml")}')
 
     config = OmegaConf.load(config_path)
-    print("VideoCrafter config: \n", yaml.load(config))
+    print("VideoCrafter config: \n", yaml.safe_load(config))
 
     from scripts.videocrafter.lvdm.samplers.ddim import DDIMSampler
     from scripts.videocrafter.sample_utils import load_model, get_conditions, make_model_input_shape, torch_to_np
