@@ -21,7 +21,7 @@ from scripts.error_hardcode import get_error
 from scripts.modelscope.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
 
-outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
+outdir = os.path.join(opts.outdir_img2img_samples, 'text2video')
 outdir = os.path.join(os.getcwd(), outdir)
 
 pipe = None
@@ -29,9 +29,14 @@ pipe = None
 def setup_pipeline():
     return TextToVideoSynthesis(ph.models_path+'/ModelScope/t2v')
 
-i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
+i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
 
-welcome_text = '''Put your models from <a style="color:SteelBlue" href="https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main">https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main</a> to stable-diffusion-webui/models/ModelScope/t2v/. Make sure, you downloaded the file named 'configuration.json' in its raw text form (click on the ⬇️ character to the right, don't save via right-click).
+welcome_text_videocrafter = '''
+    Download pretrained T2V models via this link https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link, and put the model.ckpt in models/base_t2v/model.ckpt.
+    Then use the same GUI pipeline as ModelScope does.
+'''
+
+welcome_text_modelscope = '''Put your models from <a style="color:SteelBlue" href="https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main">https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main</a> to stable-diffusion-webui/models/ModelScope/t2v/. Make sure, you downloaded the file named 'configuration.json' in its raw text form (click on the ⬇️ character to the right, don't save via right-click).
 
 8gbs of VRAM on top of SD should be enough to launch (when the VAE unloading will be fixed, before that orient around ~12 gbs).
 
@@ -40,15 +45,43 @@ Join the development or report issues and feature requests here <a style="color:
 <italic>If you liked this extension, please <a style="color:SteelBlue" href="https://github.com/deforum-art/sd-webui-modelscope-text2video">give it a star on GitHub</a>!</italic> 😊
 
 '''
+
+welcome_text = '''VideoCrafter:
+
+''' + welcome_text_videocrafter + '''
+
+ModelScope:
+
+''' + welcome_text_modelscope
 import traceback
+
 def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
+                 batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0,model_type='ModelScope', \
+            ):
+    print('text2video — The model selected is: ', model_type)
+    if model_type == 'ModelScope':
+        return process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
+                 batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame)
+    elif model_type == 'VideoCrafter':
+        return process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
+                batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame)
+    else:
+        raise NotImplementedError(f"Unknown model type: {model_type}")
+
+def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
                  batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
             ):
     
     global pipe
-    print(f"\033[4;33mModelScope text2video extension for auto1111 webui\033[0m")
+    print(f"\033[4;33m text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
     global i1_store_t2v
     init_timestring = time.strftime('%Y%m%d%H%M%S')
@@ -194,8 +227,15 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             pipe = None
         devices.torch_gc()
         gc.collect()
-        i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">ModelScope text2video extension for auto1111 — version 1.0b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
+        i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     return f'Video at {outdir_current} ready!'
+
+def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
+                 batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
+            ):
+    ...
 
 def setup_common_values(mode):
     with gr.Row(elem_id=f'{mode}_prompt_toprow'):
@@ -227,6 +267,8 @@ def on_ui_tabs():
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
+                with gr.Row(elem_id='model-switcher'):
+                    model_type = gr.Radio(label='Model type', options=['ModelScope', 'VideoCrafter'], value='ModelScope', elem_id='model-type')
                 with gr.Tabs():
                     do_img2img = gr.State(value=0)
                     with gr.Tab('txt2vid') as tab_txt2vid:
@@ -235,6 +277,7 @@ def on_ui_tabs():
                     with gr.Tab('vid2vid') as tab_vid2vid:
                         with gr.Row():
                             gr.HTML('Put your video here')
+                            gr.HTML('<strong>Vid2vid for VideoCrafter is to be done!</strong>')
                         img2img_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
                         with gr.Row():
                             gr.HTML('Alternative: enter the relative (to the webui) path to the file')
@@ -302,13 +345,13 @@ def on_ui_tabs():
                 ],
             )
 
-    return [(deforum_interface, "ModelScope text2video", "t2v_interface")]
+    return [(deforum_interface, "text2video", "t2v_interface")]
 
 def get_t2v_version():
     from modules import extensions as mext
     try:
         for ext in mext.extensions:
-            if ext.name in ["sd-webui-modelscope-text2video"] and ext.enabled:
+            if (ext.name in ["sd-webui-modelscope-text2video"] or ext.name in ["sd-webui-text2video"]) and ext.enabled:
                 return ext.version
         return "Unknown"
     except:
@@ -347,7 +390,7 @@ def DeforumOutputArgs():
     return locals()
     
 def on_ui_settings():
-    section = ('modelscope_deforum', "ModelScopeTxt2Vid")
+    section = ('modelscope_deforum', "Text2Video")
     shared.opts.add_option("modelscope_deforum_keep_model_in_vram", shared.OptionInfo(
         False, "Keep model in VRAM between runs", gr.Checkbox, {"interactive": True, "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
     shared.opts.add_option("modelscope_deforum_vae_settings", shared.OptionInfo(
