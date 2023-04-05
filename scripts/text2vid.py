@@ -32,7 +32,7 @@ def setup_pipeline():
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.0b. The video will be shown below this label when ready</p>"
 
 welcome_text_videocrafter = '''
-    Download pretrained T2V models via this link https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link, and put the model.ckpt in models/base_t2v/model.ckpt.
+    Download pretrained T2V models via this link https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link, and put the model.ckpt in models/VideoCrafter/model.ckpt.
     Then use the same GUI pipeline as ModelScope does.
 '''
 

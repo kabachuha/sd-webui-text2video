@@ -1,14 +1,16 @@
-# ModelScope text2video Extension for AUTOMATIC1111's StableDiffusion WebUI
+# text2video Extension for AUTOMATIC1111's StableDiffusion WebUI
 
-Auto1111 extension consisting of implementation of ModelScope text2video using only Auto1111 webui dependencies and downloadable models (so no logins required anywhere)
+Auto1111 extension consisting of implementation of various text2video models, such as ModelScope and VideoCrafter, using only Auto1111 webui dependencies and downloadable models (so no logins required anywhere)
 
-8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
+(ModelScope-info, not benchmarked VideoCrafter yet) 8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
 
 Update 2023-03-27: VAE settings and "Keep model in VRAM" moved to general webui setting under 'ModelScopeTxt2Vid' section. 
 
-Update 2023-03-26: prompt weights **implemented**!
+Update 2023-03-26: prompt weights **implemented**! (ModelScope only yet, as of 2023-04-05)
 
-Test examples:
+Update 2023-04-05: added VideoCrafter support, renamed the extension to plainly 'sd-webui-text2video'
+
+Test examples (ModelScope):
 
 Prompt: `flowers turning into lava`
 
@@ -25,6 +27,8 @@ https://user-images.githubusercontent.com/14872007/226468406-ce43fa0c-35f2-4625-
 
 ## Where to get the weights
 
+### ModelScope
+
 Download the following files from the [original HuggingFace repository](https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main). Alternatively, [download half-precision fp16 pruned weights (they are smaller and use less vram on loading)](https://huggingface.co/kabachuha/modelscope-damo-text2video-pruned-weights/tree/main):
 - VQGAN_autoencoder.pth
 - configuration.json
@@ -32,6 +36,10 @@ Download the following files from the [original HuggingFace repository](https://
 - text2video_pytorch_model.pth
 
 And put them in `stable-diffusion-webui/models/ModelScope/t2v`. Create those 2 folders if they are missing. 
+
+### VideoCrafter
+
+Download pretrained T2V models via [this link](https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link), and put the `model.ckpt` in `models/VideoCrafter/model.ckpt`.
 
 ## Screenshots
 
@@ -41,6 +49,8 @@ And put them in `stable-diffusion-webui/models/ModelScope/t2v`. Create those 2 f
 
 
 ## Dev resources
+
+### ModelScope
 
 HuggingFace space:
 
@@ -53,3 +63,9 @@ https://github.com/modelscope/modelscope/tree/master/modelscope/models/multi_mod
 Google Colab from the devs:
 
 https://colab.research.google.com/drive/1uW1ZqswkQ9Z9bp5Nbo5z59cAn7I0hE6R?usp=sharing
+
+### VideoCrafter
+
+Github:
+
+https://github.com/VideoCrafter/VideoCrafter
