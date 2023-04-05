@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import yaml
-import OmegaConf
+from omegaconf import OmegaConf
 from tqdm import tqdm
 from base64 import b64encode
 from types import SimpleNamespace
