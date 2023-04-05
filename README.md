@@ -2,7 +2,17 @@
 
 Auto1111 extension consisting of implementation of various text2video models, such as ModelScope and VideoCrafter, using only Auto1111 webui dependencies and downloadable models (so no logins required anywhere)
 
-(ModelScope-info, not benchmarked VideoCrafter yet) 8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
+## Requirements
+
+### ModelScope
+
+8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
+
+### VideoCrafter
+
+VideoCrafter runs with around 9.2 GBs of VRAM with the settings set on Default.
+
+## Major changes between versions
 
 Update 2023-03-27: VAE settings and "Keep model in VRAM" moved to general webui setting under 'ModelScopeTxt2Vid' section. 
 
@@ -10,7 +20,9 @@ Update 2023-03-26: prompt weights **implemented**! (ModelScope only yet, as of 2
 
 Update 2023-04-05: added VideoCrafter support, renamed the extension to plainly 'sd-webui-text2video'
 
-Test examples (ModelScope):
+## Test examples:
+
+### ModelScope
 
 Prompt: `flowers turning into lava`
 
@@ -24,6 +36,11 @@ Prompt: `really attractive anime girl skating, by makoto shinkai, cinematic ligh
 
 https://user-images.githubusercontent.com/14872007/226468406-ce43fa0c-35f2-4625-a892-9fb3411d96bb.mp4
 
+### VideoCrafter
+
+Prompt: `anime 1girl reimu touhou`
+
+https://user-images.githubusercontent.com/14872007/230231253-2fd9b7af-3f05-41c8-8c92-51042b269116.mp4
 
 ## Where to get the weights
 
