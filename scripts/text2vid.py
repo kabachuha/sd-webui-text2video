@@ -72,6 +72,15 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
                  batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0,model_type='ModelScope', \
             ):
+    
+    # weird PATH stuff
+    for basedir in basedirs:
+            sys.path.extend([
+                basedir + '/scripts',
+                basedir + '/extensions/sd-webui-text2video/scripts',
+                basedir + '/extensions/sd-webui-modelscope-text2video/scripts',
+            ])
+
     global pipe
     global i1_store_t2v
     dataurl = get_error()
