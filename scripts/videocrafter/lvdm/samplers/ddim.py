@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
-from lvdm.models.modules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
+from videocrafter.lvdm.models.modules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
 
 
 class DDIMSampler(object):
