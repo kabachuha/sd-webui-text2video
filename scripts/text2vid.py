@@ -284,7 +284,7 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
 
     from videocrafter.lvdm.samplers.ddim import DDIMSampler
     from videocrafter.sample_utils import load_model, get_conditions, make_model_input_shape, torch_to_np
-    from videocrafter.sample_utils import sample_text2video
+    from videocrafter.sample_text2video import sample_text2video
 
     # get model & sampler
     model, _, _ = load_model(config, ph.models_path+'/VideoCrafter/model.ckpt', #TODO: support safetensors and stuff
