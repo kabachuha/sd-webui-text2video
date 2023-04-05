@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from omegaconf.listconfig import ListConfig
 
-from scripts.videocrafter.lvdm.models.modules.util import (
+from videocrafter.lvdm.models.modules.util import (
     checkpoint,
     conv_nd,
     linear,
