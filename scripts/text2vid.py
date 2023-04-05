@@ -9,6 +9,8 @@ from PIL import Image
 from pathlib import Path
 import numpy as np
 import torch
+import yaml
+import OmegaConf
 from tqdm import tqdm
 from base64 import b64encode
 from types import SimpleNamespace
@@ -60,161 +62,22 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
                  batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0,model_type='ModelScope', \
             ):
-    print('text2video — The model selected is: ', model_type)
-    if model_type == 'ModelScope':
-        return process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
-                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
-                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
-                 batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame)
-    elif model_type == 'VideoCrafter':
-        return process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
-                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
-                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
-                batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame)
-    else:
-        raise NotImplementedError(f"Unknown model type: {model_type}")
-
-def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
-                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
-                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
-                 batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
-            ):
-    
-    global pipe
-    print(f"\033[4;33m text2video extension for auto1111 webui\033[0m")
-    print(f"Git commit: {get_t2v_version()}")
-    global i1_store_t2v
-    init_timestring = time.strftime('%Y%m%d%H%M%S')
-    outdir_current = os.path.join(outdir, f"{init_timestring}")
     dataurl = get_error()
+    keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else False
     try:
-        cpu_vae = opts.data.get("modelscope_deforum_vae_settings") if opts.data is not None and opts.data.get("modelscope_deforum_vae_settings") is not None else 'GPU (half precision)'
-        keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else False
-        if shared.sd_model is not None:
-            sd_hijack.model_hijack.undo_hijack(shared.sd_model)
-            try:
-                lowvram.send_everything_to_cpu()
-            except e:
-                ...
-            del shared.sd_model
-            shared.sd_model = None
-        gc.collect()
-        devices.torch_gc()
-
-        print('Starting text2video')
-        print('Pipeline setup')
-
-        # optionally store pipe in global between runs
-        if pipe is None:
-            pipe = setup_pipeline()
-
-        device=devices.get_optimal_device()
-        print('device',device)
-
-        if do_img2img:
-            
-            prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v
-            
-            batch_count = batch_count_v # update generarl batch_count from batch_count_video
-
-            if img2img_frames is None and img2img_frames_path == "":
-                raise FileNotFoundError("Please upload a video :()")
-
-            # Overrides
-            if img2img_frames is not None:
-                img2img_frames_path = img2img_frames.name
-
-            print("got a request to *vid2vid* an existing video.")
-
-            in_vid_fps, _, _ = get_quick_vid_info(img2img_frames_path)
-            folder_name = clean_folder_name(Path(img2img_frames_path).stem)
-            outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name)
-            i = 1
-            while os.path.exists(outdir_no_tmp):
-                outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name + '_' + str(i))
-                i += 1
-
-            outdir_v2v = os.path.join(outdir_no_tmp, 'tmp_input_frames')
-            os.makedirs(outdir_v2v, exist_ok=True)
-            
-            vid2frames(video_path=img2img_frames_path, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=img2img_startFrame, extract_to_frame=img2img_startFrame+frames, numeric_files_output=True, out_img_format='png')
-            
-            temp_convert_raw_png_path = os.path.join(outdir_v2v, "tmp_vid2vid_folder")
-            duplicate_pngs_from_folder(outdir_v2v, temp_convert_raw_png_path, None, folder_name)
-
-            videogen = []
-            for f in os.listdir(temp_convert_raw_png_path):
-                # double check for old _depth_ files, not really needed probably but keeping it for now
-                if '_depth_' not in f:
-                    videogen.append(f)
-                    
-            videogen.sort(key= lambda x:int(x.split('.')[0]))
-
-            images=[]
-            for file in tqdm(videogen, desc="Loading frames"):
-                image=Image.open(os.path.join(temp_convert_raw_png_path, file))
-                image=image.resize((width,height), Image.ANTIALIAS)
-                array = np.array(image)
-                images+=[array]
-
-            #print(images)
-
-            images=np.stack(images)# f h w c
-            batches=1
-            n_images=np.tile(images[np.newaxis, ...], (batches, 1, 1, 1, 1)) # n f h w c
-            bcfhw=n_images.transpose(0,4,1,2,3)
-            #convert to 0-1 float
-            bcfhw=bcfhw.astype(np.float32)/255
-            bfchw=bcfhw.transpose(0,2,1,3,4)#b c f h w
-
-            print(f"Converted the frames to tensor {bfchw.shape}")
-
-            vd_out=torch.from_numpy(bcfhw).to("cuda")
-
-            #should be -1,1, not 0,1
-            vd_out=2*vd_out-1
-
-            #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
-            print("Computing latents")
-            latents = pipe.compute_latents(vd_out).to(device)
+        print('text2video — The model selected is: ', model_type)
+        if model_type == 'ModelScope':
+            return process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                    prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                    prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
+                    batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame)
+        elif model_type == 'VideoCrafter':
+            return process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                    prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                    prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
+                    batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame)
         else:
-            latents = None
-            strength=1
-
-        print('Working in txt2vid mode' if not do_img2img else 'Working in vid2vid mode')
-
-
-        # Start the batch count loop
-        #samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
-        #                        width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
-
-        pbar = tqdm(range(batch_count), leave=False)
-        if batch_count == 1:
-            pbar.disable=True
-        
-        for batch in pbar:
-            samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
-                                    width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
-
-            if batch > 0:
-                outdir_current = os.path.join(outdir, f"{init_timestring}_{batch}")
-            print(f'text2video finished, saving frames to {outdir_current}')
-
-            # just deleted the folder so we need to make it again
-            os.makedirs(outdir_current, exist_ok=True)
-            for i in range(len(samples)):
-                cv2.imwrite(outdir_current + os.path.sep +
-                            f"{i:06}.png", samples[i])
-
-            # TODO: add params to the GUI
-            if not skip_video_creation:
-                ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
-                                    "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=img2img_frames_path if add_soundtrack == 'Init Video' else soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
-            print(f't2v complete, result saved at {outdir_current}')
-
-            mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
-            dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
-        pbar.close()
+            raise NotImplementedError(f"Unknown model type: {model_type}")
     except Exception as e:
         traceback.print_exc()
         print('Exception occurred:', e)
@@ -228,14 +91,220 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
         devices.torch_gc()
         gc.collect()
         i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
-    return f'Video at {outdir_current} ready!'
+    return f'Video at ready!'
+
+def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
+                 batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
+            ):
+    
+    global pipe
+    print(f"\033[4;33m text2video extension for auto1111 webui\033[0m")
+    print(f"Git commit: {get_t2v_version()}")
+    global i1_store_t2v
+    init_timestring = time.strftime('%Y%m%d%H%M%S')
+    outdir_current = os.path.join(outdir, f"{init_timestring}")
+    
+    cpu_vae = opts.data.get("modelscope_deforum_vae_settings") if opts.data is not None and opts.data.get("modelscope_deforum_vae_settings") is not None else 'GPU (half precision)'
+    if shared.sd_model is not None:
+        sd_hijack.model_hijack.undo_hijack(shared.sd_model)
+        try:
+            lowvram.send_everything_to_cpu()
+        except Exception as e:
+            ...
+        del shared.sd_model
+        shared.sd_model = None
+    gc.collect()
+    devices.torch_gc()
+
+    print('Starting text2video')
+    print('Pipeline setup')
+
+    # optionally store pipe in global between runs
+    if pipe is None:
+        pipe = setup_pipeline()
+
+    device=devices.get_optimal_device()
+    print('device',device)
+
+    if do_img2img:
+        
+        prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v
+        
+        batch_count = batch_count_v # update generarl batch_count from batch_count_video
+
+        if img2img_frames is None and img2img_frames_path == "":
+            raise FileNotFoundError("Please upload a video :()")
+
+        # Overrides
+        if img2img_frames is not None:
+            img2img_frames_path = img2img_frames.name
+
+        print("got a request to *vid2vid* an existing video.")
+
+        in_vid_fps, _, _ = get_quick_vid_info(img2img_frames_path)
+        folder_name = clean_folder_name(Path(img2img_frames_path).stem)
+        outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name)
+        i = 1
+        while os.path.exists(outdir_no_tmp):
+            outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name + '_' + str(i))
+            i += 1
+
+        outdir_v2v = os.path.join(outdir_no_tmp, 'tmp_input_frames')
+        os.makedirs(outdir_v2v, exist_ok=True)
+        
+        vid2frames(video_path=img2img_frames_path, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=img2img_startFrame, extract_to_frame=img2img_startFrame+frames, numeric_files_output=True, out_img_format='png')
+        
+        temp_convert_raw_png_path = os.path.join(outdir_v2v, "tmp_vid2vid_folder")
+        duplicate_pngs_from_folder(outdir_v2v, temp_convert_raw_png_path, None, folder_name)
+
+        videogen = []
+        for f in os.listdir(temp_convert_raw_png_path):
+            # double check for old _depth_ files, not really needed probably but keeping it for now
+            if '_depth_' not in f:
+                videogen.append(f)
+                
+        videogen.sort(key= lambda x:int(x.split('.')[0]))
+
+        images=[]
+        for file in tqdm(videogen, desc="Loading frames"):
+            image=Image.open(os.path.join(temp_convert_raw_png_path, file))
+            image=image.resize((width,height), Image.ANTIALIAS)
+            array = np.array(image)
+            images+=[array]
+
+        #print(images)
+
+        images=np.stack(images)# f h w c
+        batches=1
+        n_images=np.tile(images[np.newaxis, ...], (batches, 1, 1, 1, 1)) # n f h w c
+        bcfhw=n_images.transpose(0,4,1,2,3)
+        #convert to 0-1 float
+        bcfhw=bcfhw.astype(np.float32)/255
+        bfchw=bcfhw.transpose(0,2,1,3,4)#b c f h w
+
+        print(f"Converted the frames to tensor {bfchw.shape}")
+
+        vd_out=torch.from_numpy(bcfhw).to("cuda")
+
+        #should be -1,1, not 0,1
+        vd_out=2*vd_out-1
+
+        #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
+        print("Computing latents")
+        latents = pipe.compute_latents(vd_out).to(device)
+    else:
+        latents = None
+        strength=1
+
+    print('Working in txt2vid mode' if not do_img2img else 'Working in vid2vid mode')
+
+
+    # Start the batch count loop
+    #samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed, cfg_scale,
+    #                        width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
+
+    pbar = tqdm(range(batch_count), leave=False)
+    if batch_count == 1:
+        pbar.disable=True
+    
+    for batch in pbar:
+        samples, _ = pipe.infer(prompt, n_prompt, steps, frames, seed + batch if seed != -1 else -1, cfg_scale,
+                                width, height, eta, cpu_vae, device, latents,skip_steps=int(math.floor(steps*max(0, min(1 - strength, 1)))))
+
+        if batch > 0:
+            outdir_current = os.path.join(outdir, f"{init_timestring}_{batch}")
+        print(f'text2video finished, saving frames to {outdir_current}')
+
+        # just deleted the folder so we need to make it again
+        os.makedirs(outdir_current, exist_ok=True)
+        for i in range(len(samples)):
+            cv2.imwrite(outdir_current + os.path.sep +
+                        f"{i:06}.png", samples[i])
+
+        # TODO: add params to the GUI
+        if not skip_video_creation:
+            ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
+                                "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=img2img_frames_path if add_soundtrack == 'Init Video' else soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
+        print(f't2v complete, result saved at {outdir_current}')
+
+        mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
+        dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
+    pbar.close()
+
 
 def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
                  batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0
             ):
-    ...
+    print(f"\033[4;33m text2video extension for auto1111 webui\033[0m")
+    print(f"Git commit: {get_t2v_version()}")
+    global i1_store_t2v
+    init_timestring = time.strftime('%Y%m%d%H%M%S')
+    outdir_current = os.path.join(outdir, f"{init_timestring}")
+
+    # set random seed
+    if seed is not None:
+        torch.seed_everything(seed) # FIXME: may break determinism stuff for other plugins, needs testing
+
+    os.makedirs(outdir_current, exist_ok=True)
+
+    # load & merge config
+
+    config_path = os.path.join(ph.models_path, "models/VideoCrafter/model_config.yaml")
+    if not os.path.exists(config_path):
+        config_path = os.path.join(os.get_cwd(), "extensions/sd-webui-modelscope-text2video/scripts/videocrafter/base_t2v/model_config.yaml")
+    if not os.path.exists(config_path):
+        config_path = os.path.join(os.get_cwd(), "extensions/sd-webui-text2video/scripts/videocrafter/base_t2v/model_config.yaml")
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f'Could not find config file at {os.path.join(ph.models_path, "models/VideoCrafter/model_config.yaml")}, nor at {os.path.join(os.get_cwd(), "extensions/sd-webui-modelscope-text2video/scripts/videocrafter/base_t2v/model_config.yaml")}, nor at {os.path.join(os.get_cwd(), "extensions/sd-webui-text2video/scripts/videocrafter/base_t2v/model_config.yaml")}')
+
+    config = OmegaConf.load(config_path)
+    print("VideoCrafter config: \n", yaml.load(config))
+
+    from scripts.videocrafter.lvdm.samplers.ddim import DDIMSampler
+    from scripts.videocrafter.sample_utils import load_model, get_conditions, make_model_input_shape, torch_to_np
+    from scripts.videocrafter.sample_utils import sample_text2video
+
+    # get model & sampler
+    model, _, _ = load_model(config, ph.models_path+'/VideoCrafter/model.ckpt', #TODO: support safetensors and stuff
+                             inject_lora=False, # TODO
+                             lora_scale=1, # TODO
+                             lora_path=ph.models_path+'/VideoCrafter/LoRA/LoRA.ckpt', #TODO: support LoRA and stuff
+                             )
+    ddim_sampler = DDIMSampler(model)# if opt.sample_type == "ddim" else None
+
+    # prepare prompt
+    prompts = [prompt]
+    line_idx = [None]
+
+    # if opt.inject_lora:
+    #     assert(opt.lora_trigger_word != '')
+    #     prompts = [p + opt.lora_trigger_word for p in prompts]
+    
+    # go
+    start = time.time()  
+    for prompt in prompts:
+        # sample
+        samples = sample_text2video(model, prompt, 1, 1,# todo:add batch size support
+                          sample_type='ddim', sampler=ddim_sampler,
+                          ddim_steps=steps, eta=eta, 
+                          cfg_scale=cfg_scale,
+                          decode_frame_bs=1,
+                          ddp=False, show_denoising_progress=False,
+                          )
+        # save
+        if seed is not None:
+            save_name = save_name + f"_seed{seed:05d}"
+        save_results(samples, opt.save_dir, save_name=save_name, save_fps=opt.save_fps)
+    print("Finish sampling!")
+    print(f"Run time = {(time.time() - start):.2f} seconds")
+
+    # if opt.ddp:
+    #     dist.destroy_process_group()
+
 
 def setup_common_values(mode):
     with gr.Row(elem_id=f'{mode}_prompt_toprow'):
