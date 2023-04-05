@@ -254,11 +254,11 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
 
     config_path = os.path.join(ph.models_path, "models/VideoCrafter/model_config.yaml")
     if not os.path.exists(config_path):
-        config_path = os.path.join(os.get_cwd(), "extensions/sd-webui-modelscope-text2video/scripts/videocrafter/base_t2v/model_config.yaml")
+        config_path = os.path.join(os.getcwd(), "extensions/sd-webui-modelscope-text2video/scripts/videocrafter/base_t2v/model_config.yaml")
     if not os.path.exists(config_path):
-        config_path = os.path.join(os.get_cwd(), "extensions/sd-webui-text2video/scripts/videocrafter/base_t2v/model_config.yaml")
+        config_path = os.path.join(os.getcwd(), "extensions/sd-webui-text2video/scripts/videocrafter/base_t2v/model_config.yaml")
     if not os.path.exists(config_path):
-        raise FileNotFoundError(f'Could not find config file at {os.path.join(ph.models_path, "models/VideoCrafter/model_config.yaml")}, nor at {os.path.join(os.get_cwd(), "extensions/sd-webui-modelscope-text2video/scripts/videocrafter/base_t2v/model_config.yaml")}, nor at {os.path.join(os.get_cwd(), "extensions/sd-webui-text2video/scripts/videocrafter/base_t2v/model_config.yaml")}')
+        raise FileNotFoundError(f'Could not find config file at {os.path.join(ph.models_path, "models/VideoCrafter/model_config.yaml")}, nor at {os.path.join(os.getcwd(), "extensions/sd-webui-modelscope-text2video/scripts/videocrafter/base_t2v/model_config.yaml")}, nor at {os.path.join(os.getcwd(), "extensions/sd-webui-text2video/scripts/videocrafter/base_t2v/model_config.yaml")}')
 
     config = OmegaConf.load(config_path)
     print("VideoCrafter config: \n", yaml.load(config))
