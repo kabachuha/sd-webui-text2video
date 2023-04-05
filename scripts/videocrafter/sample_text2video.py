@@ -88,7 +88,7 @@ def sample_denoising_batch(model, noise_shape, condition, *args,
 
 # ------------------------------------------------------------------------------------------
 @torch.no_grad()
-def sample_text2video(model, prompt, n_samples, batch_size,
+def sample_text2video(model, prompt, n_prompt, n_samples, batch_size,
                       sample_type="ddim", sampler=None, 
                       ddim_steps=50, eta=1.0, cfg_scale=7.5, 
                       decode_frame_bs=1,
@@ -98,7 +98,7 @@ def sample_text2video(model, prompt, n_samples, batch_size,
     # get cond vector
     assert(model.cond_stage_model is not None)
     cond_embd = get_conditions(prompt, model, batch_size)
-    uncond_embd = get_conditions("", model, batch_size) if cfg_scale != 1.0 else None
+    uncond_embd = get_conditions(n_prompt, model, batch_size) if cfg_scale != 1.0 else None
 
     # sample batches
     all_videos = []
