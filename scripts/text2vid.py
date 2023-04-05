@@ -1,7 +1,18 @@
+import sys, os
+basedirs = [os.getcwd()]
+if 'google.colab' in sys.modules:
+    basedirs.append('/content/gdrive/MyDrive/sd/stable-diffusion-webui') #hardcode as TheLastBen's colab seems to be the primal source
+
+for basedir in basedirs:
+    deforum_paths_to_ensure = [basedir + '/extensions/sd-webui-text2video/scripts', basedir + '/extensions/sd-webui-modelscope-text2video/scripts', basedir]
+
+    for deforum_scripts_path_fix in deforum_paths_to_ensure:
+        if not deforum_scripts_path_fix in sys.path:
+            sys.path.extend([deforum_scripts_path_fix])
+
 # See https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
 import cv2
 import gc
-import os
 import random
 import subprocess
 import time, math
@@ -20,7 +31,7 @@ import modules.paths as ph
 from modules import devices, lowvram, script_callbacks, sd_hijack, shared
 from modules.shared import cmd_opts, opts, state
 from scripts.error_hardcode import get_error
-from scripts.modelscope.t2v_pipeline import TextToVideoSynthesis, tensor2vid
+from modelscope.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video')
