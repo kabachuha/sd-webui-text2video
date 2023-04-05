@@ -18,7 +18,7 @@ import modules.paths as ph
 from modules import devices, lowvram, script_callbacks, sd_hijack, shared
 from modules.shared import cmd_opts, opts, state
 from scripts.error_hardcode import get_error
-from scripts.t2v_pipeline import TextToVideoSynthesis, tensor2vid
+from scripts.modelscope.t2v_pipeline import TextToVideoSynthesis, tensor2vid
 from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video-modelscope')
