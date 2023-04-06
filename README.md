@@ -56,7 +56,7 @@ And put them in `stable-diffusion-webui/models/ModelScope/t2v`. Create those 2 f
 
 ### VideoCrafter
 
-Download pretrained T2V models via [this link](https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link), and put the `model.ckpt` in `models/VideoCrafter/model.ckpt`.
+Download pretrained T2V models either via [this link](https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link) or download [the pruned half precision weights](https://huggingface.co/kabachuha/videocrafter-pruned-weights/tree/main), and put the `model.ckpt` in `models/VideoCrafter/model.ckpt`.
 
 ## Screenshots
 
