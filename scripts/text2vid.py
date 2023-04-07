@@ -95,13 +95,13 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                     prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                     batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
-                    inpainting_image=None,do_inpainting=False,inpainting_frames=1,)
+                    inpainting_image,do_inpainting,inpainting_frames,)
         elif model_type == 'VideoCrafter':
             process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                     prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                     batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
-                    inpainting_image=None,do_inpainting=False,inpainting_frames=1,)
+                    inpainting_image,do_inpainting,inpainting_frames,)
         else:
             raise NotImplementedError(f"Unknown model type: {model_type}")
     except Exception as e:
