@@ -469,7 +469,7 @@ def on_ui_tabs():
                     tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_img2img])
                     tab_img2vid.select(fn=lambda: 2, inputs=[], outputs=[do_img2img])
 
-                    with gr.Tab('Output settings'):
+                    with gr.Tab('Output'):
                         with gr.Row(variant='compact') as fps_out_format_row:
                             fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
                         with gr.Row(variant='compact') as soundtrack_row:
