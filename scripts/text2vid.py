@@ -71,7 +71,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
                 batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0, \
-                inpainting_image=None,do_inpainting=False,inpainting_frames=1, \
+                inpainting_image=None,inpainting_frames=1,inpainting_weights="", \
                 model_type='ModelScope',
             ):
     
@@ -95,13 +95,13 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                     prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                     batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
-                    inpainting_image=None,do_inpainting=False,inpainting_frames=1,)
+                    inpainting_image,inpainting_frames,inpainting_weights,)
         elif model_type == 'VideoCrafter':
             process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                     prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                     batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
-                    inpainting_image=None,do_inpainting=False,inpainting_frames=1,)
+                    inpainting_image,inpainting_frames,inpainting_weights,)
         else:
             raise NotImplementedError(f"Unknown model type: {model_type}")
     except Exception as e:
@@ -122,7 +122,7 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
                  batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0, \
-                 inpainting_image=None,do_inpainting=False,inpainting_frames=1,
+                 inpainting_image=None,inpainting_frames=1,inpainting_weights=""
             ):
     
     global pipe
@@ -156,7 +156,7 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
 
     mask=None
 
-    if do_img2img:
+    if do_img2img == 1:
         
         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta = prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v
         
@@ -222,12 +222,12 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
         #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
         print("Computing latents")
         latents = pipe.compute_latents(vd_out).to(device)
-    elif do_inpainting:
+    elif do_img2img == 2:
         images=[]
         print("gir",inpainting_image)
         print(inpainting_image.name)
-        for i in range(inpainting_frames):
-            image=Image.open(inpainting_image.name)
+        for i in range(frames):
+            image=Image.open(inpainting_image.name).convert("RGB")
             image=image.resize((width,height), Image.ANTIALIAS)
             array = np.array(image)
             images+=[array]
@@ -251,19 +251,23 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
         #but right now they have shape num_sample=1,4, 1 (only used 1 img), latent_h, latent_w
         print("Computing latents")
         image_latents = pipe.compute_latents(vd_out).numpy()
-        padding_width = [(0, 0), (0, 0), (0, frames-inpainting_frames), (0, 0), (0, 0)]
-        padded_latents = np.pad(image_latents, pad_width=padding_width, mode='constant', constant_values=0)
-
         latent_h=height//8
         latent_w=width//8
         latent_noise=np.random.normal(size=(1,4,frames,latent_h,latent_w))
         mask=np.ones(shape=(1,4,frames,latent_h,latent_w))
 
-        for i in range(inpainting_frames):
-            v=i/inpainting_frames
+        #if len(inpainting_weights)>0:
+        #    mask_weights=eval(inpainting_weights)
+        #else:
+        # TODO: find a safe way to evaluate inpainting weights
+        # see FrameInterpolater from Deforum
+        mask_weights=[i/inpainting_frames for i in range(inpainting_frames)]+[0]*(frames-inpainting_frames)
+            
+        for i in range(frames):
+            v=mask_weights[i]
             mask[:,:,i,:,:]=v
 
-        masked_latents=padded_latents*(1-mask)+latent_noise*mask
+        masked_latents=image_latents*(1-mask)+latent_noise*mask
 
         latents=torch.tensor(masked_latents).to(device)
 
@@ -311,8 +315,8 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
 def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
-                batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0, \
-                inpainting_image=None,do_inpainting=False,inpainting_frames=1,
+                batch_count=1, do_img2img=0, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0, \
+                inpainting_image=None,inpainting_frames=1,inpainting_weights=""
             ):
     print(f"\033[4;33m text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
@@ -454,14 +458,16 @@ def on_ui_tabs():
                         with gr.Row():
                             strength = gr.Slider(label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05, interactive=True)
                             img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
-                    
+
+                    with gr.Tab('img2vid') as tab_img2vid:
+                        inpainting_image = gr.File(label="In-'framing' image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
+                        with gr.Row():
+                            inpainting_frames=gr.Slider(label='Inpainted start frames',value=dv.inpainting_frames, minimum=1, maximum=200, step=1)
+                            inpainting_weights=gr.Textbox(label='inpainting weights', placeholder="WIP", interactive=False)
+
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
                     tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_img2img])
-
-                    with gr.Tab('img2vid'):
-                        inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
-                        do_inpainting = gr.Checkbox(label="Do inpainting", value=dv.do_inpainting, interactive=True)
-                        inpainting_frames=gr.Slider(label='inpainting frames',value=dv.inpainting_frames,minimum=1, maximum=200, step=1)
+                    tab_img2vid.select(fn=lambda: 2, inputs=[], outputs=[do_img2img])
 
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
@@ -510,7 +516,7 @@ def on_ui_tabs():
                         prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta,\
                         prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                         batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
-                        inpainting_image,do_inpainting,inpainting_frames, \
+                        inpainting_image,inpainting_frames, \
                         model_type],  # [dummy_component, dummy_component] +
                 outputs=[
                     result, result2,
@@ -559,7 +565,6 @@ def DeforumOutputArgs():
     frame_interpolation_slow_mo_enabled = False
     frame_interpolation_slow_mo_amount = 2  # [2 to 10]
     frame_interpolation_keep_imgs = False
-    do_inpainting=False
     inpainting_frames=1
     return locals()
     
