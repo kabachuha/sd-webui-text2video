@@ -227,7 +227,7 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
         print("gir",inpainting_image)
         print(inpainting_image.name)
         for i in range(inpainting_frames):
-            image=Image.open(inpainting_image.name)
+            image=Image.open(inpainting_image.name).convert("RGB")
             image=image.resize((width,height), Image.ANTIALIAS)
             array = np.array(image)
             images+=[array]
@@ -438,6 +438,10 @@ def on_ui_tabs():
                 with gr.Tabs():
                     do_img2img = gr.State(value=0)
                     with gr.Tab('txt2vid') as tab_txt2vid:
+                        with gr.Accordion('img2vid', open=False):
+                            inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
+                            do_inpainting = gr.Checkbox(label="Do inpainting", value=dv.do_inpainting, interactive=True)
+                            inpainting_frames=gr.Slider(label='inpainting frames',value=dv.inpainting_frames,minimum=1, maximum=200, step=1)
                         # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
                         prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid')
                     with gr.Tab('vid2vid') as tab_vid2vid:
@@ -457,11 +461,6 @@ def on_ui_tabs():
                     
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
                     tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_img2img])
-
-                    with gr.Tab('img2vid'):
-                        inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
-                        do_inpainting = gr.Checkbox(label="Do inpainting", value=dv.do_inpainting, interactive=True)
-                        inpainting_frames=gr.Slider(label='inpainting frames',value=dv.inpainting_frames,minimum=1, maximum=200, step=1)
 
                     with gr.Tab('Output settings'):
                         with gr.Row(variant='compact') as fps_out_format_row:
