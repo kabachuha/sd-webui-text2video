@@ -1436,9 +1436,9 @@ class GaussianDiffusion(object):
                 #noise_to_add=xt
                 to_inpaint=self.add_noise(original_latents, noise_to_add, steps[i+1])
                 xt=to_inpaint*(1-binary_mask)+xt*binary_mask
-                print(mask.shape,i,ddim_timesteps,v)
-                print(mask[0,0,:,0,0])
-                print(binary_mask[0,0,:,0,0])
+                #print(mask.shape,i,ddim_timesteps,v)
+                #print(mask[0,0,:,0,0])
+                #print(binary_mask[0,0,:,0,0])
                 pass
 
             
