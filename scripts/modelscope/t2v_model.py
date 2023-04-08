@@ -1192,8 +1192,8 @@ class GaussianDiffusion(object):
                 1.0 - self.alphas_cumprod)
 
     def add_noise(self, xt, noise, t):
-        print("adding noise", t,
-              self.sqrt_alphas_cumprod[t], self.sqrt_one_minus_alphas_cumprod[t])
+        #print("adding noise", t,
+        #      self.sqrt_alphas_cumprod[t], self.sqrt_one_minus_alphas_cumprod[t])
         noisy_sample = self.sqrt_alphas_cumprod[t] * \
             xt+noise*self.sqrt_one_minus_alphas_cumprod[t]
         return noisy_sample
