@@ -1,4 +1,5 @@
 import sys, os
+from scripts.key_frames import T2VAnimKeys #TODO: move to deforum_tools
 basedirs = [os.getcwd()]
 if 'google.colab' in sys.modules:
     basedirs.append('/content/gdrive/MyDrive/sd/stable-diffusion-webui') #hardcode as TheLastBen's colab seems to be the primal source
@@ -71,7 +72,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
                 batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0, \
-                inpainting_image=None,do_inpainting=False,inpainting_frames=1, \
+                inpainting_image=None,inpainting_frames=0,inpainting_weights="", \
                 model_type='ModelScope',
             ):
     
@@ -95,13 +96,13 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                     prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                     batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
-                    inpainting_image,do_inpainting,inpainting_frames,)
+                    inpainting_image,inpainting_frames,inpainting_weights,)
         elif model_type == 'VideoCrafter':
             process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                     prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                     batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
-                    inpainting_image,do_inpainting,inpainting_frames,)
+                    inpainting_image,inpainting_frames,inpainting_weights="",)
         else:
             raise NotImplementedError(f"Unknown model type: {model_type}")
     except Exception as e:
@@ -122,7 +123,7 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
                  batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0, \
-                 inpainting_image=None,do_inpainting=False,inpainting_frames=1,
+                 inpainting_image=None,inpainting_frames=0,inpainting_weights="",
             ):
     
     global pipe
@@ -312,7 +313,7 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
                 batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0, \
-                inpainting_image=None,do_inpainting=False,inpainting_frames=1,
+                inpainting_image=None,inpainting_frames=1,inpainting_weights="",
             ):
     print(f"\033[4;33m text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
