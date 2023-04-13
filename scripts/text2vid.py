@@ -59,7 +59,7 @@ Join the development or report issues and feature requests here <a style="color:
 
 '''
 
-welcome_text = '''VideoCrafter:
+welcome_text = '''VideoCrafter (WIP):
 
 ''' + welcome_text_videocrafter + '''
 
@@ -97,7 +97,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                     batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
                     inpainting_image,inpainting_frames,inpainting_weights,)
-        elif model_type == 'VideoCrafter':
+        elif model_type == 'VideoCrafter (WIP)':
             process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                     prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
@@ -315,6 +315,7 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
     pbar.close()
 
 
+# VideoCrafter support is heavy WIP and sketchy, needs help (esp. since I don't like VideoCrafter)
 def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                 prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
