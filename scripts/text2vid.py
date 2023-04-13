@@ -75,6 +75,21 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
                 inpainting_image=None,inpainting_frames=0,inpainting_weights="", \
                 model_type='ModelScope',
             ):
+    run(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
+                batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
+                inpainting_image,inpainting_frames,inpainting_weights, \
+                model_type)
+    return f'Video ready'
+
+def run(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+                prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
+                prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v=1, \
+                batch_count=1, do_img2img=False, img2img_frames=None, img2img_frames_path="", strength=0,img2img_startFrame=0, \
+                inpainting_image=None,inpainting_frames=0,inpainting_weights="", \
+                model_type='ModelScope',
+            ):
     
     # weird PATH stuff
     for basedir in basedirs:
@@ -87,18 +102,19 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     global pipe
     global i1_store_t2v
     dataurl = get_error()
+    vids_pack = [dataurl]
     i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else False
     try:
         print('text2video — The model selected is: ', model_type)
         if model_type == 'ModelScope':
-            process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+            vids_pack = process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                     prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                     batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
                     inpainting_image,inpainting_frames,inpainting_weights,)
         elif model_type == 'VideoCrafter (WIP)':
-            process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
+            vids_pack = process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                     prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
                     prompt_v, n_prompt_v, steps_v, frames_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, batch_count_v, \
                     batch_count, do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame, \
@@ -117,7 +133,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
             pipe = None
         devices.torch_gc()
         gc.collect()
-    return f'Video at ready!'
+    return vids_pack
 
 def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, \
                 prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, \
@@ -133,6 +149,7 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
     init_timestring = time.strftime('%Y%m%d%H%M%S')
     outdir_current = os.path.join(outdir, f"{init_timestring}")
     
+    max_vids_to_pack = opts.data.get("modelscope_deforum_show_n_videos") if opts.data is not None and opts.data.get("modelscope_deforum_show_n_videos") is not None else -1
     cpu_vae = opts.data.get("modelscope_deforum_vae_settings") if opts.data is not None and opts.data.get("modelscope_deforum_vae_settings") is not None else 'GPU (half precision)'
     if shared.sd_model is not None:
         sd_hijack.model_hijack.undo_hijack(shared.sd_model)
@@ -235,6 +252,8 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
     if batch_count == 1:
         pbar.disable=True
     
+    vids_to_pack = []
+    
     for batch in pbar:
 
         # TODO: move to a separate function
@@ -310,8 +329,14 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
 
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
         dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
-        i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
+
+        if max_vids_to_pack == -1 or len(vids_to_pack) < max_vids_to_pack:
+            vids_to_pack.append(dataurl)
+    i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p>'
+    for dataurl in vids_to_pack:
+        i1_store_t2v += '<video controls loop><source src="{dataurl}" type="video/mp4"></video><br>'
     pbar.close()
+    return vids_to_pack
 
 
 # VideoCrafter support is heavy WIP and sketchy, needs help (esp. since I don't like VideoCrafter)
@@ -406,7 +431,8 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
         print("Finish sampling!")
         print(f"Run time = {(time.time() - start):.2f} seconds")
     pbar.close()
-
+    # TODO: rework VideoCrafter
+    return [dataurl]
     # if opt.ddp:
     #     dist.destroy_process_group()
 
@@ -616,6 +642,8 @@ def on_ui_settings():
         False, "Keep model in VRAM between runs", gr.Checkbox, {"interactive": True, "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
     shared.opts.add_option("modelscope_deforum_vae_settings", shared.OptionInfo(
         "GPU (half precision)", "VAE Mode:", gr.Radio, {"interactive": True, "choices": ['GPU (half precision)', 'GPU', 'CPU (Low VRAM)']}, section=section))
+    shared.opts.add_option("modelscope_deforum_show_n_videos", shared.OptionInfo(
+        -1, "How many videos to show on the right panel on completion (-1 = show all)", gr.Number, {"interactive": True, "visible": True}, section=section))
 
 script_callbacks.on_ui_tabs(on_ui_tabs)
 script_callbacks.on_ui_settings(on_ui_settings)

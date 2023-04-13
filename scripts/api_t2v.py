@@ -79,7 +79,7 @@ def t2v_api(_, app: FastAPI):
                 tmp_vid2vid = tempfile.NamedTemporaryFile()
                 tmp_vid2vid.write(io.BytesIO(base64.b64decode(vid2vid_input)).getbuffer())
 
-            videodat = text2vid.process(
+            videodat = text2vid.run(
                 # ffmpeg params
                 dv.skip_video_creation, #skip_video_creation
                 find_ffmpeg_binary(), #ffmpeg_location
@@ -120,7 +120,7 @@ def t2v_api(_, app: FastAPI):
                 model_type="ModelScope",#Only one has stable support at this moment
             )
 
-            return JSONResponse(content={"mp4": videodat})
+            return JSONResponse(content={"mp4s": videodat})
         except Exception as e:
             # Log the error and return a JSON response with an appropriate status code and error message
             logger.error(f"Error processing the video: {e}")
