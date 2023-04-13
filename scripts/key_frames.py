@@ -4,8 +4,8 @@ import numexpr
 import pandas as pd
 
 class T2VAnimKeys():
-    def __init__(self, anim_args, seed=-1):
-        self.fi = FrameInterpolater(anim_args.max_frames, seed)
+    def __init__(self, anim_args, seed=-1, max_i_frames=1):
+        self.fi = FrameInterpolater(anim_args.max_frames, seed, max_i_frames)
         self.inpainting_weights_series = self.fi.get_inbetweens(self.fi.parse_key_frames(anim_args.inpainting_weights))
 
 def check_is_number(value):
@@ -13,9 +13,10 @@ def check_is_number(value):
     return re.match(float_pattern, value)
 
 class FrameInterpolater():
-    def __init__(self, max_frames=0, seed=-1) -> None:
+    def __init__(self, max_frames=0, seed=-1, max_i_frames=1) -> None:
         self.max_frames = max_frames
         self.seed = seed
+        self.max_i_frames = max_i_frames
 
     def sanitize_value(self, value):
         return value.replace("'","").replace('"',"").replace('(',"").replace(')',"")
@@ -24,6 +25,7 @@ class FrameInterpolater():
         key_frame_series = pd.Series([np.nan for a in range(self.max_frames)])
         # get our ui variables set for numexpr.evaluate
         max_f = self.max_frames -1
+        max_i_f = self.max_i_frames - 1
         s = self.seed
         for i in range(0, self.max_frames):
             if i in key_frames:
@@ -59,7 +61,8 @@ class FrameInterpolater():
         frames = dict()
         for match_object in string.split(","):
             frameParam = match_object.split(":")
-            max_f = self.max_frames -1
+            max_f = self.max_frames - 1
+            max_i_f = self.max_i_frames - 1
             s = self.seed
             frame = int(self.sanitize_value(frameParam[0])) if check_is_number(self.sanitize_value(frameParam[0].strip())) else int(numexpr.evaluate(frameParam[0].strip().replace("'","",1).replace('"',"",1)[::-1].replace("'","",1).replace('"',"",1)[::-1]))
             frames[frame] = frameParam[1].strip()
