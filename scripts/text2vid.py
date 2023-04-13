@@ -241,8 +241,7 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
         if inpainting_frames > 0:
             keys = T2VAnimKeys(SimpleNamespace(**{'max_frames':frames, 'inpainting_weights':inpainting_weights}), seed, inpainting_frames)
             images=[]
-            print("gir",inpainting_image)
-            print(inpainting_image.name)
+            print("Received an image for inpainting", inpainting_image.name)
             for i in range(frames):
                 image=Image.open(inpainting_image.name).convert("RGB")
                 image=image.resize((width,height), Image.ANTIALIAS)
