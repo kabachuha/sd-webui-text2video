@@ -564,6 +564,24 @@ def T2VArgs():
     inpainting_frames = 0
     return locals()
 
+def T2VArgs_sanity_check(t2v_args):
+    if t2v_args.frames < 1:
+        raise ValueError('Frames count cannot be lower than 1!')
+    if t2v_args.batch_count < 1:
+        raise ValueError('Batch count cannot be lower than 1!')
+    if t2v_args.width < 1 or t2v_args.height < 1:
+        raise ValueError('Video dimensions cannot be lower than 1 pixel!')
+    if t2v_args.cfg_scale < 1:
+        raise ValueError('CFG scale cannot be lower than 1!')
+    if t2v_args.steps < 1:
+        raise ValueError('Steps cannot be lower than 1!')
+    if t2v_args.strength < 0 or t2v_args.strength > 1:
+        raise ValueError('vid2vid strength should be in range of 0 to 1!')
+    if t2v_args.img2img_startFrame >= t2v_args.frames:
+        raise ValueError('vid2vid start frame cannot be greater than the number of frames!')
+    if t2v_args.inpainting_frames < 0 or t2v_args.inpainting_frames > t2v_args.frames:
+        raise ValueError('inpainting frames count should lie between 0 and the frames number!')
+
 def T2VOutputArgs():
     skip_video_creation = False
     fps = 15
