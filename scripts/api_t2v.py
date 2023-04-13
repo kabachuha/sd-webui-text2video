@@ -8,6 +8,7 @@ import sys
 import tempfile
 from PIL import Image
 import urllib
+from typing import Union
 import traceback
 from types import SimpleNamespace
 
@@ -46,10 +47,10 @@ def t2v_api(_, app: FastAPI):
         return JSONResponse(content={"version": get_t2v_version()})
 
     @app.get("/t2v/run")
-    async def t2v_run(prompt: str, n_prompt: str | None = None, steps:int | None = None, frames:int | None = None, seed:int | None = None, \
-                      cfg_scale:int | None = None, width:int | None = None, height:int | None = None, eta:float | None = None, batch_count:int | None = None, \
-                      do_img2img:bool = False, vid2vid_input:str = "",strength:float | None = None,img2img_startFrame:int | None = None, \
-                      inpainting_image:str = "", inpainting_frames:int | None = None, inpainting_weights:str | None = None,):
+    async def t2v_run(prompt: str, n_prompt: Union[str, None] = None, steps: Union[int, None] = None, frames: Union[int, None] = None, seed: Union[int, None] = None, \
+                      cfg_scale: Union[int, None] = None, width: Union[int, None] = None, height: Union[int, None] = None, eta: Union[float, None] = None, batch_count: Union[int, None] = None, \
+                      do_img2img:bool = False, vid2vid_input:str = "",strength: Union[float, None] = None,img2img_startFrame: Union[int, None] = None, \
+                      inpainting_image:str = "", inpainting_frames: Union[int, None] = None, inpainting_weights: Union[str, None] = None,):
         args_dict = locals()
         default_args_dict = text2vid.T2VArgs()
         for k, v in args_dict.items():
