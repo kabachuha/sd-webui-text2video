@@ -452,11 +452,11 @@ def on_ui_tabs():
                             # TODO: should be tied to the total frame count dynamically
                             inpainting_frames=gr.Slider(label='inpainting frames',value=dv.inpainting_frames,minimum=0, maximum=200, step=1)
                             with gr.Row():
-                                gr.HTML('''The weigths of '0:(t/max_i_f), "max_i_f":(1)' will 'continue' the initial pic
+                                gr.Markdown('''The weigths of `0:(t/max_i_f), "max_i_f":(1)` will *continue* the initial pic
                                 
-                                To 'loop it back', set the weight to 0 for the first and for the last frame
+To *loop it back*, set the weight to 0 for the first and for the last frame
                                 
-                                Example: '0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)' ''')
+Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                             with gr.Row():
                                 inpainting_weights = gr.Textbox(label="Inpainting weights", value=dv.inpainting_weights, interactive=True)
                     with gr.Tab('vid2vid') as tab_vid2vid:
