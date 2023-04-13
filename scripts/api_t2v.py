@@ -11,8 +11,8 @@ import urllib
 import traceback
 from types import SimpleNamespace
 
-import text2vid
-from text2vid import T2VArgs_sanity_check, get_t2v_version
+import scripts.text2vid as text2vid
+from scripts.text2vid import T2VArgs_sanity_check, get_t2v_version
 from fastapi import FastAPI, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
