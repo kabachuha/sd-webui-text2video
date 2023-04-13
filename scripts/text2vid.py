@@ -37,6 +37,8 @@ from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, g
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video')
 outdir = os.path.join(os.getcwd(), outdir)
 
+tabs_done = False
+settings_done = False
 pipe = None
 
 def setup_pipeline():
@@ -458,6 +460,11 @@ def setup_common_values(mode, d):
     return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
 
 def on_ui_tabs():
+    global tabs_done
+    if tabs_done:
+        return
+    tabs_done = True
+    
     global i1_store_t2v
     # Uses only SD-requirements + ffmpeg
     d = SimpleNamespace(**T2VArgs())
@@ -637,6 +644,10 @@ def T2VOutputArgs():
     return locals()
     
 def on_ui_settings():
+    global settings_done
+    if settings_done:
+        return
+    settings_done = True
     section = ('modelscope_deforum', "Text2Video")
     shared.opts.add_option("modelscope_deforum_keep_model_in_vram", shared.OptionInfo(
         False, "Keep model in VRAM between runs", gr.Checkbox, {"interactive": True, "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
