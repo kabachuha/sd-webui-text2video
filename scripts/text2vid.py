@@ -396,7 +396,8 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
         npz_to_video_grid(samples[0:1,...], 
                               os.path.join(outdir_current, f"vid.mp4"), 
                               fps=fps)
-        add_soundtrack(ffmpeg_location, fps, os.path.join(outdir_current, f"vid.mp4"), 0, -1, None, add_soundtrack, soundtrack_path, ffmpeg_crf, ffmpeg_preset)
+        if add_soundtrack != 'None':
+            add_soundtrack(ffmpeg_location, fps, os.path.join(outdir_current, f"vid.mp4"), 0, -1, None, add_soundtrack, soundtrack_path, ffmpeg_crf, ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
 
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
