@@ -567,7 +567,7 @@ def DeforumOutputArgs():
     frame_interpolation_slow_mo_enabled = False
     frame_interpolation_slow_mo_amount = 2  # [2 to 10]
     frame_interpolation_keep_imgs = False
-    inpainting_weights = '0:(1/max_i_f), "max_i_f":(0)' # uniform weights (as they used to be in the original variant)
+    inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
     inpainting_frames=0
     return locals()
     
