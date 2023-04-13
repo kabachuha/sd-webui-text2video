@@ -411,47 +411,45 @@ def process_videocrafter(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpe
     #     dist.destroy_process_group()
 
 
-def setup_common_values(mode):
+def setup_common_values(mode, d):
     with gr.Row(elem_id=f'{mode}_prompt_toprow'):
         prompt = gr.Textbox(label='Prompt', lines=3, interactive=True, elem_id=f"{mode}_prompt", placeholder="Enter your prompt here...")
     with gr.Row(elem_id=f'{mode}_n_prompt_toprow'):
-        n_prompt = gr.Textbox(label='Negative prompt', lines=2, interactive=True, elem_id=f"{mode}_n_prompt", value='text, watermark, copyright, blurry')
+        n_prompt = gr.Textbox(label='Negative prompt', lines=2, interactive=True, elem_id=f"{mode}_n_prompt", value=d.n_prompt)
     with gr.Row():
-        steps = gr.Slider(label='Steps', minimum=1, maximum=100, step=1, value=30)
-        cfg_scale = gr.Slider(label='CFG scale', minimum=1, maximum=100, step=1, value=7)
-    # with gr.Row():
-        # frames = gr.Slider(label="Frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
-        # seed = gr.Number(label='Seed', value = -1, Interactive = True, precision=0)
+        steps = gr.Slider(label='Steps', minimum=1, maximum=100, step=1, value=d.steps)
+        cfg_scale = gr.Slider(label='CFG scale', minimum=1, maximum=100, step=1, value=d.cfg_scale)
     with gr.Row():
-        width = gr.Slider(label='Width', minimum=64, maximum=1024, step=64, value=256)
-        height = gr.Slider(label='Height', minimum=64, maximum=1024, step=64, value=256)
+        width = gr.Slider(label='Width', minimum=64, maximum=1024, step=64, value=d.width)
+        height = gr.Slider(label='Height', minimum=64, maximum=1024, step=64, value=d.height)
     with gr.Row():
-        seed = gr.Number(label='Seed', value = -1, Interactive = True, precision=0)
-        eta = gr.Number(label="ETA", value=0, interactive=True)
+        seed = gr.Number(label='Seed', value = d.seed, Interactive = True, precision=0)
+        eta = gr.Number(label="ETA", value=d.eta, interactive=True)
     with gr.Row():
-        frames = gr.Slider(label="Frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
-        batch_count = gr.Slider(label="Batch count", value=1, minimum=1, maximum=100, step=1, interactive=True)
+        frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=125, step=1, interactive=True, precision=0)
+        batch_count = gr.Slider(label="Batch count", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=True)
     
     return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
 
 def on_ui_tabs():
     global i1_store_t2v
     # Uses only SD-requirements + ffmpeg
-    dv = SimpleNamespace(**DeforumOutputArgs())
+    d = SimpleNamespace(**T2VArgs())
+    dv = SimpleNamespace(**T2VOutputArgs())
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
                 with gr.Row(elem_id='model-switcher'):
-                    model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter'], value='ModelScope', elem_id='model-type')
+                    model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
                 with gr.Tabs():
                     do_img2img = gr.State(value=0)
                     with gr.Tab('txt2vid') as tab_txt2vid:
                         # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
-                        prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid')
+                        prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
                         with gr.Accordion('img2vid', open=False):
                             inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                             # TODO: should be tied to the total frame count dynamically
-                            inpainting_frames=gr.Slider(label='inpainting frames',value=dv.inpainting_frames,minimum=0, maximum=200, step=1)
+                            inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=200, step=1)
                             with gr.Row():
                                 gr.Markdown('''`inpainting frames` is the number of frames inpainting is applied to (counting from the beginning)
 
@@ -463,7 +461,7 @@ To *loop it back*, set the weight to 0 for the first and for the last frame
 
 Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                             with gr.Row():
-                                inpainting_weights = gr.Textbox(label="Inpainting weights", value=dv.inpainting_weights, interactive=True)
+                                inpainting_weights = gr.Textbox(label="Inpainting weights", value=d.inpainting_weights, interactive=True)
                     with gr.Tab('vid2vid') as tab_vid2vid:
                         with gr.Row():
                             gr.HTML('Put your video here')
@@ -476,8 +474,8 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                         # TODO: here too
                         prompt_v, n_prompt_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid')
                         with gr.Row():
-                            strength = gr.Slider(label="denoising strength", value=dv.strength, minimum=0, maximum=1, step=0.05, interactive=True)
-                            img2img_startFrame=gr.Number(label='vid2vid start frame',value=dv.img2img_startFrame)
+                            strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
+                            img2img_startFrame=gr.Number(label='vid2vid start frame',value=d.img2img_startFrame)
                     
                     tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
                     tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_img2img])
@@ -548,9 +546,24 @@ def get_t2v_version():
     except:
         return "Unknown"
 
-def DeforumOutputArgs():
+def T2VArgs():
+    frames = 24
+    batch_count = 1
+    eta = 0
+    seed = -1
+    width = 0
+    height = 0
+    cfg_scale = 17
+    steps = 30
+    prompt = ""
+    n_prompt = "text, watermark, copyright, blurry"
     strength = 0.75
     img2img_startFrame = 0
+    inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
+    inpainting_frames = 0
+    return locals()
+
+def T2VOutputArgs():
     skip_video_creation = False
     fps = 15
     make_gif = False
@@ -571,15 +584,12 @@ def DeforumOutputArgs():
 
     render_steps = False
     path_name_modifier = "x0_pred"  # ["x0_pred","x"]
-    store_frames_in_ram = False
     # **Interpolate Video Settings**
     frame_interpolation_engine = "None"  # ["None", "RIFE v4.6", "FILM"]
     frame_interpolation_x_amount = 2  # [2 to 1000 depends on the engine]
     frame_interpolation_slow_mo_enabled = False
     frame_interpolation_slow_mo_amount = 2  # [2 to 10]
     frame_interpolation_keep_imgs = False
-    inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
-    inpainting_frames=0
     return locals()
     
 def on_ui_settings():
