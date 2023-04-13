@@ -450,7 +450,7 @@ def on_ui_tabs():
                         with gr.Accordion('img2vid', open=False):
                             inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                             # TODO: should be tied to the total frame count dynamically
-                            inpainting_frames=gr.Slider(label='inpainting frames',value=dv.inpainting_frames,minimum=1, maximum=200, step=1)
+                            inpainting_frames=gr.Slider(label='inpainting frames',value=dv.inpainting_frames,minimum=0, maximum=200, step=1)
                             with gr.Row():
                                 gr.HTML('''The weigths of '0:(t/max_i_f), "max_i_f":(1)' will 'continue' the initial pic
                                 
