@@ -116,16 +116,20 @@ t2v_video_args_names = str('skip_video_creation, ffmpeg_location, ffmpeg_crf, ff
 
 common_values_names = str('''prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
-t2v_args_names = common_values_names + [f'{v}_v' for v in common_values_names] + str('''
+v2v_values_names = str('''
 do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame,
 inpainting_image,inpainting_frames, inpainting_weights,
 model_type''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+
+t2v_args_names = common_values_names + [f'{v}_v' for v in common_values_names] + v2v_values_names
+
+t2v_args_names_cleaned = common_values_names + v2v_values_names
 
 def get_component_names():
     return t2v_video_args_names + t2v_args_names
 
 def pack_anim_args(args_dict):
-    return {name: args_dict[name] for name in t2v_args_names}
+    return {name: args_dict[name] for name in t2v_args_names_cleaned}
 
 def pack_video_args(args_dict):
     return {name: args_dict[name] for name in t2v_video_args_names}
