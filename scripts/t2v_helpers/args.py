@@ -146,7 +146,7 @@ def process_args(args_dict):
             args_dict.pop(f'{name}_v')
 
     args = SimpleNamespace(**pack_anim_args(args_dict))
-    video_args = SimpleNamespace(**pack_anim_args(args_dict))
+    video_args = SimpleNamespace(**pack_video_args(args_dict))
     T2VArgs_sanity_check(args)
     return args, video_args
 
