@@ -18,6 +18,8 @@ from modules.shared import opts
 from tqdm import tqdm
 from modules.prompt_parser import reconstruct_cond_batch
 
+from modules.sd_hijack_optimizations import get_xformers_flash_attention_op
+
 __all__ = ['UNetSD']
 
 try:
@@ -488,7 +490,7 @@ class CrossAttention(nn.Module):
         if has_xformers():
             import xformers
             out = xformers.ops.memory_efficient_attention(
-                q, k, v, op=self.attention_op, scale=self.scale, mask=mask
+                q, k, v, op=get_xformers_flash_attention_op(q,k,v), scale=self.scale, mask=mask
             )
         elif has_torch2():
             out = F.scaled_dot_product_attention(
@@ -1086,7 +1088,7 @@ class AttentionBlock(nn.Module):
         if has_xformers():
             import xformers
             x = xformers.ops.memory_efficient_attention(
-                q, k, v, op=self.attention_op, scale=self.scale,
+                q, k, v, op=get_xformers_flash_attention_op(q,k,v), scale=self.scale,
             )
         elif has_torch2():
             x = F.scaled_dot_product_attention(
