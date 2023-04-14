@@ -16,7 +16,7 @@ def run(*args):
     # TODO: change to i+2 when we will add the progress bar
     args_dict = {component_names[i]: args[i+0] for i in range(0, len(component_names))}
     model_type = args_dict['model_type']
-    args.i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
+    t2v_helpers_args.i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else False
     try:
         print('text2video — The model selected is: ', args_dict['model_type'])
