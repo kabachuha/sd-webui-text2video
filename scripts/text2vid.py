@@ -151,6 +151,9 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
     # optionally store pipe in global between runs
     if pipe is None:
         pipe = setup_pipeline()
+    
+    if pipe is not None:
+        pipe.keep_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else False
 
     device=devices.get_optimal_device()
     print('device',device)
@@ -585,7 +588,7 @@ def DeforumOutputArgs():
 def on_ui_settings():
     section = ('modelscope_deforum', "Text2Video")
     shared.opts.add_option("modelscope_deforum_keep_model_in_vram", shared.OptionInfo(
-        False, "Keep model in VRAM between runs", gr.Checkbox, {"interactive": True, "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
+        'None', "Keep model in VRAM between runs", gr.Radio, {"interactive": True, "choices": ['None', 'Main Model Only', 'All'], "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
     shared.opts.add_option("modelscope_deforum_vae_settings", shared.OptionInfo(
         "GPU (half precision)", "VAE Mode:", gr.Radio, {"interactive": True, "choices": ['GPU (half precision)', 'GPU', 'CPU (Low VRAM)']}, section=section))
 
