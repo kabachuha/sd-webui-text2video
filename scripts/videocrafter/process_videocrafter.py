@@ -5,13 +5,13 @@ import time, os
 from t2v_helpers.general_utils import get_t2v_version
 from t2v_helpers.args import get_outdir, process_args
 import modules.paths as ph
+import t2v_helpers.args as t2v_helpers_args
 
-# VideoCrafter support is heavy WIP and sketchy, needs help (esp. since I don't like VideoCrafter)
+# VideoCrafter support is heavy WIP and sketchy, needs help and more devs!
 def process_videocrafter(args_dict):
     args, video_args = process_args(args_dict)
     print(f"\033[4;33m text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
-    global i1_store_t2v
     init_timestring = time.strftime('%Y%m%d%H%M%S')
     outdir_current = os.path.join(get_outdir(), f"{init_timestring}")
 
@@ -90,7 +90,7 @@ def process_videocrafter(args_dict):
 
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
         dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
-        i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
+        t2v_helpers_args.i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
         print("Finish sampling!")
         print(f"Run time = {(time.time() - start):.2f} seconds")
     pbar.close()

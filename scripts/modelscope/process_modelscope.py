@@ -15,6 +15,7 @@ from t2v_helpers.general_utils import get_t2v_version
 import time, math
 from t2v_helpers.video_audio_utils import ffmpeg_stitch_video, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
 from t2v_helpers.args import get_outdir, process_args
+import t2v_helpers.args as t2v_helpers_args
 from modules import shared, sd_hijack, lowvram
 from modules.shared import opts, devices
 import os
@@ -30,7 +31,6 @@ def process_modelscope(args_dict):
     global pipe
     print(f"\033[4;33m text2video extension for auto1111 webui\033[0m")
     print(f"Git commit: {get_t2v_version()}")
-    global i1_store_t2v
     init_timestring = time.strftime('%Y%m%d%H%M%S')
     outdir_current = os.path.join(get_outdir(), f"{init_timestring}")
     
@@ -212,8 +212,8 @@ def process_modelscope(args_dict):
 
         if max_vids_to_pack == -1 or len(vids_to_pack) < max_vids_to_pack:
             vids_to_pack.append(dataurl)
-    i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p>'
+    t2v_helpers_args.i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p>'
     for dataurl in vids_to_pack:
-        i1_store_t2v += '<video controls loop><source src="{dataurl}" type="video/mp4"></video><br>'
+        t2v_helpers_args.i1_store_t2v += '<video controls loop><source src="{dataurl}" type="video/mp4"></video><br>'
     pbar.close()
     return vids_to_pack
