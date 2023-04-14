@@ -20,6 +20,8 @@ Update 2023-03-26: prompt weights **implemented**! (ModelScope only yet, as of 2
 
 Update 2023-04-05: added VideoCrafter support, renamed the extension to plainly 'sd-webui-text2video'
 
+Update 2023-04-13: in-framing/in-painting support: allows to 'animate' an existing pic or even seamlessly loop the videos! 
+
 ## Test examples:
 
 ### ModelScope
@@ -35,6 +37,26 @@ https://user-images.githubusercontent.com/14872007/226345611-a1f0601f-db32-41bd-
 Prompt: `really attractive anime girl skating, by makoto shinkai, cinematic lighting`
 
 https://user-images.githubusercontent.com/14872007/226468406-ce43fa0c-35f2-4625-a892-9fb3411d96bb.mp4
+
+**'Continuing' an existing image**
+
+Prompt: `best quality, astronaut dog`
+
+https://user-images.githubusercontent.com/14872007/232073361-bdb87a47-85ec-44d8-9dc4-40dab0bd0555.mp4
+
+Prompt: `explosion`
+
+https://user-images.githubusercontent.com/14872007/232073687-b7e78b06-182b-4ce6-b565-d6738c4890d1.mp4
+
+**In-painting and looping back the videos**
+
+Prompt: `nuclear explosion`
+
+https://user-images.githubusercontent.com/14872007/232073842-84860a3e-fa82-43a6-a411-5cfc509b5355.mp4
+
+Prompt: `best quality, lots of cheese`
+
+https://user-images.githubusercontent.com/14872007/232073876-16895cae-0f26-41bc-a575-0c811219cf88.mp4
 
 ### VideoCrafter
 
