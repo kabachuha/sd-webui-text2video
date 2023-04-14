@@ -1,3 +1,16 @@
+# The API and the UI should be fully autonomus
+import sys, os
+basedirs = [os.getcwd()]
+if 'google.colab' in sys.modules:
+    basedirs.append('/content/gdrive/MyDrive/sd/stable-diffusion-webui') #hardcode as TheLastBen's colab seems to be the primal source
+
+for basedir in basedirs:
+    deforum_paths_to_ensure = [basedir + '/extensions/sd-webui-text2video/scripts', basedir + '/extensions/sd-webui-modelscope-text2video/scripts', basedir]
+
+    for deforum_scripts_path_fix in deforum_paths_to_ensure:
+        if not deforum_scripts_path_fix in sys.path:
+            sys.path.extend([deforum_scripts_path_fix])
+
 import base64
 import hashlib
 import io
@@ -12,13 +25,14 @@ from typing import Union
 import traceback
 from types import SimpleNamespace
 
-import scripts.text2vid as text2vid
-from scripts.text2vid import T2VArgs_sanity_check, get_t2v_version
 from fastapi import FastAPI, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from scripts.video_audio_utils import find_ffmpeg_binary
+from t2v_helpers.video_audio_utils import find_ffmpeg_binary
+from t2v_helpers.general_utils import get_t2v_version
+from t2v_helpers.args import T2VArgs_sanity_check, T2VArgs, T2VOutputArgs
+from t2v_helpers.render import run
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +65,15 @@ def t2v_api(_, app: FastAPI):
                       cfg_scale: Union[int, None] = None, width: Union[int, None] = None, height: Union[int, None] = None, eta: Union[float, None] = None, batch_count: Union[int, None] = None, \
                       do_img2img:bool = False, vid2vid_input:str = "",strength: Union[float, None] = None,img2img_startFrame: Union[int, None] = None, \
                       inpainting_image:str = "", inpainting_frames: Union[int, None] = None, inpainting_weights: Union[str, None] = None,):
+        for basedir in basedirs:
+            sys.path.extend([
+                basedir + '/scripts',
+                basedir + '/extensions/sd-webui-text2video/scripts',
+                basedir + '/extensions/sd-webui-modelscope-text2video/scripts',
+            ])
+        
         args_dict = locals()
-        default_args_dict = text2vid.T2VArgs()
+        default_args_dict = T2VArgs()
         for k, v in args_dict.items():
             if v is None and k in default_args_dict:
                 v = default_args_dict[k]
@@ -62,7 +83,7 @@ def t2v_api(_, app: FastAPI):
         @return:
         """
         d = SimpleNamespace(**args_dict)
-        dv = SimpleNamespace(**text2vid.T2VOutputArgs())
+        dv = SimpleNamespace(**T2VOutputArgs())
 
         tmp_inpainting = None
 
@@ -80,7 +101,7 @@ def t2v_api(_, app: FastAPI):
                 tmp_vid2vid = tempfile.NamedTemporaryFile()
                 tmp_vid2vid.write(io.BytesIO(base64.b64decode(vid2vid_input)).getbuffer())
 
-            videodat = text2vid.run(
+            videodat = run(
                 # ffmpeg params
                 dv.skip_video_creation, #skip_video_creation
                 find_ffmpeg_binary(), #ffmpeg_location
