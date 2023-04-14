@@ -13,6 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, repeat
 from os import path as osp
+from modules.shared import opts
 
 from tqdm import tqdm
 from modules.prompt_parser import reconstruct_cond_batch
@@ -45,6 +46,22 @@ except:
         """
         gc.collect()
         pass
+
+def has_xformers():
+    try:
+        import xformers
+        return opts.xformers
+    except ImportError:
+        return False
+
+def has_torch2():
+    try:
+        import torch
+        if torch.__version__.startswith('2'):
+            return True
+    except ImportError:
+        ...
+    return False
 
 from ldm.modules.diffusionmodules.model import Decoder, Encoder
 from ldm.modules.distributions.distributions import DiagonalGaussianDistribution
@@ -462,19 +479,33 @@ class CrossAttention(nn.Module):
 
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h),
                       (q, k, v))
-        sim = torch.einsum('b i d, b j d -> b i j', q, k) * self.scale
-        del q, k
-
+    
         if exists(mask):
             mask = rearrange(mask, 'b ... -> b (...)')
-            max_neg_value = -torch.finfo(sim.dtype).max
+            max_neg_value = -torch.finfo(x.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h=h)
+        
+        if has_xformers():
+            import xformers
+            out = xformers.ops.memory_efficient_attention(
+                q, k, v, op=self.attention_op, scale=self.scale, mask=mask
+            )
+        elif has_torch2():
+            out = F.scaled_dot_product_attention(
+                q, k, v, dropout_p=0.0, is_causal=False, mask=mask
+            )
+        else:
+
+            sim = torch.einsum('b i d, b j d -> b i j', q, k) * self.scale
+            del q, k
+
             sim.masked_fill_(~mask, max_neg_value)
 
-        # attention, what we cannot get enough of
-        sim = sim.softmax(dim=-1)
+            # attention, what we cannot get enough of
+            sim = sim.softmax(dim=-1)
 
-        out = torch.einsum('b i j, b j d -> b i d', sim, v)
+            out = torch.einsum('b i j, b j d -> b i d', sim, v)
+        
         out = rearrange(out, '(b h) n d -> b n (h d)', h=h)
         return self.to_out(out)
 
