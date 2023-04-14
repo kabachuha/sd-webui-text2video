@@ -8,7 +8,7 @@ Auto1111 extension consisting of implementation of various text2video models, su
 
 8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
 
-### VideoCrafter
+### VideoCrafter (WIP, needs more devs to maintain properly as well)
 
 VideoCrafter runs with around 9.2 GBs of VRAM with the settings set on Default.
 
