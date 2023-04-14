@@ -1082,11 +1082,22 @@ class AttentionBlock(nn.Module):
             v = torch.cat([cv, v], dim=-1)
 
         # compute attention
-        attn = torch.matmul(q.transpose(-1, -2) * self.scale, k * self.scale)
-        attn = F.softmax(attn, dim=-1)
 
-        # gather context
-        x = torch.matmul(v, attn.transpose(-1, -2))
+        if has_xformers():
+            import xformers
+            x = xformers.ops.memory_efficient_attention(
+                q, k, v, op=self.attention_op, scale=self.scale,
+            )
+        elif has_torch2():
+            x = F.scaled_dot_product_attention(
+                q, k, v, dropout_p=0.0, is_causal=False,
+            )
+        else:
+            attn = torch.matmul(q.transpose(-1, -2) * self.scale, k * self.scale)
+            attn = F.softmax(attn, dim=-1)
+
+            # gather context
+            x = torch.matmul(v, attn.transpose(-1, -2))
         x = x.reshape(b, c, h, w)
         # output
         x = self.proj(x)
