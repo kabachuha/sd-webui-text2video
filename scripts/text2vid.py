@@ -15,7 +15,7 @@ from modules import script_callbacks, shared
 from modules.shared import cmd_opts, opts
 from t2v_helpers.render import run
 import t2v_helpers.args as args
-from t2v_helpers.args import setup_text2video_ui
+from t2v_helpers.args import setup_text2video_settings_dictionary
 from webui import wrap_gradio_gpu_call
 
 def process(*args):
@@ -35,7 +35,7 @@ def on_ui_tabs():
         components = {}
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
-                components = args.setup_text2video_settings_dictionary()
+                components = setup_text2video_settings_dictionary()
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(variant='compact'):
                     run_button = gr.Button('Generate', elem_id=f"text2vid_generate", variant='primary')
@@ -67,7 +67,7 @@ def on_ui_tabs():
                     dummy_component1, dummy_component2,
                 ],
             )
-    return [(setup_text2video_ui(), "txt2video", "t2v_interface")]
+    return [(deforum_interface, "txt2video", "t2v_interface")]
     
 def on_ui_settings():
     section = ('modelscope_deforum', "Text2Video")
