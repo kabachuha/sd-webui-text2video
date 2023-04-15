@@ -33,6 +33,7 @@ from t2v_helpers.video_audio_utils import find_ffmpeg_binary
 from t2v_helpers.general_utils import get_t2v_version
 from t2v_helpers.args import T2VArgs_sanity_check, T2VArgs, T2VOutputArgs
 from t2v_helpers.render import run
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ def t2v_api(_, app: FastAPI):
         dv = SimpleNamespace(**T2VOutputArgs())
 
         tmp_inpainting = None
+        tmp_vid2vid = None
 
         # Wrap the process call in a try-except block to handle potential errors
         try:
@@ -93,12 +95,12 @@ def t2v_api(_, app: FastAPI):
 
             if inpainting_frames > 0 and len(inpainting_image) > 0:
                 img = Image.open(io.BytesIO(urllib.request.urlopen(inpainting_image).file.read()))
-                tmp_inpainting = tempfile.NamedTemporaryFile()
+                tmp_inpainting = open(f'{str(uuid.uuid4())}.png', "w")
                 img.save(tmp_inpainting)
             
             if do_img2img and len(vid2vid_input) > 0:
                 vid2vid_input = vid2vid_input[len("data:video/mp4;base64,"):] if vid2vid_input.startswith("data:video/mp4;base64,") else vid2vid_input
-                tmp_vid2vid = tempfile.NamedTemporaryFile()
+                tmp_vid2vid = open(f'{str(uuid.uuid4())}.mp4', "w")
                 tmp_vid2vid.write(io.BytesIO(base64.b64decode(vid2vid_input)).getbuffer())
 
             videodat = run(
