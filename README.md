@@ -6,9 +6,16 @@ Auto1111 extension consisting of implementation of various text2video models, su
 
 ### ModelScope
 
-8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
+6 GBs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames long 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti, or if you have a Torch2 attention optimization supported videocard, you can fit the whopping 125 frames (8 seconds) long video into the same 12 GBs of VRAM! 250 frames (16 seconds) in the same conditions take 20 gbs.
 
-### VideoCrafter
+Prompt: `best quality, anime girl dancing`
+
+https://user-images.githubusercontent.com/14872007/232229730-82df36cc-ac8b-46b3-949d-0e1dfc10a975.mp4
+
+
+We will appreciate *any* help with this extension, *especially* pull-requests.
+
+### VideoCrafter (WIP, needs more devs to maintain properly as well)
 
 VideoCrafter runs with around 9.2 GBs of VRAM with the settings set on Default.
 
@@ -20,13 +27,11 @@ Update 2023-03-26: prompt weights **implemented**! (ModelScope only yet, as of 2
 
 Update 2023-04-05: added VideoCrafter support, renamed the extension to plainly 'sd-webui-text2video'
 
+Update 2023-04-13: in-framing/in-painting support: allows to 'animate' an existing pic or even seamlessly loop the videos! 
+
 ## Test examples:
 
 ### ModelScope
-
-Prompt: `flowers turning into lava`
-
-https://user-images.githubusercontent.com/14872007/226214023-2d3892d8-64d4-4312-baab-575aafedae09.mp4
 
 Prompt: `cinematic explosion by greg rutkowski`
 
@@ -35,6 +40,26 @@ https://user-images.githubusercontent.com/14872007/226345611-a1f0601f-db32-41bd-
 Prompt: `really attractive anime girl skating, by makoto shinkai, cinematic lighting`
 
 https://user-images.githubusercontent.com/14872007/226468406-ce43fa0c-35f2-4625-a892-9fb3411d96bb.mp4
+
+**'Continuing' an existing image**
+
+Prompt: `best quality, astronaut dog`
+
+https://user-images.githubusercontent.com/14872007/232073361-bdb87a47-85ec-44d8-9dc4-40dab0bd0555.mp4
+
+Prompt: `explosion`
+
+https://user-images.githubusercontent.com/14872007/232073687-b7e78b06-182b-4ce6-b565-d6738c4890d1.mp4
+
+**In-painting and looping back the videos**
+
+Prompt: `nuclear explosion`
+
+https://user-images.githubusercontent.com/14872007/232073842-84860a3e-fa82-43a6-a411-5cfc509b5355.mp4
+
+Prompt: `best quality, lots of cheese`
+
+https://user-images.githubusercontent.com/14872007/232073876-16895cae-0f26-41bc-a575-0c811219cf88.mp4
 
 ### VideoCrafter
 
@@ -60,10 +85,13 @@ Download pretrained T2V models either via [this link](https://drive.google.com/f
 
 ## Screenshots
 
-![Screenshot 2023-03-20 at 15-52-21 Stable Diffusion](https://user-images.githubusercontent.com/14872007/226345377-bad6dda5-f921-4233-b832-843e78854cbb.png)
+txt2vid with img2vid
 
-![Screenshot 2023-03-20 at 15-52-15 Stable Diffusion](https://user-images.githubusercontent.com/14872007/226345398-d37133a8-3e5f-43f3-ae13-37dc609cd14c.png)
+![Screenshot 2023-04-15 at 17-53-36 Stable Diffusion](https://user-images.githubusercontent.com/14872007/232232319-c3a443ee-1a8a-4504-a114-d9da2ae916c2.png)
 
+vid2vid
+
+![Screenshot 2023-04-15 at 17-33-32 Stable Diffusion](https://user-images.githubusercontent.com/14872007/232232338-a2aa4b78-35d0-4c9b-850b-15edc90c0c9f.png)
 
 ## Dev resources
 

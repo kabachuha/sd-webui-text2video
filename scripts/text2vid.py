@@ -72,7 +72,7 @@ def on_ui_tabs():
 def on_ui_settings():
     section = ('modelscope_deforum', "Text2Video")
     shared.opts.add_option("modelscope_deforum_keep_model_in_vram", shared.OptionInfo(
-        False, "Keep model in VRAM between runs", gr.Checkbox, {"interactive": True, "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
+        'None', "Keep model in VRAM between runs", gr.Radio, {"interactive": True, "choices": ['None', 'Main Model Only', 'All'], "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
     shared.opts.add_option("modelscope_deforum_vae_settings", shared.OptionInfo(
         "GPU (half precision)", "VAE Mode:", gr.Radio, {"interactive": True, "choices": ['GPU (half precision)', 'GPU', 'CPU (Low VRAM)']}, section=section))
     shared.opts.add_option("modelscope_deforum_show_n_videos", shared.OptionInfo(
