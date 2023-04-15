@@ -61,7 +61,7 @@ def t2v_api(_, app: FastAPI):
     async def t2v_version():
         return JSONResponse(content={"version": get_t2v_version()})
 
-    @app.get("/t2v/run")
+    @app.post("/t2v/run")
     async def t2v_run(prompt: str, n_prompt: Union[str, None] = None, steps: Union[int, None] = None, frames: Union[int, None] = None, seed: Union[int, None] = None, \
                       cfg_scale: Union[int, None] = None, width: Union[int, None] = None, height: Union[int, None] = None, eta: Union[float, None] = None, batch_count: Union[int, None] = None, \
                       do_img2img:bool = False, vid2vid_input:str = "",strength: Union[float, None] = None,img2img_startFrame: Union[int, None] = None, \
