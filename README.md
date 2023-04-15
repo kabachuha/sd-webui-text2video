@@ -29,6 +29,10 @@ Update 2023-04-05: added VideoCrafter support, renamed the extension to plainly 
 
 Update 2023-04-13: in-framing/in-painting support: allows to 'animate' an existing pic or even seamlessly loop the videos! 
 
+Update 2023-04-15: **MEGA-UPDATE**: Torch2/xformers optimizations, possible to make 125 frames long video on 12 gbs of VRAM. CPU offloading doesn't happen now if keep_pipe_in_vram is checked.
+
+Update 2023-04-16: WebAPI is available!
+
 ## Test examples:
 
 ### ModelScope
