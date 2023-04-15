@@ -85,9 +85,24 @@ def t2v_api(_, app: FastAPI):
         d = SimpleNamespace(**args_dict)
         dv = SimpleNamespace(**T2VOutputArgs())
 
+        tmp_inpainting = None
+        tmp_vid2vid = None
+        os.mkdir('t2v_temp', exist_ok=True)
+
         # Wrap the process call in a try-except block to handle potential errors
         try:
             T2VArgs_sanity_check(d)
+
+            if d.inpainting_frames > 0 and inpainting_image:
+                img_content = await inpainting_image.read()
+                img = Image.open(img_content)
+                tmp_inpainting = open(f't2v_temp/{str(uuid.uuid4())}.png', "w")
+                img.save(tmp_inpainting)
+            
+            if do_img2img and vid2vid_input:
+                vid2vid_input_content = await vid2vid_input.read()
+                tmp_vid2vid = open(f't2v_temp/{str(uuid.uuid4())}.mp4', "wb")
+                tmp_vid2vid.write(vid2vid_input_content)
 
             videodat = run(
                 # ffmpeg params
@@ -142,6 +157,22 @@ def t2v_api(_, app: FastAPI):
                 status_code=500,
                 content={"detail": "An error occurred while processing the video."},
             )
+        finally:
+            if tmp_inpainting is not None:
+                tmp_inpainting.close()
+                # delete temporary file
+                try:
+                    os.remove(tmp_inpainting.name)
+                except Exception as e:
+                    ...
+                except Exception as e:
+                    ...
+            if tmp_vid2vid is not None:
+                tmp_vid2vid.close()
+                try:
+                    os.remove(tmp_vid2vid.name)
+                except Exception as e:
+                    ...
 
 
 try:
