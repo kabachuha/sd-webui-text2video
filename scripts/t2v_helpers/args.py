@@ -3,7 +3,6 @@ from types import SimpleNamespace
 from t2v_helpers.video_audio_utils import find_ffmpeg_binary
 import os
 from modules.shared import opts
-import traceback
 
 welcome_text_videocrafter = '''
     Download pretrained T2V models via this link https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link, and put the model.ckpt in models/VideoCrafter/model.ckpt.
@@ -190,7 +189,6 @@ def T2VArgs_sanity_check(t2v_args):
             raise ValueError('inpainting frames count should lie between 0 and the frames number!')
     except Exception as e:
         print(t2v_args)
-        traceback.print_exc()
         raise e
 
 def T2VOutputArgs():
