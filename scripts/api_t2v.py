@@ -86,7 +86,9 @@ def t2v_api(_, app: FastAPI):
         dv = SimpleNamespace(**T2VOutputArgs())
 
         tmp_inpainting = None
+        tmp_inpainting_name = f't2v_temp/{str(uuid.uuid4())}.png'
         tmp_vid2vid = None
+        temp_vid2vid_name = f't2v_temp/{str(uuid.uuid4())}.mp4'
         os.makedirs('t2v_temp', exist_ok=True)
 
         # Wrap the process call in a try-except block to handle potential errors
@@ -95,14 +97,16 @@ def t2v_api(_, app: FastAPI):
 
             if d.inpainting_frames > 0 and inpainting_image:
                 img_content = await inpainting_image.read()
-                img = Image.open(img_content)
-                tmp_inpainting = open(f't2v_temp/{str(uuid.uuid4())}.png', "w")
-                img.save(tmp_inpainting)
+                img = Image.open(io.BytesIO(img_content))
+                img.save(tmp_inpainting_name)
+                tmp_inpainting = open(tmp_inpainting_name, "r")
             
             if do_img2img and vid2vid_input:
                 vid2vid_input_content = await vid2vid_input.read()
-                tmp_vid2vid = open(f't2v_temp/{str(uuid.uuid4())}.mp4', "wb")
-                tmp_vid2vid.write(vid2vid_input_content)
+                tmp_vid2vid = open(temp_vid2vid_name, "wb")
+                tmp_vid2vid.write(io.BytesIO(vid2vid_input_content).getbuffer())
+                tmp_vid2vid.close()
+                tmp_vid2vid = open(temp_vid2vid_name, "r")
 
             videodat = run(
                 # ffmpeg params
@@ -138,11 +142,11 @@ def t2v_api(_, app: FastAPI):
                 d.batch_count,#batch_count_v
 
                 do_img2img,#do_img2img
-                vid2vid_input.file if vid2vid_input is not None else None,#img2img_frames
+                tmp_vid2vid,#img2img_frames
                 "",#img2img_frames_path
                 d.strength,#strength
                 d.img2img_startFrame,#img2img_startFrame
-                inpainting_image.file if inpainting_image is not None else None,#inpainting_image
+                tmp_inpainting,#inpainting_image
                 d.inpainting_frames,#inpainting_frames
                 d.inpainting_weights,#inpainting_weights
                 "ModelScope",#model_type. Only one has stable support at this moment
@@ -162,7 +166,7 @@ def t2v_api(_, app: FastAPI):
                 tmp_inpainting.close()
                 # delete temporary file
                 try:
-                    os.remove(tmp_inpainting.name)
+                    os.remove(tmp_inpainting_name)
                 except Exception as e:
                     ...
                 except Exception as e:
@@ -170,7 +174,7 @@ def t2v_api(_, app: FastAPI):
             if tmp_vid2vid is not None:
                 tmp_vid2vid.close()
                 try:
-                    os.remove(tmp_vid2vid.name)
+                    os.remove(temp_vid2vid_name)
                 except Exception as e:
                     ...
 
