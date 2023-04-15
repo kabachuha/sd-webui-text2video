@@ -124,7 +124,7 @@ def process_modelscope(args_dict):
         latents = pipe.compute_latents(vd_out).to(device)
     else:
         latents = None
-        strength=1
+        args.strength=1
 
     print('Working in txt2vid mode' if not args.do_img2img else 'Working in vid2vid mode')
 
@@ -188,7 +188,7 @@ def process_modelscope(args_dict):
 
             mask=torch.tensor(mask).to(device)
 
-            strength=1
+            args.strength=1
 
         samples, _ = pipe.infer(args.prompt, args.n_prompt, args.steps, args.frames, args.seed + batch if args.seed != -1 else -1, args.cfg_scale,
                                 args.width, args.height, args.eta, cpu_vae, device, latents,skip_steps=int(math.floor(args.steps*max(0, min(1 - args.strength, 1)))), mask=mask)
