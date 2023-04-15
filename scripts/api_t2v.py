@@ -112,6 +112,7 @@ def t2v_api(_, app: FastAPI):
                 dv.fps,#fps
                 dv.add_soundtrack,#add_soundtrack
                 dv.soundtrack_path,#soundtrack_paths
+
                 d.prompt,#prompt
                 d.n_prompt,#n_prompt
                 d.steps,#steps
@@ -121,6 +122,8 @@ def t2v_api(_, app: FastAPI):
                 d.width,#width
                 d.height,#height
                 d.eta,#eta
+                d.batch_count,#batch_count
+
                 # The same, but for vid2vid. Will deduplicate later
                 d.prompt,#prompt
                 d.n_prompt,#n_prompt
@@ -131,17 +134,17 @@ def t2v_api(_, app: FastAPI):
                 d.width,#width
                 d.height,#height
                 d.eta,#eta
-                batch_count_v=d.batch_count,#batch_count_v
-                batch_count=d.batch_count,#batch_count
-                do_img2img=do_img2img,#do_img2img
-                img2img_frames=tmp_vid2vid,#img2img_frames
-                img2img_frames_path="",#img2img_frames_path
-                strength=d.strength,#strength
-                img2img_startFrame=d.img2img_startFrame,#img2img_startFrame
-                inpainting_image=tmp_inpainting,
-                inpainting_frames=d.inpainting_frames,
-                inpainting_weights=d.inpainting_weights,#inpainting_weights
-                model_type="ModelScope",#Only one has stable support at this moment
+                d.batch_count,#batch_count_v
+
+                do_img2img,#do_img2img
+                tmp_vid2vid,#img2img_frames
+                "",#img2img_frames_path
+                d.strength,#strength
+                d.img2img_startFrame,#img2img_startFrame
+                tmp_inpainting,#inpainting_image
+                d.inpainting_frames,#inpainting_frames
+                d.inpainting_weights,#inpainting_weights
+                "ModelScope",#model_type. Only one has stable support at this moment
             )
 
             return JSONResponse(content={"mp4s": videodat})
