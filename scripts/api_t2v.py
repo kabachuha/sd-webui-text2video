@@ -54,7 +54,7 @@ def t2v_api(_, app: FastAPI):
     
     @app.get("/t2v/api_version")
     async def t2v_api_version():
-        return JSONResponse(content={"version": '0.1b'})
+        return JSONResponse(content={"version": '1.0'})
     
     @app.get("/t2v/version")
     async def t2v_version():
