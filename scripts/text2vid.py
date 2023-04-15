@@ -32,6 +32,7 @@ from modules import devices, lowvram, script_callbacks, sd_hijack, shared
 from modules.shared import cmd_opts, opts, state
 from scripts.error_hardcode import get_error
 from modelscope.t2v_pipeline import TextToVideoSynthesis, tensor2vid
+from modelscope.t2v_model import has_torch2
 from scripts.video_audio_utils import ffmpeg_stitch_video, find_ffmpeg_binary, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
 
 outdir = os.path.join(opts.outdir_img2img_samples, 'text2video')
@@ -429,7 +430,7 @@ def setup_common_values(mode):
         seed = gr.Number(label='Seed', value = -1, Interactive = True, precision=0)
         eta = gr.Number(label="ETA", value=0, interactive=True)
     with gr.Row():
-        frames = gr.Slider(label="Frames", value=24, minimum=2, maximum=125, step=1, interactive=True, precision=0)
+        frames = gr.Slider(label="Frames", value=24, minimum=2, maximum=250 if has_torch2() else 125, step=1, interactive=True, precision=0)
         batch_count = gr.Slider(label="Batch count", value=1, minimum=1, maximum=100, step=1, interactive=True)
     
     return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
