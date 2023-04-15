@@ -61,18 +61,18 @@ def process_modelscope(args_dict):
 
     mask=None
 
-    if args.do_img2img:
-        if args.img2img_frames is None and args.img2img_frames_path == "":
+    if args.do_vid2vid:
+        if args.vid2vid_frames is None and args.vid2vid_frames_path == "":
             raise FileNotFoundError("Please upload a video :()")
 
         # Overrides
-        if args.img2img_frames is not None:
-            img2img_frames_path = args.img2img_frames.name
+        if args.vid2vid_frames is not None:
+            vid2vid_frames_path = args.vid2vid_frames.name
 
         print("got a request to *vid2vid* an existing video.")
 
-        in_vid_fps, _, _ = get_quick_vid_info(img2img_frames_path)
-        folder_name = clean_folder_name(Path(img2img_frames_path).stem)
+        in_vid_fps, _, _ = get_quick_vid_info(vid2vid_frames_path)
+        folder_name = clean_folder_name(Path(vid2vid_frames_path).stem)
         outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name)
         i = 1
         while os.path.exists(outdir_no_tmp):
@@ -82,7 +82,7 @@ def process_modelscope(args_dict):
         outdir_v2v = os.path.join(outdir_no_tmp, 'tmp_input_frames')
         os.makedirs(outdir_v2v, exist_ok=True)
         
-        vid2frames(video_path=img2img_frames_path, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=args.img2img_startFrame, extract_to_frame=args.img2img_startFrame+args.frames, numeric_files_output=True, out_img_format='png')
+        vid2frames(video_path=vid2vid_frames_path, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=args.vid2vid_startFrame, extract_to_frame=args.vid2vid_startFrame+args.frames, numeric_files_output=True, out_img_format='png')
         
         temp_convert_raw_png_path = os.path.join(outdir_v2v, "tmp_vid2vid_folder")
         duplicate_pngs_from_folder(outdir_v2v, temp_convert_raw_png_path, None, folder_name)
@@ -126,7 +126,7 @@ def process_modelscope(args_dict):
         latents = None
         args.strength=1
 
-    print('Working in txt2vid mode' if not args.do_img2img else 'Working in vid2vid mode')
+    print('Working in txt2vid mode' if not args.do_vid2vid else 'Working in vid2vid mode')
 
 
     # Start the batch count loop
@@ -206,7 +206,7 @@ def process_modelscope(args_dict):
         # TODO: add params to the GUI
         if not video_args.skip_video_creation:
             ffmpeg_stitch_video(ffmpeg_location=video_args.ffmpeg_location, fps=video_args.fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
-                                "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=video_args.add_soundtrack, audio_path=img2img_frames_path if video_args.add_soundtrack == 'Init Video' else video_args.soundtrack_path, crf=video_args.ffmpeg_crf, preset=video_args.ffmpeg_preset)
+                                "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=video_args.add_soundtrack, audio_path=vid2vid_frames_path if video_args.add_soundtrack == 'Init Video' else video_args.soundtrack_path, crf=video_args.ffmpeg_crf, preset=video_args.ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
 
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()

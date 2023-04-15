@@ -63,7 +63,7 @@ def t2v_api(_, app: FastAPI):
     @app.post("/t2v/run")
     async def t2v_run(prompt: str, n_prompt: Union[str, None] = None, steps: Union[int, None] = None, frames: Union[int, None] = None, seed: Union[int, None] = None, \
                       cfg_scale: Union[int, None] = None, width: Union[int, None] = None, height: Union[int, None] = None, eta: Union[float, None] = None, batch_count: Union[int, None] = None, \
-                      do_img2img:bool = False, vid2vid_input: Union[UploadFile, None] = None,strength: Union[float, None] = None,img2img_startFrame: Union[int, None] = None, \
+                      do_vid2vid:bool = False, vid2vid_input: Union[UploadFile, None] = None,strength: Union[float, None] = None,vid2vid_startFrame: Union[int, None] = None, \
                       inpainting_image: Union[UploadFile, None] = None, inpainting_frames: Union[int, None] = None, inpainting_weights: Union[str, None] = None,):
         for basedir in basedirs:
             sys.path.extend([
@@ -101,7 +101,7 @@ def t2v_api(_, app: FastAPI):
                 img.save(tmp_inpainting_name)
                 tmp_inpainting = open(tmp_inpainting_name, "r")
             
-            if do_img2img and vid2vid_input:
+            if do_vid2vid and vid2vid_input:
                 vid2vid_input_content = await vid2vid_input.read()
                 tmp_vid2vid = open(temp_vid2vid_name, "wb")
                 tmp_vid2vid.write(io.BytesIO(vid2vid_input_content).getbuffer())
@@ -141,11 +141,11 @@ def t2v_api(_, app: FastAPI):
                 d.eta,#eta
                 d.batch_count,#batch_count_v
 
-                do_img2img,#do_img2img
-                tmp_vid2vid,#img2img_frames
-                "",#img2img_frames_path
+                do_vid2vid,#do_vid2vid
+                tmp_vid2vid,#vid2vid_frames
+                "",#vid2vid_frames_path
                 d.strength,#strength
-                d.img2img_startFrame,#img2img_startFrame
+                d.vid2vid_startFrame,#vid2vid_startFrame
                 tmp_inpainting,#inpainting_image
                 d.inpainting_frames,#inpainting_frames
                 d.inpainting_weights,#inpainting_weights

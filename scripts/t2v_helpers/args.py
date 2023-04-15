@@ -57,7 +57,7 @@ def setup_text2video_settings_dictionary():
     with gr.Row(elem_id='model-switcher'):
         model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
     with gr.Tabs():
-        do_img2img = gr.State(value=0)
+        do_vid2vid = gr.State(value=0)
         with gr.Tab('txt2vid') as tab_txt2vid:
             # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
             prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
@@ -81,19 +81,19 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
             with gr.Row():
                 gr.HTML('Put your video here')
                 gr.HTML('<strong>Vid2vid for VideoCrafter is to be done!</strong>')
-            img2img_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
+            vid2vid_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
             with gr.Row():
                 gr.HTML('Alternative: enter the relative (to the webui) path to the file')
             with gr.Row():
-                img2img_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
+                vid2vid_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
             # TODO: here too
             prompt_v, n_prompt_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
             with gr.Row():
                 strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
-                img2img_startFrame=gr.Number(label='vid2vid start frame',value=d.img2img_startFrame)
+                vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
         
-        tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_img2img])
-        tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_img2img])
+        tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_vid2vid])
+        tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_vid2vid])
 
         with gr.Tab('Output settings'):
             with gr.Row(variant='compact') as fps_out_format_row:
@@ -119,7 +119,7 @@ t2v_video_args_names = str('skip_video_creation, ffmpeg_location, ffmpeg_crf, ff
 common_values_names = str('''prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 v2v_values_names = str('''
-do_img2img, img2img_frames, img2img_frames_path, strength,img2img_startFrame,
+do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame,
 inpainting_image,inpainting_frames, inpainting_weights,
 model_type''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
@@ -137,7 +137,7 @@ def pack_video_args(args_dict):
     return {name: args_dict[name] for name in t2v_video_args_names}
 
 def process_args(args_dict):
-    if args_dict['do_img2img']:
+    if args_dict['do_vid2vid']:
         # override text2vid data with vid2vid data
         for name in common_values_names:
             args_dict[f'{name}_v'] = args_dict[name]
@@ -164,7 +164,7 @@ def T2VArgs():
     prompt = ""
     n_prompt = "text, watermark, copyright, blurry"
     strength = 0.75
-    img2img_startFrame = 0
+    vid2vid_startFrame = 0
     inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
     inpainting_frames = 0
     return locals()
@@ -183,7 +183,7 @@ def T2VArgs_sanity_check(t2v_args):
             raise ValueError('Steps cannot be lower than 1!')
         if t2v_args.strength < 0 or t2v_args.strength > 1:
             raise ValueError('vid2vid strength should be in range of 0 to 1!')
-        if t2v_args.img2img_startFrame >= t2v_args.frames:
+        if t2v_args.vid2vid_startFrame >= t2v_args.frames:
             raise ValueError('vid2vid start frame cannot be greater than the number of frames!')
         if t2v_args.inpainting_frames < 0 or t2v_args.inpainting_frames > t2v_args.frames:
             raise ValueError('inpainting frames count should lie between 0 and the frames number!')
