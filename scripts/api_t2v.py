@@ -11,7 +11,6 @@ for basedir in basedirs:
         if not deforum_scripts_path_fix in sys.path:
             sys.path.extend([deforum_scripts_path_fix])
 
-import base64
 import hashlib
 import io
 import json
@@ -25,7 +24,7 @@ from typing import Union
 import traceback
 from types import SimpleNamespace
 
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Query, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -64,8 +63,8 @@ def t2v_api(_, app: FastAPI):
     @app.post("/t2v/run")
     async def t2v_run(prompt: str, n_prompt: Union[str, None] = None, steps: Union[int, None] = None, frames: Union[int, None] = None, seed: Union[int, None] = None, \
                       cfg_scale: Union[int, None] = None, width: Union[int, None] = None, height: Union[int, None] = None, eta: Union[float, None] = None, batch_count: Union[int, None] = None, \
-                      do_img2img:bool = False, vid2vid_input:str = "",strength: Union[float, None] = None,img2img_startFrame: Union[int, None] = None, \
-                      inpainting_image:str = "", inpainting_frames: Union[int, None] = None, inpainting_weights: Union[str, None] = None,):
+                      do_img2img:bool = False, vid2vid_input: UploadFile | None = None,strength: Union[float, None] = None,img2img_startFrame: Union[int, None] = None, \
+                      inpainting_image: UploadFile | None = None, inpainting_frames: Union[int, None] = None, inpainting_weights: Union[str, None] = None,):
         for basedir in basedirs:
             sys.path.extend([
                 basedir + '/scripts',
@@ -86,22 +85,9 @@ def t2v_api(_, app: FastAPI):
         d = SimpleNamespace(**args_dict)
         dv = SimpleNamespace(**T2VOutputArgs())
 
-        tmp_inpainting = None
-        tmp_vid2vid = None
-
         # Wrap the process call in a try-except block to handle potential errors
         try:
             T2VArgs_sanity_check(d)
-
-            if d.inpainting_frames > 0 and len(inpainting_image) > 0:
-                img = Image.open(io.BytesIO(urllib.request.urlopen(inpainting_image).file.read()))
-                tmp_inpainting = open(f'{str(uuid.uuid4())}.png', "w")
-                img.save(tmp_inpainting)
-            
-            if do_img2img and len(vid2vid_input) > 0:
-                vid2vid_input = vid2vid_input[len("data:video/mp4;base64,"):] if vid2vid_input.startswith("data:video/mp4;base64,") else vid2vid_input
-                tmp_vid2vid = open(f'{str(uuid.uuid4())}.mp4', "w")
-                tmp_vid2vid.write(io.BytesIO(base64.b64decode(vid2vid_input)).getbuffer())
 
             videodat = run(
                 # ffmpeg params
@@ -137,11 +123,11 @@ def t2v_api(_, app: FastAPI):
                 d.batch_count,#batch_count_v
 
                 do_img2img,#do_img2img
-                tmp_vid2vid,#img2img_frames
+                vid2vid_input,#img2img_frames
                 "",#img2img_frames_path
                 d.strength,#strength
                 d.img2img_startFrame,#img2img_startFrame
-                tmp_inpainting,#inpainting_image
+                inpainting_image,#inpainting_image
                 d.inpainting_frames,#inpainting_frames
                 d.inpainting_weights,#inpainting_weights
                 "ModelScope",#model_type. Only one has stable support at this moment
@@ -156,11 +142,6 @@ def t2v_api(_, app: FastAPI):
                 status_code=500,
                 content={"detail": "An error occurred while processing the video."},
             )
-        finally:
-            if tmp_vid2vid is not None:
-                tmp_vid2vid.close()
-            if tmp_inpainting is not None:
-                tmp_inpainting.close()
 
 
 try:
