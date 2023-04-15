@@ -89,7 +89,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     global i1_store_t2v
     dataurl = get_error()
     i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
-    keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else False
+    keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else 'None'
     try:
         print('text2video — The model selected is: ', model_type)
         if model_type == 'ModelScope':
@@ -114,7 +114,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         # print(e)
     finally:
         #optionally store pipe in global between runs, if not, remove it
-        if not keep_pipe_in_vram:
+        if keep_pipe_in_vram is 'None':
             pipe = None
         devices.torch_gc()
         gc.collect()
