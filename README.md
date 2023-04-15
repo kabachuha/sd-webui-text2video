@@ -6,7 +6,14 @@ Auto1111 extension consisting of implementation of various text2video models, su
 
 ### ModelScope
 
-8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames length 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti. We will appreciate *any* help with this extension, *especially* pull-requests.
+8gbs vram should be enough to run on GPU with low vram vae on at 256x256 (and we are already getting reports of people launching 192x192 videos [with 4gbs of vram](https://github.com/deforum-art/sd-webui-modelscope-text2video/discussions/27)). 24 frames long 256x256 video definitely fits into 12gbs of NVIDIA GeForce RTX 2080 Ti, or if you have a Torch2 attention optimization supported videocard, you can fit the whopping 125 frames (8 seconds) long video into the same 12 GBs of VRAM!
+
+Prompt: `best quality, anime girl dancing`
+
+https://user-images.githubusercontent.com/14872007/232229730-82df36cc-ac8b-46b3-949d-0e1dfc10a975.mp4
+
+
+We will appreciate *any* help with this extension, *especially* pull-requests.
 
 ### VideoCrafter (WIP, needs more devs to maintain properly as well)
 
