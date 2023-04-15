@@ -191,7 +191,7 @@ def process_modelscope(args_dict):
             strength=1
 
         samples, _ = pipe.infer(args.prompt, args.n_prompt, args.steps, args.frames, args.seed + batch if args.seed != -1 else -1, args.cfg_scale,
-                                args.width, args.height, args.eta, cpu_vae, device, latents,skip_steps=int(math.floor(args.steps*max(0, min(1 - strength, 1)))), mask=mask)
+                                args.width, args.height, args.eta, cpu_vae, device, latents,skip_steps=int(math.floor(args.steps*max(0, min(1 - args.strength, 1)))), mask=mask)
 
         if batch > 0:
             outdir_current = os.path.join(get_outdir(), f"{init_timestring}_{batch}")
