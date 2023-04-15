@@ -33,10 +33,6 @@ Update 2023-04-13: in-framing/in-painting support: allows to 'animate' an existi
 
 ### ModelScope
 
-Prompt: `flowers turning into lava`
-
-https://user-images.githubusercontent.com/14872007/226214023-2d3892d8-64d4-4312-baab-575aafedae09.mp4
-
 Prompt: `cinematic explosion by greg rutkowski`
 
 https://user-images.githubusercontent.com/14872007/226345611-a1f0601f-db32-41bd-b983-80d363eca4d5.mp4
