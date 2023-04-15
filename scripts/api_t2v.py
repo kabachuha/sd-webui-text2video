@@ -86,10 +86,10 @@ def t2v_api(_, app: FastAPI):
         dv = SimpleNamespace(**T2VOutputArgs())
 
         tmp_inpainting = None
-        tmp_inpainting_name = f't2v_temp/{str(uuid.uuid4())}.png'
+        tmp_inpainting_name = f'outputs/t2v_temp/{str(uuid.uuid4())}.png'
         tmp_vid2vid = None
-        temp_vid2vid_name = f't2v_temp/{str(uuid.uuid4())}.mp4'
-        os.makedirs('t2v_temp', exist_ok=True)
+        temp_vid2vid_name = f'outputs/t2v_temp/{str(uuid.uuid4())}.mp4'
+        os.makedirs('outputs/t2v_temp', exist_ok=True)
 
         # Wrap the process call in a try-except block to handle potential errors
         try:
