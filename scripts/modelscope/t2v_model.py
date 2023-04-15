@@ -52,7 +52,7 @@ except:
 def has_xformers():
     try:
         import xformers
-        return opts.xformers
+        return True
     except ImportError:
         return False
 
@@ -487,14 +487,14 @@ class CrossAttention(nn.Module):
             max_neg_value = -torch.finfo(x.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h=h)
         
-        if has_xformers():
+        if has_torch2():
+            out = F.scaled_dot_product_attention(
+                q, k, v, dropout_p=0.0, is_causal=False, attn_mask=mask
+            )
+        elif has_xformers():
             import xformers
             out = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v), scale=self.scale, mask=mask
-            )
-        elif has_torch2():
-            out = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=0.0, is_causal=False, attn_mask=mask
             )
         else:
 
@@ -1085,14 +1085,14 @@ class AttentionBlock(nn.Module):
 
         # compute attention
 
-        if has_xformers():
+        if has_torch2():
+            x = F.scaled_dot_product_attention(
+                q, k, v, dropout_p=0.0, is_causal=False,
+            )
+        elif has_xformers():
             import xformers
             x = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v), scale=self.scale,
-            )
-        elif has_torch2():
-            x = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=0.0, is_causal=False,
             )
         else:
             attn = torch.matmul(q.transpose(-1, -2) * self.scale, k * self.scale)
