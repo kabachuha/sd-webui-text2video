@@ -27,7 +27,7 @@ ModelScope:
 
 ''' + welcome_text_modelscope
 
-i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 2.0b. The video will be shown below this label when ready</p>"
+i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.2b. The video will be shown below this label when ready</p>"
 
 def setup_common_values(mode, d):
     with gr.Row(elem_id=f'{mode}_prompt_toprow'):
