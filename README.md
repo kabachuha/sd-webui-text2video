@@ -89,10 +89,13 @@ Download pretrained T2V models either via [this link](https://drive.google.com/f
 
 ## Screenshots
 
-![Screenshot 2023-03-20 at 15-52-21 Stable Diffusion](https://user-images.githubusercontent.com/14872007/226345377-bad6dda5-f921-4233-b832-843e78854cbb.png)
+txt2vid with img2vid
 
-![Screenshot 2023-03-20 at 15-52-15 Stable Diffusion](https://user-images.githubusercontent.com/14872007/226345398-d37133a8-3e5f-43f3-ae13-37dc609cd14c.png)
+![Screenshot 2023-04-15 at 17-53-36 Stable Diffusion](https://user-images.githubusercontent.com/14872007/232232319-c3a443ee-1a8a-4504-a114-d9da2ae916c2.png)
 
+vid2vid
+
+![Screenshot 2023-04-15 at 17-33-32 Stable Diffusion](https://user-images.githubusercontent.com/14872007/232232338-a2aa4b78-35d0-4c9b-850b-15edc90c0c9f.png)
 
 ## Dev resources
 
