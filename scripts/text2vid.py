@@ -89,7 +89,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
     global i1_store_t2v
     dataurl = get_error()
     i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
-    keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else False
+    keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else 'None'
     try:
         print('text2video — The model selected is: ', model_type)
         if model_type == 'ModelScope':
@@ -114,7 +114,7 @@ def process(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps
         # print(e)
     finally:
         #optionally store pipe in global between runs, if not, remove it
-        if not keep_pipe_in_vram:
+        if keep_pipe_in_vram is 'None':
             pipe = None
         devices.torch_gc()
         gc.collect()
@@ -152,6 +152,9 @@ def process_modelscope(skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_
     # optionally store pipe in global between runs
     if pipe is None:
         pipe = setup_pipeline()
+    
+    if pipe is not None:
+        pipe.keep_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else False
 
     device=devices.get_optimal_device()
     print('device',device)
@@ -588,7 +591,7 @@ def DeforumOutputArgs():
 def on_ui_settings():
     section = ('modelscope_deforum', "Text2Video")
     shared.opts.add_option("modelscope_deforum_keep_model_in_vram", shared.OptionInfo(
-        False, "Keep model in VRAM between runs", gr.Checkbox, {"interactive": True, "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
+        'None', "Keep model in VRAM between runs", gr.Radio, {"interactive": True, "choices": ['None', 'Main Model Only', 'All'], "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
     shared.opts.add_option("modelscope_deforum_vae_settings", shared.OptionInfo(
         "GPU (half precision)", "VAE Mode:", gr.Radio, {"interactive": True, "choices": ['GPU (half precision)', 'GPU', 'CPU (Low VRAM)']}, section=section))
 

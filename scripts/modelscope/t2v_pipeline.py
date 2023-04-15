@@ -62,6 +62,8 @@ class TextToVideoSynthesis():
         self.config = SimpleNamespace(**config_dict)
         print("config", self.config)
 
+        self.keep_in_vram = 'None' #None, All, Model
+
         cfg = self.config.model["model_cfg"]
         cfg['temporal_attention'] = True if cfg[
             'temporal_attention'] == 'True' else False
@@ -120,7 +122,8 @@ class TextToVideoSynthesis():
         self.autoencoder = AutoencoderKL(
             ddconfig, 4,
             osp.join(self.model_dir, self.config.model["model_args"]["ckpt_autoencoder"]))
-        self.autoencoder.to('cpu')
+        if self.keep_in_vram != "All":
+            self.autoencoder.to('cpu')
         self.autoencoder.eval()
 
         # Initialize Open clip
@@ -130,8 +133,9 @@ class TextToVideoSynthesis():
                              device='cpu',
             layer='penultimate')
 
-        self.clip_encoder.model.to('cpu')
-        self.clip_encoder.to("cpu")
+        if self.keep_in_vram != "All":
+            self.clip_encoder.model.to('cpu')
+            self.clip_encoder.to("cpu")
         self.noise_gen = torch.Generator(device='cpu')
 
     def compute_latents(self, vd_out, cpu_vae='GPU (half precision)', device=torch.device('cuda')):
@@ -210,7 +214,8 @@ class TextToVideoSynthesis():
         self.clip_encoder.to(self.device)
         self.clip_encoder.device = self.device
         c, uc = self.preprocess(prompt, n_prompt, steps)
-        self.clip_encoder.to("cpu")
+        if self.keep_in_vram != "All":
+            self.clip_encoder.to("cpu")
         torch_gc()
 
         if 'half precision' in cpu_vae and mask is not None:
@@ -253,7 +258,8 @@ class TextToVideoSynthesis():
 
                 self.last_tensor = x0
                 self.last_tensor.cpu()
-                self.sd_model.to("cpu")
+                if self.keep_in_vram == "None":
+                    self.sd_model.to("cpu")
                 torch_gc()
                 scale_factor = 0.18215
                 bs_vd = x0.shape[0]
@@ -268,7 +274,8 @@ class TextToVideoSynthesis():
                     chunks = torch.chunk(x0, chunks=max_frames, dim=2)
                     # Apply the autoencoder to each chunk
                     output_chunks = []
-                    self.autoencoder.to("cpu")
+                    if self.keep_in_vram != "All":
+                        self.autoencoder.to("cpu")
                     print("STARTING VAE ON CPU")
                     x = 0
                     for chunk in chunks:
@@ -321,11 +328,13 @@ class TextToVideoSynthesis():
         vd_out = vd_out.type(torch.float32).cpu()
 
         video_path = self.postprocess_video(vd_out)
-        self.clip_encoder.to("cpu")
-        self.sd_model.to("cpu")
-        self.autoencoder.to("cpu")
-        self.autoencoder.encoder.to("cpu")
-        self.autoencoder.decoder.to("cpu")
+        if self.keep_in_vram == "None":
+            self.sd_model.to("cpu")
+        if self.keep_in_vram != "All":
+            self.clip_encoder.to("cpu")
+            self.autoencoder.to("cpu")
+            self.autoencoder.encoder.to("cpu")
+            self.autoencoder.decoder.to("cpu")
 
         # self.autoencoder = None
         # del self.autoencoder
@@ -361,7 +370,8 @@ class TextToVideoSynthesis():
         uc = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, [n_prompt], steps, cached_uc)
         c = get_conds_with_caching(prompt_parser.get_learned_conditioning, self.clip_encoder, [prompt], steps, cached_c)
         if offload:
-            self.clip_encoder.to('cpu')
+            if self.keep_in_vram != "All":
+                self.clip_encoder.to('cpu')
         return c, uc
 
     def postprocess_video(self, video_data):
