@@ -123,11 +123,11 @@ def t2v_api(_, app: FastAPI):
                 d.batch_count,#batch_count_v
 
                 do_img2img,#do_img2img
-                vid2vid_input,#img2img_frames
+                vid2vid_input.file if vid2vid_input is not None else None,#img2img_frames
                 "",#img2img_frames_path
                 d.strength,#strength
                 d.img2img_startFrame,#img2img_startFrame
-                inpainting_image,#inpainting_image
+                inpainting_image.file if inpainting_image is not None else None,#inpainting_image
                 d.inpainting_frames,#inpainting_frames
                 d.inpainting_weights,#inpainting_weights
                 "ModelScope",#model_type. Only one has stable support at this moment
