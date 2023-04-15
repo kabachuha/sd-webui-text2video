@@ -494,7 +494,7 @@ class CrossAttention(nn.Module):
         elif has_xformers():
             import xformers
             out = xformers.ops.memory_efficient_attention(
-                q, k, v, op=get_xformers_flash_attention_op(q,k,v), scale=self.scale, mask=mask
+                q, k, v, op=get_xformers_flash_attention_op(q,k,v), scale=self.scale, attn_bias=mask
             )
         else:
 
