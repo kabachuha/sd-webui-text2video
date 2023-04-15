@@ -494,7 +494,7 @@ class CrossAttention(nn.Module):
             )
         elif has_torch2():
             out = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=0.0, is_causal=False, mask=mask
+                q, k, v, dropout_p=0.0, is_causal=False, attn_mask=mask
             )
         else:
 
