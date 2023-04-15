@@ -216,6 +216,6 @@ def process_modelscope(args_dict):
             vids_to_pack.append(dataurl)
     t2v_helpers_args.i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.1b </p>'
     for dataurl in vids_to_pack:
-        t2v_helpers_args.i1_store_t2v += '<video controls loop><source src="{dataurl}" type="video/mp4"></video><br>'
+        t2v_helpers_args.i1_store_t2v += f'<video controls loop><source src="{dataurl}" type="video/mp4"></video><br>'
     pbar.close()
     return vids_to_pack
