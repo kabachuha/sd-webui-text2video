@@ -64,7 +64,8 @@ def t2v_api(_, app: FastAPI):
     async def t2v_run(prompt: str, n_prompt: Union[str, None] = None, steps: Union[int, None] = None, frames: Union[int, None] = None, seed: Union[int, None] = None, \
                       cfg_scale: Union[int, None] = None, width: Union[int, None] = None, height: Union[int, None] = None, eta: Union[float, None] = None, batch_count: Union[int, None] = None, \
                       do_vid2vid:bool = False, vid2vid_input: Union[UploadFile, None] = None,strength: Union[float, None] = None,vid2vid_startFrame: Union[int, None] = None, \
-                      inpainting_image: Union[UploadFile, None] = None, inpainting_frames: Union[int, None] = None, inpainting_weights: Union[str, None] = None,):
+                      inpainting_image: Union[UploadFile, None] = None, inpainting_frames: Union[int, None] = None, inpainting_weights: Union[str, None] = None, \
+                      fps: Union[int, None] = None, add_soundtrack: Union[str, None] = None, soundtrack_path: Union[str, None] = None, ):
         for basedir in basedirs:
             sys.path.extend([
                 basedir + '/scripts',
@@ -72,18 +73,22 @@ def t2v_api(_, app: FastAPI):
                 basedir + '/extensions/sd-webui-modelscope-text2video/scripts',
             ])
         
-        args_dict = locals()
-        default_args_dict = T2VArgs()
-        for k, v in args_dict.items():
-            if v is None and k in default_args_dict:
-                args_dict[k] = default_args_dict[k]
+        locals_args_dict = locals()
+        args_dict = T2VArgs()
+        video_args_dict = T2VOutputArgs()
+        for k, v in locals_args_dict.items():
+            if v is not None:
+                if k in args_dict:
+                    args_dict[k] = locals_args_dict[k]
+                elif k in video_args_dict:
+                    video_args_dict[k] = locals_args_dict[k]
 
         """
         Run t2v over api
         @return:
         """
         d = SimpleNamespace(**args_dict)
-        dv = SimpleNamespace(**T2VOutputArgs())
+        dv = SimpleNamespace(**video_args_dict)
 
         tmp_inpainting = None
         tmp_inpainting_name = f'outputs/t2v_temp/{str(uuid.uuid4())}.png'
