@@ -77,7 +77,7 @@ def t2v_api(_, app: FastAPI):
         default_args_dict = T2VArgs()
         for k, v in args_dict.items():
             if v is None and k in default_args_dict:
-                v = default_args_dict[k]
+                args_dict[k] = default_args_dict[k]
 
         """
         Run t2v over api
