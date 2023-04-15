@@ -53,6 +53,8 @@ def process_modelscope(args_dict):
     # optionally store pipe in global between runs
     if pipe is None:
         pipe = setup_pipeline()
+    
+    pipe.keep_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else 'None'
 
     device=devices.get_optimal_device()
     print('device',device)

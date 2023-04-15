@@ -44,6 +44,8 @@ def setup_common_values(mode, d):
         seed = gr.Number(label='Seed', value = d.seed, Interactive = True, precision=0)
         eta = gr.Number(label="ETA", value=d.eta, interactive=True)
     with gr.Row():
+        gr.Markdown('256x256 Benchmarks: 24 frames peak at 5.7 GBs of VRAM and 125 frames peak at 11.5 GBs with Torch2 installed')
+    with gr.Row():
         frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=125, step=1, interactive=True, precision=0)
         batch_count = gr.Slider(label="Batch count", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=True)
     
