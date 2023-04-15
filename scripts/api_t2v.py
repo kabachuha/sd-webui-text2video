@@ -87,7 +87,7 @@ def t2v_api(_, app: FastAPI):
 
         tmp_inpainting = None
         tmp_vid2vid = None
-        os.mkdir('t2v_temp', exist_ok=True)
+        os.makedirs('t2v_temp', exist_ok=True)
 
         # Wrap the process call in a try-except block to handle potential errors
         try:
