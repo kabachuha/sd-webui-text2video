@@ -93,7 +93,7 @@ def t2v_api(_, app: FastAPI):
         try:
             T2VArgs_sanity_check(d)
 
-            if inpainting_frames > 0 and len(inpainting_image) > 0:
+            if d.inpainting_frames > 0 and len(inpainting_image) > 0:
                 img = Image.open(io.BytesIO(urllib.request.urlopen(inpainting_image).file.read()))
                 tmp_inpainting = open(f'{str(uuid.uuid4())}.png', "w")
                 img.save(tmp_inpainting)
