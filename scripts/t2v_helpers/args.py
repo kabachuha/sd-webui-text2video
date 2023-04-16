@@ -1,6 +1,7 @@
 import gradio as gr
 from types import SimpleNamespace
 from t2v_helpers.video_audio_utils import find_ffmpeg_binary
+from modelscope.t2v_model import has_torch2
 import os
 from modules.shared import opts
 
@@ -46,7 +47,7 @@ def setup_common_values(mode, d):
     with gr.Row():
         gr.Markdown('256x256 Benchmarks: 24 frames peak at 5.7 GBs of VRAM and 125 frames peak at 11.5 GBs with Torch2 installed')
     with gr.Row():
-        frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=125, step=1, interactive=True, precision=0)
+        frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=250 if has_torch2() else 125, step=1, interactive=True, precision=0)
         batch_count = gr.Slider(label="Batch count", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=True)
     
     return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
