@@ -141,7 +141,7 @@ def process_args(args_dict):
     if args_dict['do_vid2vid']:
         # override text2vid data with vid2vid data
         for name in common_values_names:
-            args_dict[f'{name}_v'] = args_dict[name]
+            args_dict[name] = args_dict[f'{name}_v']
     
     # deduplicate
     for name in common_values_names:
