@@ -87,6 +87,16 @@ And put them in `stable-diffusion-webui/models/ModelScope/t2v`. Create those 2 f
 
 Download pretrained T2V models either via [this link](https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link) or download [the pruned half precision weights](https://huggingface.co/kabachuha/videocrafter-pruned-weights/tree/main), and put the `model.ckpt` in `models/VideoCrafter/model.ckpt`.
 
+## Fine-tunes and how to use them
+
+Thanks to https://github.com/ExponentialML/Text-To-Video-Finetuning you can fine-tune your models!
+
+To utilize a fine-tuned model here, use [this script](https://github.com/ExponentialML/Text-To-Video-Finetuning/pull/52) which will convert the Diffusers-formatted model that repo outputs into the original weights format.
+
+Example of a fine-tuned model: [Animov-0.1 by strangeman3107](https://huggingface.co/datasets/strangeman3107/animov-0.1). The converted weights for this model reside [here](https://huggingface.co/kabachuha/animov-0.1-modelscope-original-format).
+
+https://user-images.githubusercontent.com/14872007/232611542-600cec38-d944-4530-bc5c-3595a115c2be.mp4
+
 ## Screenshots
 
 txt2vid with img2vid
