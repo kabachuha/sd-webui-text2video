@@ -188,6 +188,12 @@ class TextToVideoSynthesis():
 
     # @torch.compile()
     def infer(self, prompt, n_prompt, steps, frames, seed, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device=torch.device('cpu'), latents=None, skip_steps=0,strength=0,mask=None):
+        print('Making a video with the following parameters:')
+        vars = locals()
+        vars.pop('self')
+        vars.pop('latents')
+        vars.pop('mask')
+        print(vars)
         r"""
         The entry function of text to image synthesis task.
         1. Using diffusion model to generate the video's latent representation.
