@@ -139,7 +139,7 @@ def process_modelscope(args_dict):
     for batch in pbar:
 
         # TODO: move to a separate function
-        if args.inpainting_frames > 0:
+        if  args.inpainting_frames > 0 and hasattr(args.inpainting_image, "name"):
             keys = T2VAnimKeys(SimpleNamespace(**{'max_frames':args.frames, 'inpainting_weights':args.inpainting_weights}), args.seed, args.inpainting_frames)
             images=[]
             print("Received an image for inpainting", args.inpainting_image.name)
