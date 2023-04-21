@@ -17,6 +17,8 @@ from modules.shared import opts
 
 from tqdm import tqdm
 from modules.prompt_parser import reconstruct_cond_batch
+from modules.shared import state
+from modules.sd_samplers_common import InterruptedException
 
 from modules.sd_hijack_optimizations import get_xformers_flash_attention_op
 
@@ -1405,6 +1407,8 @@ class GaussianDiffusion(object):
         steps = (1 + torch.arange(0, self.num_timesteps,
                                   self.num_timesteps // ddim_timesteps)).clamp(
                                       0, self.num_timesteps - 1).flip(0)
+        
+        state.sampling_steps = ddim_timesteps
 
         if skip_steps > 0:
             step0 = steps[skip_steps-1]
@@ -1414,6 +1418,7 @@ class GaussianDiffusion(object):
             t = torch.full((b, ), step0, dtype=torch.long, device=xt.device)
             print("huh", step0, t)
             xt = self.add_noise(xt, noise_to_add, step0)
+            state.sampling_steps = state.sampling_steps - skip_steps
 
         if mask is not None:
             pass
@@ -1430,15 +1435,15 @@ class GaussianDiffusion(object):
         pbar = tqdm(steps, desc="DDIM sampling")
 
         #print(c)
-        #print(uc)
-
-        
+        #print(uc)        
 
         i = 0
         for step in pbar:
 
-            
+            state.sampling_step = i
 
+            if state.interrupted:
+                raise InterruptedException
 
             c_i = reconstruct_cond_batch(c, i)
             uc_i = reconstruct_cond_batch(uc, i)
@@ -1487,11 +1492,13 @@ class GaussianDiffusion(object):
                 pass
 
             
-
             t.cpu()
             t = None
             i += 1
             pbar.set_description(f"DDIM sampling {str(step)}")
+
+            if state.skipped:
+                break
         pbar.close()
         return xt
 
