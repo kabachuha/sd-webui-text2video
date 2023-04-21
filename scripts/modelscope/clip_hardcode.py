@@ -93,10 +93,10 @@ class FrozenOpenCLIPEmbedder(torch.nn.Module):
         self.chunk_length = 75
     
     def tokenize(self, texts):
-        assert not opts.use_old_emphasis_implementation, 'Old emphasis implementation not supported for Open Clip'
-
-        tokenized = [tokenizer.encode(text) for text in texts]
-
+        if not (hasattr(opts, 'use_old_emphasis_implementation') and opts.use_old_emphasis_implementation):
+            tokenized = [tokenizer.encode(text) for text in texts]
+        else:
+            assert not opts.use_old_emphasis_implementation, 'Old emphasis implementation not supported for Open Clip'
         return tokenized
     
     def encode_with_transformer(self, text):
