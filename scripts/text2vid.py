@@ -38,7 +38,21 @@ def on_ui_tabs():
                 components = setup_text2video_settings_dictionary()
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(variant='compact'):
+                    interrupt = gr.Button('Interrupt', elem_id=f"text2vid_interrupt", elem_classes="generate-box-interrupt")
+                    skip = gr.Button('Skip', elem_id=f"text2vid_skip", elem_classes="generate-box-skip")
                     run_button = gr.Button('Generate', elem_id=f"text2vid_generate", variant='primary')
+
+                    skip.click(
+                        fn=lambda: shared.state.skip(),
+                        inputs=[],
+                        outputs=[],
+                    )
+
+                    interrupt.click(
+                        fn=lambda: shared.state.interrupt(),
+                        inputs=[],
+                        outputs=[],
+                    )
                 with gr.Row(variant='compact'):
                     i1 = gr.HTML(args.i1_store_t2v, elem_id='deforum_header')
                 with gr.Row(visible=False):

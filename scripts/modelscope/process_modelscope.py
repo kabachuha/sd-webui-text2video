@@ -17,7 +17,7 @@ from t2v_helpers.video_audio_utils import ffmpeg_stitch_video, get_quick_vid_inf
 from t2v_helpers.args import get_outdir, process_args
 import t2v_helpers.args as t2v_helpers_args
 from modules import shared, sd_hijack, lowvram
-from modules.shared import opts, devices
+from modules.shared import opts, devices, state
 import os
 
 pipe = None
@@ -122,9 +122,12 @@ def process_modelscope(args_dict):
         #latents should have shape num_sample, 4, max_frames, latent_h,latent_w
         print("Computing latents")
         latents = pipe.compute_latents(vd_out).to(device)
+
+        skip_steps = int(math.floor(args.steps*max(0, min(1 - args.strength, 1))))
     else:
         latents = None
         args.strength=1
+        skip_steps = 0
 
     print('Working in txt2vid mode' if not args.do_vid2vid else 'Working in vid2vid mode')
 
@@ -135,9 +138,17 @@ def process_modelscope(args_dict):
         pbar.disable=True
     
     vids_to_pack = []
+
+    state.job_count = args.batch_count
     
     for batch in pbar:
+        if state.skipped:
+            state.skipped = False
 
+        if state.interrupted:
+            break
+
+        shared.state.job = f"Batch {batch+1} out of {args.batch_count}"
         # TODO: move to a separate function
         if args.inpainting_frames > 0 and hasattr(args.inpainting_image, "name"):
             keys = T2VAnimKeys(SimpleNamespace(**{'max_frames':args.frames, 'inpainting_weights':args.inpainting_weights}), args.seed, args.inpainting_frames)
@@ -191,7 +202,7 @@ def process_modelscope(args_dict):
             args.strength=1
 
         samples, _ = pipe.infer(args.prompt, args.n_prompt, args.steps, args.frames, args.seed + batch if args.seed != -1 else -1, args.cfg_scale,
-                                args.width, args.height, args.eta, cpu_vae, device, latents,skip_steps=int(math.floor(args.steps*max(0, min(1 - args.strength, 1)))), mask=mask)
+                                args.width, args.height, args.eta, cpu_vae, device, latents,skip_steps=skip_steps, mask=mask)
 
         if batch > 0:
             outdir_current = os.path.join(get_outdir(), f"{init_timestring}_{batch}")
