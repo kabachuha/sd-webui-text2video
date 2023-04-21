@@ -97,7 +97,13 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
             prompt_v, n_prompt_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
             with gr.Row():
                 strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
-                vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
+                vid2vid_startFrame=gr.Slider(label='vid2vid start frame',value=d.vid2vid_startFrame, minimum=0, maximum=frames.maximum-1)
+            
+            def update_max_vid_frames(vid2vid_frames): # Show video
+                return {
+                    vid2vid_startFrame: gr.update(maximum=vid2vid_frames-1, visible=True),
+                }
+            vid2vid_frames.change(fn=update_max_vid_frames, inputs=[vid2vid_frames], outputs=[vid2vid_startFrame])
         
         tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_vid2vid])
         tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_vid2vid])
