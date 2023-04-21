@@ -494,7 +494,7 @@ class CrossAttention(nn.Module):
         elif has_xformers():
             import xformers
             out = xformers.ops.memory_efficient_attention(
-                q, k, v, op=get_xformers_flash_attention_op(q,k,v), scale=self.scale, attn_bias=mask
+                q, k, v, op=get_xformers_flash_attention_op(q,k,v), attn_bias=mask,
             )
         else:
 
@@ -1093,7 +1093,7 @@ class AttentionBlock(nn.Module):
         elif has_xformers():
             import xformers
             x = xformers.ops.memory_efficient_attention(
-                q, k, v, op=get_xformers_flash_attention_op(q,k,v), scale=self.scale,
+                q, k, v, op=get_xformers_flash_attention_op(q,k,v),
             )
         else:
             attn = torch.matmul(q.transpose(-1, -2) * self.scale, k * self.scale)
