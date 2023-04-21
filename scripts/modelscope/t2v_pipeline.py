@@ -188,11 +188,14 @@ class TextToVideoSynthesis():
 
     # @torch.compile()
     def infer(self, prompt, n_prompt, steps, frames, seed, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device=torch.device('cpu'), latents=None, skip_steps=0,strength=0,mask=None):
-        print('Making a video with the following parameters:')
         vars = locals()
         vars.pop('self')
         vars.pop('latents')
         vars.pop('mask')
+        print('Making a video with the following parameters:')
+
+        seed = seed if seed!=-1 else random.randint(0, 2**32 - 1)
+        vars['seed'] = seed
         print(vars)
         r"""
         The entry function of text to image synthesis task.
@@ -235,7 +238,7 @@ class TextToVideoSynthesis():
             latent_h, latent_w = height // 8, width // 8
             self.sd_model.to(self.device)
             if latents == None:
-                self.noise_gen.manual_seed(seed if seed!=-1 else random.randint(0, 2**32 - 1))
+                self.noise_gen.manual_seed(seed)
                 latents = torch.randn(num_sample, 4, max_frames, latent_h,
                                           latent_w, generator=self.noise_gen).to(
                                               self.device)
