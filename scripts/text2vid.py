@@ -61,8 +61,11 @@ def on_ui_tabs():
                 with gr.Row(variant='compact'):
                     btn = gr.Button("Click here after the generation to show the video")
                 with gr.Row(variant='compact'):
+                    with gr.Group(elem_id='text2vid_results_panel'):
+                        gr.Label("", visible=False)
+                with gr.Row(variant='compact'):
                     i1 = gr.HTML(args.i1_store_t2v, elem_id='deforum_header')
-                    def show_vid(): # Show video
+                    def show_vid(): # Show video1
                         return {
                             i1: gr.update(value=args.i1_store_t2v, visible=True),
                             btn: gr.update(value="Update the video", visible=True),

@@ -8,3 +8,25 @@
 #vid_to_vid_chosen_file, #inpainting_chosen_file {
 	height: 85px !important;
 }
+
+.generate-box{
+    position: relative;
+}
+.gradio-button.generate-box-skip, .gradio-button.generate-box-interrupt{
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    display: none;
+    background: #b4c0cc;
+}
+.gradio-button.generate-box-skip:hover, .gradio-button.generate-box-interrupt:hover{
+    background: #c2cfdb;
+}
+.gradio-button.generate-box-interrupt{
+    left: 0;
+    border-radius: 0.5rem 0 0 0.5rem;
+}
+.gradio-button.generate-box-skip{
+    right: 0;
+    border-radius: 0 0.5rem 0.5rem 0;
+}

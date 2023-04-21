@@ -4,7 +4,7 @@ function submit_txt2vid(){
 
     var id = randomId()
     // Using progressbar without the gallery
-    requestProgress(id, null, null, function(){
+    requestProgress(id, gradioApp().getElementById('text2vid_results_panel'), null, function(){
         showSubmitButtons('text2vid', true)
     })
 
