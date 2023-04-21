@@ -37,7 +37,7 @@ def on_ui_tabs():
             with gr.Column(scale=1, variant='panel'):
                 components = setup_text2video_settings_dictionary()
             with gr.Column(scale=1, variant='compact'):
-                with gr.Row(variant='compact'):
+                with gr.Row(elem_id=f"text2vid_generate_box", variant='compact', elem_classes="generate-box"):
                     interrupt = gr.Button('Interrupt', elem_id=f"text2vid_interrupt", elem_classes="generate-box-interrupt")
                     skip = gr.Button('Skip', elem_id=f"text2vid_skip", elem_classes="generate-box-skip")
                     run_button = gr.Button('Generate', elem_id=f"text2vid_generate", variant='primary')
@@ -75,8 +75,8 @@ def on_ui_tabs():
             run_button.click(
                 # , extra_outputs=[None, '', '']),
                 fn=wrap_gradio_gpu_call(process),
-                # _js="submit_deforum",
-                inputs=[components[name] for name in args.get_component_names()],
+                _js="submit_txt2vid",
+                inputs=[dummy_component1, dummy_component2] + [components[name] for name in args.get_component_names()],
                 outputs=[
                     dummy_component1, dummy_component2,
                 ],
