@@ -1442,7 +1442,7 @@ class GaussianDiffusion(object):
 
             state.sampling_step = i
 
-            if state.interrupted or state.skipped:
+            if state.interrupted:
                 raise InterruptedException
 
             c_i = reconstruct_cond_batch(c, i)
@@ -1496,6 +1496,9 @@ class GaussianDiffusion(object):
             t = None
             i += 1
             pbar.set_description(f"DDIM sampling {str(step)}")
+
+            if state.skipped:
+                break
         pbar.close()
         return xt
 
