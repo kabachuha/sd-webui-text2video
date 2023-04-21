@@ -163,7 +163,7 @@ def T2VArgs():
     cfg_scale = 17
     steps = 30
     prompt = ""
-    n_prompt = "text, watermark, copyright, blurry"
+    n_prompt = "text, watermark, copyright, blurry, nsfw"
     strength = 0.75
     vid2vid_startFrame = 0
     inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
