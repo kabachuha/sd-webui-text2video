@@ -489,7 +489,7 @@ class CrossAttention(nn.Module):
         
         if has_torch2():
             out = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=0.0, is_causal=False, attn_bias=mask
+                q, k, v, dropout_p=0.0, is_causal=False, attn_mask=mask
             )
         elif has_xformers():
             import xformers
