@@ -78,6 +78,12 @@ To *loop it back*, set the weight to 0 for the first and for the last frame
 Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                 with gr.Row():
                     inpainting_weights = gr.Textbox(label="Inpainting weights", value=d.inpainting_weights, interactive=True)
+                
+                def update_max_inp_frames(frames): # Show video
+                    return {
+                        inpainting_frames: gr.update(maximum=frames, visible=True),
+                    }
+                frames.change(fn=update_max_inp_frames, inputs=[frames], outputs=[inpainting_frames])
         with gr.Tab('vid2vid') as tab_vid2vid:
             with gr.Row():
                 gr.HTML('Put your video here')
