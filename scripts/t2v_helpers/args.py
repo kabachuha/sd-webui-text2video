@@ -79,9 +79,9 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                 with gr.Row():
                     inpainting_weights = gr.Textbox(label="Inpainting weights", value=d.inpainting_weights, interactive=True)
                 
-                def update_max_inp_frames(frames, inpainting_frames): # Show video
+                def update_max_inp_frames(f, i_frames): # Show video
                     return {
-                        inpainting_frames: gr.update(value=min(frames, inpainting_frames), maximum=frames, visible=True),
+                        'inpainting_frames': i_frames if type(i_frames) == dict else gr.update(value=min(f, i_frames), maximum=f, visible=True),
                     }
                 frames.change(fn=update_max_inp_frames, inputs=[frames, inpainting_frames], outputs=[inpainting_frames])
         with gr.Tab('vid2vid') as tab_vid2vid:
@@ -99,9 +99,9 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                 strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
                 vid2vid_startFrame=gr.Slider(label='vid2vid start frame',value=d.vid2vid_startFrame, minimum=0, maximum=frames.maximum-1)
             
-            def update_max_vid_frames(vid2vid_frames, vid2vid_startFrame): # Show video
+            def update_max_vid_frames(v2v_frames, sFrame): # Show video
                 return {
-                    vid2vid_startFrame: gr.update(value=min(vid2vid_startFrame, vid2vid_frames-1), maximum=vid2vid_frames-1, visible=True),
+                    'vid2vid_startFrame': sFrame if type(sFrame) == dict else gr.update(value=min(sFrame, v2v_frames-1), maximum=v2v_frames-1, visible=True),
                 }
             vid2vid_frames.change(fn=update_max_vid_frames, inputs=[vid2vid_frames, vid2vid_startFrame], outputs=[vid2vid_startFrame])
         
