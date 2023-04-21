@@ -224,9 +224,8 @@ class TextToVideoSynthesis():
             self.clip_encoder.to("cpu")
         torch_gc()
 
-        if 'half precision' in cpu_vae and mask is not None:
-            mask=mask.half()
-            latents=latents.half()
+        mask=mask.half() if 'half precision' in cpu_vae and mask is not None else mask
+        latents=latents.half() if 'half precision' in cpu_vae and latents is not None else latents
 
         # synthesis
         strength = None if strength == 0.0 else strength
