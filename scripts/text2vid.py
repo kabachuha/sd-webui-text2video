@@ -37,8 +37,22 @@ def on_ui_tabs():
             with gr.Column(scale=1, variant='panel'):
                 components = setup_text2video_settings_dictionary()
             with gr.Column(scale=1, variant='compact'):
-                with gr.Row(variant='compact'):
+                with gr.Row(elem_id=f"text2vid_generate_box", variant='compact', elem_classes="generate-box"):
+                    interrupt = gr.Button('Interrupt', elem_id=f"text2vid_interrupt", elem_classes="generate-box-interrupt")
+                    skip = gr.Button('Skip', elem_id=f"text2vid_skip", elem_classes="generate-box-skip")
                     run_button = gr.Button('Generate', elem_id=f"text2vid_generate", variant='primary')
+
+                    skip.click(
+                        fn=lambda: shared.state.skip(),
+                        inputs=[],
+                        outputs=[],
+                    )
+
+                    interrupt.click(
+                        fn=lambda: shared.state.interrupt(),
+                        inputs=[],
+                        outputs=[],
+                    )
                 with gr.Row(variant='compact'):
                     i1 = gr.HTML(args.i1_store_t2v, elem_id='deforum_header')
                 with gr.Row(visible=False):
@@ -46,9 +60,12 @@ def on_ui_tabs():
                     dummy_component2 = gr.Label("")
                 with gr.Row(variant='compact'):
                     btn = gr.Button("Click here after the generation to show the video")
+                with gr.Row(variant='compact', elem_id='text2vid_results_panel'):
+                    ...
+                    #gr.Label("", visible=False)
                 with gr.Row(variant='compact'):
                     i1 = gr.HTML(args.i1_store_t2v, elem_id='deforum_header')
-                    def show_vid(): # Show video
+                    def show_vid(): # Show video1
                         return {
                             i1: gr.update(value=args.i1_store_t2v, visible=True),
                             btn: gr.update(value="Update the video", visible=True),
@@ -61,8 +78,8 @@ def on_ui_tabs():
             run_button.click(
                 # , extra_outputs=[None, '', '']),
                 fn=wrap_gradio_gpu_call(process),
-                # _js="submit_deforum",
-                inputs=[components[name] for name in args.get_component_names()],
+                _js="submit_txt2vid",
+                inputs=[dummy_component1, dummy_component2] + [components[name] for name in args.get_component_names()],
                 outputs=[
                     dummy_component1, dummy_component2,
                 ],

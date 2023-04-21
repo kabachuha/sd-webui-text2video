@@ -6,6 +6,7 @@ from t2v_helpers.general_utils import get_t2v_version
 from t2v_helpers.args import get_outdir, process_args
 import modules.paths as ph
 import t2v_helpers.args as t2v_helpers_args
+from modules.shared import state
 
 # VideoCrafter support is heavy WIP and sketchy, needs help and more devs!
 def process_videocrafter(args_dict):
@@ -55,7 +56,17 @@ def process_videocrafter(args_dict):
     if args.batch_count == 1:
         pbar.disable=True
     
+    state.job_count = args.batch_count
+    
     for batch in pbar:
+        state.job_no = batch + 1
+        if state.skipped:
+            state.skipped = False
+
+        if state.interrupted:
+            break
+
+        state.job = f"Batch {batch+1} out of {args.batch_count}"
         ddim_sampler.noise_gen.manual_seed(args.seed + batch if args.seed != -1 else -1)
         # sample
         samples = sample_text2video(model, args.prompt, args.n_prompt, 1, 1,# todo:add batch size support
