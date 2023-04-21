@@ -1408,7 +1408,7 @@ class GaussianDiffusion(object):
                                   self.num_timesteps // ddim_timesteps)).clamp(
                                       0, self.num_timesteps - 1).flip(0)
         
-        state.sampling_steps = steps
+        state.sampling_steps = ddim_timesteps
 
         if skip_steps > 0:
             step0 = steps[skip_steps-1]
@@ -1435,9 +1435,7 @@ class GaussianDiffusion(object):
         pbar = tqdm(steps, desc="DDIM sampling")
 
         #print(c)
-        #print(uc)
-
-        
+        #print(uc)        
 
         i = 0
         for step in pbar:
