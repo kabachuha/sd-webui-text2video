@@ -75,6 +75,7 @@ def process_videocrafter(args_dict):
                         cfg_scale=args.cfg_scale,
                         decode_frame_bs=1,
                         ddp=False, show_denoising_progress=False,
+                        num_frames=args.frames
                         )
         # save
         if batch > 0:
