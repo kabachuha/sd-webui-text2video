@@ -4,6 +4,9 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
+from modules.shared import state
+from modules.sd_samplers_common import InterruptedException
+
 from videocrafter.lvdm.models.modules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
 
 
@@ -159,8 +162,14 @@ class DDIMSampler(object):
             iterator = tqdm(time_range, desc='DDIM Sampler', total=total_steps)
         else:
             iterator = time_range
+        
+        state.sampling_steps = total_steps
 
         for i, step in enumerate(iterator):
+            state.sampling_step = i
+            if state.interrupted:
+                raise InterruptedException
+
             index = total_steps - i - 1
             ts = torch.full((b,), step, device=device, dtype=torch.long)
 
@@ -191,6 +200,8 @@ class DDIMSampler(object):
             if index % log_every_t == 0 or index == total_steps - 1:
                 intermediates['x_inter'].append(img)
                 intermediates['pred_x0'].append(pred_x0)
+            if state.skipped:
+                break
 
         return img, intermediates
 
