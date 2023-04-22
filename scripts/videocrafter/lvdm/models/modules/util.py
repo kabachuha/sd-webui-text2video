@@ -322,6 +322,7 @@ def noise_like(shape, device, repeat=False, noise_gen=None):
     assert noise_gen is not None
     repeat_noise = lambda: torch.randn((1, *shape[1:]), generator=noise_gen).repeat(shape[0], *((1,) * (len(shape) - 1))).to(device)
     noise = lambda: torch.randn(shape, generator=noise_gen).to(device)
+    return repeat_noise() if repeat else noise()
 
 def init_(tensor):
     dim = tensor.shape[-1]
