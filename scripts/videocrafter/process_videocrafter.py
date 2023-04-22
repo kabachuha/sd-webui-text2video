@@ -96,8 +96,8 @@ def process_videocrafter(args_dict):
         npz_to_video_grid(samples[0:1,...],  # TODO: is this the reason only 1 second is saved?
                               os.path.join(outdir_current, f"vid.mp4"), 
                               fps=video_args.fps)
-        if add_soundtrack != 'None':
-            add_soundtrack(video_args.ffmpeg_location, video_args.fps, os.path.join(outdir_current, f"vid.mp4"), 0, -1, None, add_soundtrack, video_args.soundtrack_path, video_args.ffmpeg_crf, video_args.ffmpeg_preset)
+        if video_args.add_soundtrack != 'None':
+            add_soundtrack(video_args.ffmpeg_location, video_args.fps, os.path.join(outdir_current, f"vid.mp4"), 0, -1, None, video_args.add_soundtrack, video_args.soundtrack_path, video_args.ffmpeg_crf, video_args.ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
 
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
