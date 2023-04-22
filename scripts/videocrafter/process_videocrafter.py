@@ -82,17 +82,6 @@ def process_videocrafter(args_dict):
             outdir_current = os.path.join(get_outdir(), f"{init_timestring}_{batch}")
         print(f'text2video finished, saving frames to {outdir_current}')
 
-        # just deleted the folder so we need to make it again
-        # os.makedirs(outdir_current, exist_ok=True)
-        # for i in range(len(samples)):
-        #     cv2.imwrite(outdir_current + os.path.sep +
-        #                 f"{i:06}.png", samples[i])
-
-        # # TODO: add params to the GUI
-        # if not skip_video_creation:
-        #     ffmpeg_stitch_video(ffmpeg_location=ffmpeg_location, fps=fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
-        #                         "%06d.png"), stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=add_soundtrack, audio_path=img2img_frames_path if add_soundtrack == 'Init Video' else soundtrack_path, crf=ffmpeg_crf, preset=ffmpeg_preset)
-
         npz_to_video_grid(samples[0:1,...],  # TODO: is this the reason only 1 second is saved?
                               os.path.join(outdir_current, f"vid.mp4"), 
                               fps=video_args.fps)
@@ -106,7 +95,4 @@ def process_videocrafter(args_dict):
         print("Finish sampling!")
         print(f"Run time = {(time.time() - start):.2f} seconds")
     pbar.close()
-    # TODO: rework VideoCrafter
     return [dataurl]
-    # if opt.ddp:
-    #     dist.destroy_process_group()
