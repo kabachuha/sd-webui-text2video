@@ -64,11 +64,11 @@ body:
       required: true
   - type: dropdown
     id: where
+    validations:
+      required: true
     attributes:
       label: On which platform are you launching the webui backend with the extension?
       multiple: true
-    validations:
-      required: true
       options:
         - Local PC setup (Windows)
         - Local PC setup (Linux)
