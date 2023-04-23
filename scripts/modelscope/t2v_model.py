@@ -327,7 +327,7 @@ class UNetSD(nn.Module):
             fps=None,
             video_mask=None,
             focus_present_mask=None,
-            prob_focus_present=0.,
+            prob_focus_present=0.0,
             mask_last_frame_num=0  # mask last frame num
     ):
         """
@@ -458,7 +458,7 @@ class CrossAttention(nn.Module):
                  context_dim=None,
                  heads=8,
                  dim_head=64,
-                 dropout=0.):
+                 dropout=0.0):
         super().__init__()
         inner_dim = dim_head * heads
         context_dim = default(context_dim, query_dim)
@@ -530,7 +530,7 @@ class SpatialTransformer(nn.Module):
                  n_heads,
                  d_head,
                  depth=1,
-                 dropout=0.,
+                 dropout=0.0,
                  context_dim=None,
                  disable_self_attn=False,
                  use_linear=False,
@@ -602,7 +602,7 @@ class TemporalTransformer(nn.Module):
                  n_heads,
                  d_head,
                  depth=1,
-                 dropout=0.,
+                 dropout=0.0,
                  context_dim=None,
                  disable_self_attn=False,
                  use_linear=False,
@@ -704,7 +704,7 @@ class BasicTransformerBlock(nn.Module):
                  dim,
                  n_heads,
                  d_head,
-                 dropout=0.,
+                 dropout=0.0,
                  context_dim=None,
                  gated_ff=True,
                  checkpoint=True,
@@ -763,7 +763,7 @@ def zero_module(module):
 
 class FeedForward(nn.Module):
 
-    def __init__(self, dim, dim_out=None, mult=4, glu=False, dropout=0.):
+    def __init__(self, dim, dim_out=None, mult=4, glu=False, dropout=0.0):
         super().__init__()
         inner_dim = int(dim * mult)
         dim_out = default(dim_out, dim)
