@@ -47,7 +47,7 @@ for issue in repo.get_issues():
         if not match:
             return False
         webui_commit_id = match.group(1)
-        if not (7 <= len(commit_id) <= 40):
+        if not (7 <= len(webui_commit_id) <= 40):
             return False
         match = re.search(r'txt2vid commit id - ([a-fA-F0-9]+)', issue_body)
         if match:
