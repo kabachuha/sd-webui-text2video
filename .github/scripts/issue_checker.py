@@ -70,8 +70,8 @@ for issue in repo.get_issues():
         if not check_title_word_count(issue.title, 3):
             error_messages.append("Make sure the issue title has at least 3 words.")
 
-        if not check_title_concise(issue.title, 9):
-            error_messages.append("The issue title should be concise and contain no more than 9 words.")
+        if not check_title_concise(issue.title, 13):
+            error_messages.append("The issue title should be concise and contain no more than 13 words.")
 
         if not check_commit_id_format(issue.body):
             error_messages.append("Provide a valid commit ID in the format 'commit id - [commit_hash]' **both** for the WebUI and the Extension.")
