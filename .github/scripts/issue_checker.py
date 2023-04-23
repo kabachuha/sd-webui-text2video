@@ -7,12 +7,17 @@ token = os.environ['GITHUB_TOKEN']
 g = Github(token)
 
 # Get the current repository
+print(f"Repo is {os.environ['GITHUB_REPOSITORY']}")
 repo = g.get_repo(os.environ['GITHUB_REPOSITORY'])
 
 # Get the issue number from the event payload
 #issue_number = int(os.environ['ISSUE_NUMBER'])
 
 for issue in repo.get_issues():
+    print(f"Processing issue №{issue.number}")
+    if issue.pull_request:
+        continue
+
     # Get the issue object
     #issue = repo.get_issue(issue_number)
 
@@ -53,7 +58,8 @@ for issue in repo.get_issues():
         return True
 
     # Only if a bug report
-    if check_keywords(issue.title, ['[Bug]']) and not '[Feature Request]' in issue.title and not 'Repos for Training and Finetuning' in issue.title:
+    if '[Bug]' in issue.title and not '[Feature Request]' in issue.title and not 'Repos for Training and Finetuning' in issue.title:
+        print('The issue is eligible')
         # Initialize an empty list to store error messages
         error_messages = []
 
@@ -72,6 +78,7 @@ for issue in repo.get_issues():
             
         # If there are any error messages, close the issue and send a comment with the error messages
         if error_messages:
+            print('Invalid issue, closing')
             # Add the "not planned" label to the issue
             not_planned_label = repo.get_label("invalid")
             issue.add_to_labels(not_planned_label)
@@ -86,6 +93,7 @@ for issue in repo.get_issues():
             # Add the comment to the issue
             issue.create_comment(comment)
         elif issue.state is 'closed':
+            print('Issue is fine')
             issue.edit(state='open')
             issue.delete_labels()
             bug_label = repo.get_label("bug")
