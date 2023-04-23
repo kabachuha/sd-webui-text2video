@@ -10,7 +10,7 @@ g = Github(token)
 repo = g.get_repo(os.environ['GITHUB_REPOSITORY'])
 
 # Get the issue number from the event payload
-issue_number = int(os.environ['ISSUE_NUMBER'])
+#issue_number = int(os.environ['ISSUE_NUMBER'])
 
 for issue in repo.get_issues():
     # Get the issue object
