@@ -56,6 +56,13 @@ body:
     validations:
       required: true
   - type: textarea
+    id: what-torch
+    attributes:
+      label: Torch version
+      description: Which Torch version your WebUI is working with
+    validations:
+      required: true
+  - type: textarea
     id: what-gpu
     attributes:
       label: What GPU were you using for launching?
