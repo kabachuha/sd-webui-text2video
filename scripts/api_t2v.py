@@ -28,10 +28,10 @@ from fastapi import FastAPI, Query, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from t2v_helpers.video_audio_utils import find_ffmpeg_binary
-from t2v_helpers.general_utils import get_t2v_version
-from t2v_helpers.args import T2VArgs_sanity_check, T2VArgs, T2VOutputArgs
-from t2v_helpers.render import run
+from scripts.t2v_helpers.video_audio_utils import find_ffmpeg_binary
+from scripts.t2v_helpers.general_utils import get_t2v_version
+from scripts.t2v_helpers.args import T2VArgs_sanity_check, T2VArgs, T2VOutputArgs
+from scripts.t2v_helpers.render import run
 import uuid
 
 logger = logging.getLogger(__name__)

@@ -7,7 +7,7 @@ from tqdm import tqdm
 from modules.shared import state
 from modules.sd_samplers_common import InterruptedException
 
-from videocrafter.lvdm.models.modules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
+from scripts.videocrafter.lvdm.models.modules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
 
 
 class DDIMSampler(object):

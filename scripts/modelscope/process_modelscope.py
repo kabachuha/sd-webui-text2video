@@ -2,8 +2,8 @@
 from base64 import b64encode
 from tqdm import tqdm
 from PIL import Image
-from modelscope.t2v_pipeline import TextToVideoSynthesis, tensor2vid
-from t2v_helpers.key_frames import T2VAnimKeys #TODO: move to deforum_tools
+from scripts.modelscope.t2v_pipeline import TextToVideoSynthesis, tensor2vid
+from scripts.t2v_helpers.key_frames import T2VAnimKeys #TODO: move to deforum_tools
 from pathlib import Path
 import numpy as np
 import torch
@@ -11,11 +11,11 @@ import cv2
 import gc
 import modules.paths as ph
 from types import SimpleNamespace
-from t2v_helpers.general_utils import get_t2v_version
+from scripts.t2v_helpers.general_utils import get_t2v_version
 import time, math
-from t2v_helpers.video_audio_utils import ffmpeg_stitch_video, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
-from t2v_helpers.args import get_outdir, process_args
-import t2v_helpers.args as t2v_helpers_args
+from scripts.t2v_helpers.video_audio_utils import ffmpeg_stitch_video, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
+from scripts.t2v_helpers.args import get_outdir, process_args
+import scripts.t2v_helpers.args as t2v_helpers_args
 from modules import shared, sd_hijack, lowvram
 from modules.shared import opts, devices, state
 import os

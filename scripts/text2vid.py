@@ -13,9 +13,9 @@ for basedir in basedirs:
 import gradio as gr
 from modules import script_callbacks, shared
 from modules.shared import cmd_opts, opts
-from t2v_helpers.render import run
-import t2v_helpers.args as args
-from t2v_helpers.args import setup_text2video_settings_dictionary
+from scripts.t2v_helpers.render import run
+import scripts.t2v_helpers.args as args
+from scripts.t2v_helpers.args import setup_text2video_settings_dictionary
 from webui import wrap_gradio_gpu_call
 
 def process(*args):

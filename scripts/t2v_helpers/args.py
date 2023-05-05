@@ -1,7 +1,7 @@
 import gradio as gr
 from types import SimpleNamespace
-from t2v_helpers.video_audio_utils import find_ffmpeg_binary
-from modelscope.t2v_model import has_torch2
+from scripts.t2v_helpers.video_audio_utils import find_ffmpeg_binary
+from scripts.modelscope.t2v_model import has_torch2
 import os
 from modules.shared import opts
 

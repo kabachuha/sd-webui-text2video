@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from collections import OrderedDict
-from videocrafter.lvdm.models.modules.util import (
+from scripts.videocrafter.lvdm.models.modules.util import (
     zero_module,
     conv_nd,
     avg_pool_nd

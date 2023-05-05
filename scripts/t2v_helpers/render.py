@@ -1,13 +1,13 @@
 import traceback
-from modelscope.process_modelscope import process_modelscope
-import modelscope.process_modelscope as pm
-from videocrafter.process_videocrafter import process_videocrafter
+from scripts.modelscope.process_modelscope import process_modelscope
+import scripts.modelscope.process_modelscope as pm
+from scripts.videocrafter.process_videocrafter import process_videocrafter
 from modules.shared import opts
 from .error_hardcode import get_error
 from modules import lowvram, devices, sd_hijack
-import logging 
+import logging
 import gc
-import t2v_helpers.args as t2v_helpers_args
+import scripts.t2v_helpers.args as t2v_helpers_args
 
 def run(*args):
     dataurl = get_error()

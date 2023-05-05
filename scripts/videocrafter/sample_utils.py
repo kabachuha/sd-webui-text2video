@@ -2,8 +2,8 @@ import os
 import torch
 from PIL import Image
 
-from videocrafter.lvdm.models.modules.lora import net_load_lora
-from videocrafter.lvdm.utils.common_utils import instantiate_from_config
+from scripts.videocrafter.lvdm.models.modules.lora import net_load_lora
+from scripts.videocrafter.lvdm.utils.common_utils import instantiate_from_config
 
 
 # ------------------------------------------------------------------------------------------

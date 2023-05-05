@@ -15,11 +15,11 @@ import pytorch_lightning as pl
 from torchvision.utils import make_grid
 from torch.optim.lr_scheduler import LambdaLR
 from pytorch_lightning.utilities import rank_zero_only
-from videocrafter.lvdm.models.modules.distributions import normal_kl, DiagonalGaussianDistribution
-from videocrafter.lvdm.models.modules.util import make_beta_schedule, extract_into_tensor, noise_like
-from videocrafter.lvdm.models.modules.lora import inject_trainable_lora
-from videocrafter.lvdm.samplers.ddim import DDIMSampler
-from videocrafter.lvdm.utils.common_utils import log_txt_as_img, exists, default, ismap, isimage, mean_flat, count_params, instantiate_from_config, check_istarget
+from scripts.videocrafter.lvdm.models.modules.distributions import normal_kl, DiagonalGaussianDistribution
+from scripts.videocrafter.lvdm.models.modules.util import make_beta_schedule, extract_into_tensor, noise_like
+from scripts.videocrafter.lvdm.models.modules.lora import inject_trainable_lora
+from scripts.videocrafter.lvdm.samplers.ddim import DDIMSampler
+from scripts.videocrafter.lvdm.utils.common_utils import log_txt_as_img, exists, default, ismap, isimage, mean_flat, count_params, instantiate_from_config, check_istarget
 
 
 def disabled_train(self, mode=True):

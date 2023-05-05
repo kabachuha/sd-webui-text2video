@@ -11,7 +11,7 @@ try:
 except:
     XFORMERS_IS_AVAILBLE = False
 
-from videocrafter.lvdm.models.modules.util import (
+from scripts.videocrafter.lvdm.models.modules.util import (
     GEGLU,
     exists,
     default,
