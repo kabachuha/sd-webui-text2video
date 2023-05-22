@@ -51,21 +51,9 @@ except:
         gc.collect()
         pass
 
-def has_xformers():
-    try:
-        import xformers
-        return True
-    except ImportError:
-        return False
-
-def has_torch2():
-    try:
-        import torch
-        if torch.__version__.startswith('2'):
-            return True
-    except ImportError:
-        ...
-    return False
+import modules.shared as shared
+from modules.shared import cmd_opts
+can_use_sdp = hasattr(torch.nn.functional, "scaled_dot_product_attention") and callable(getattr(torch.nn.functional, "scaled_dot_product_attention")) # not everyone has torch 2.x to use sdp
 
 from ldm.modules.diffusionmodules.model import Decoder, Encoder
 from ldm.modules.distributions.distributions import DiagonalGaussianDistribution
@@ -489,14 +477,19 @@ class CrossAttention(nn.Module):
             max_neg_value = -torch.finfo(x.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h=h)
         
-        if has_torch2():
-            out = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=0.0, is_causal=False, attn_mask=mask
-            )
-        elif has_xformers():
+        if cmd_opts.force_enable_xformers or (cmd_opts.xformers and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
             import xformers
             out = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v), attn_bias=mask,
+            )
+        elif cmd_opts.opt_sdp_no_mem_attention and can_use_sdp:
+            with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=False):
+                out = F.scaled_dot_product_attention(
+                    q, k, v, dropout_p=0.0, attn_mask=mask
+                )
+        elif cmd_opts.opt_sdp_attention and can_use_sdp:
+            out = F.scaled_dot_product_attention(
+                q, k, v, dropout_p=0.0, attn_mask=mask
             )
         else:
 
@@ -1088,15 +1081,20 @@ class AttentionBlock(nn.Module):
 
         # compute attention
 
-        if has_torch2():
-            x = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=0.0, is_causal=False,
-            )
-        elif has_xformers():
+        if cmd_opts.force_enable_xformers or (cmd_opts.xformers and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
             import xformers
             x = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v),
             )
+        elif cmd_opts.opt_sdp_no_mem_attention and can_use_sdp:
+            with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=False):
+                x = F.scaled_dot_product_attention(
+                    q, k, v, dropout_p=0.0,
+                )
+        elif cmd_opts.opt_sdp_attention and can_use_sdp:
+            x = F.scaled_dot_product_attention(
+                    q, k, v, dropout_p=0.0,
+                )
         else:
             attn = torch.matmul(q.transpose(-1, -2) * self.scale, k * self.scale)
             attn = F.softmax(attn, dim=-1)
