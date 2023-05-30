@@ -1,3 +1,6 @@
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
+
 import traceback
 from modelscope.process_modelscope import process_modelscope
 import modelscope.process_modelscope as pm

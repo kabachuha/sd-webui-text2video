@@ -1,4 +1,8 @@
-# See https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
+# Function calls referenced from https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
+
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
+
 from base64 import b64encode
 from tqdm import tqdm
 from PIL import Image

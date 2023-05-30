@@ -1,3 +1,8 @@
+/*
+ Copyright (C) 2023 by Artem Khrapov (kabachuha)
+ Read LICENSE for usage terms.
+*/
+
 #vid_to_vid_chosen_file .w-full, #inpainting_chosen_file .w-full {
 	display: flex !important;
 	align-items: flex-start !important;

@@ -1,3 +1,6 @@
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
+
 import gradio as gr
 from types import SimpleNamespace
 from t2v_helpers.video_audio_utils import find_ffmpeg_binary

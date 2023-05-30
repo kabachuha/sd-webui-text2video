@@ -3,6 +3,18 @@
 # Copyright 2021-2022 The Alibaba Fundamental Vision Team Authors. All rights reserved.
 
 # https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
+
+# Alibaba's code used under Apache 2.0 license
+# StabilityAI's Stable Diffusion code used under MIT license
+# Automatic1111's WebUI's code used under AGPL v3.0
+
+# All the licenses of the code and its modifications are incorporated into the compatible AGPL v3.0 license
+
+# SD-webui text2video:
+
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# See LICENSE for usage terms.
+
 from ldm.util import instantiate_from_config
 import importlib
 import math

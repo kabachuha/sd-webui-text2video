@@ -1,4 +1,6 @@
-# The API and the UI should be fully autonomus
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
+
 import sys, os
 basedirs = [os.getcwd()]
 if 'google.colab' in sys.modules:

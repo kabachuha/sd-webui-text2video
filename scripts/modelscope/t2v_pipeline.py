@@ -1,5 +1,10 @@
 # https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal Apache 2.0
 # Copyright 2021-2022 The Alibaba Fundamental Vision Team Authors. All rights reserved.
+
+# The modified Apache 2.0 code is incorporated into the Apache 2.0-compatible AGPL v3.0 license
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
+
 import datetime
 import json
 import os

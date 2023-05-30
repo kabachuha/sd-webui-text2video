@@ -1,3 +1,11 @@
+# This code is borrowed from Automatic1111's webui with modifications
+# AGPL v3.0 (c) 2023 AUTOMATIC1111, read the full license here
+# https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/LICENSE.txt
+
+# Modified by kabachuha and incorporated into the AGPL v3.0 license of the project
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
+
 from collections import namedtuple
 
 import math

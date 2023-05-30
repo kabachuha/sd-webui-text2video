@@ -1,4 +1,5 @@
-
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
 
 def get_t2v_version():
     from modules import extensions as mext
