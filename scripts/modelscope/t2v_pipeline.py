@@ -90,12 +90,12 @@ class TextToVideoSynthesis():
         self.sd_model.load_state_dict(
             torch.load(
                 osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"]),
-                map_location='cpu' if devices.has_mps() else None, # default to cpu when macos, else default behaviour
+                map_location='cpu' if devices.has_mps() or torch.cuda.is_available() == False else None, # default to cpu when macos, else default behaviour -- TheSloppiestOfJoes: Added a check if CUDA is available, else use CPU
             ),
             strict=True,
         )
         self.sd_model.eval()
-        if not devices.has_mps():
+        if not devices.has_mps() or torch.cuda.is_available() == True:
             self.sd_model.half()
 
         # Initialize diffusion
