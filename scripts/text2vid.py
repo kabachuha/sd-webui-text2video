@@ -14,6 +14,10 @@ for basedir in basedirs:
         if not deforum_scripts_path_fix in sys.path:
             sys.path.extend([deforum_scripts_path_fix])
 
+current_directory = os.path.dirname(os.path.abspath(__file__))
+if current_directory not in sys.path:
+    sys.path.append(current_directory)
+
 import gradio as gr
 from modules import script_callbacks, shared
 from modules.shared import cmd_opts, opts
@@ -30,6 +34,8 @@ def process(*args):
             basedir + '/extensions/sd-webui-text2video/scripts',
             basedir + '/extensions/sd-webui-modelscope-text2video/scripts',
         ])
+    if current_directory not in sys.path:
+        sys.path.append(current_directory)
 
     run(*args)
     return f'Video ready'
