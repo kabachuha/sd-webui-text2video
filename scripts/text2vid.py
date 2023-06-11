@@ -1,7 +1,11 @@
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
+
 import sys, os
+
 basedirs = [os.getcwd()]
 if 'google.colab' in sys.modules:
-    basedirs.append('/content/gdrive/MyDrive/sd/stable-diffusion-webui') #hardcode as TheLastBen's colab seems to be the primal source
+    basedirs.append('/content/gdrive/MyDrive/sd/stable-diffusion-webui')  # hardcode as TheLastBen's colab seems to be the primal source
 
 for basedir in basedirs:
     deforum_paths_to_ensure = [basedir + '/extensions/sd-webui-text2video/scripts', basedir + '/extensions/sd-webui-modelscope-text2video/scripts', basedir]
@@ -9,6 +13,10 @@ for basedir in basedirs:
     for deforum_scripts_path_fix in deforum_paths_to_ensure:
         if not deforum_scripts_path_fix in sys.path:
             sys.path.extend([deforum_scripts_path_fix])
+
+current_directory = os.path.dirname(os.path.abspath(__file__))
+if current_directory not in sys.path:
+    sys.path.append(current_directory)
 
 import gradio as gr
 from modules import script_callbacks, shared
@@ -21,12 +29,14 @@ from webui import wrap_gradio_gpu_call
 def process(*args):
     # weird PATH stuff
     for basedir in basedirs:
-            sys.path.extend([
-                basedir + '/scripts',
-                basedir + '/extensions/sd-webui-text2video/scripts',
-                basedir + '/extensions/sd-webui-modelscope-text2video/scripts',
-            ])
-    
+        sys.path.extend([
+            basedir + '/scripts',
+            basedir + '/extensions/sd-webui-text2video/scripts',
+            basedir + '/extensions/sd-webui-modelscope-text2video/scripts',
+        ])
+    if current_directory not in sys.path:
+        sys.path.append(current_directory)
+
     run(*args)
     return f'Video ready'
 
@@ -62,14 +72,16 @@ def on_ui_tabs():
                     btn = gr.Button("Click here after the generation to show the video")
                 with gr.Row(variant='compact', elem_id='text2vid_results_panel'):
                     ...
-                    #gr.Label("", visible=False)
+                    # gr.Label("", visible=False)
                 with gr.Row(variant='compact'):
                     i1 = gr.HTML(args.i1_store_t2v, elem_id='deforum_header')
-                    def show_vid(): # Show video1
+
+                    def show_vid():  # Show video1
                         return {
                             i1: gr.update(value=args.i1_store_t2v, visible=True),
                             btn: gr.update(value="Update the video", visible=True),
                         }
+
                     btn.click(
                         show_vid,
                         [],
@@ -85,11 +97,12 @@ def on_ui_tabs():
                 ],
             )
     return [(deforum_interface, "txt2video", "t2v_interface")]
-    
+
 def on_ui_settings():
     section = ('modelscope_deforum', "Text2Video")
     shared.opts.add_option("modelscope_deforum_keep_model_in_vram", shared.OptionInfo(
-        'None', "Keep model in VRAM between runs", gr.Radio, {"interactive": True, "choices": ['None', 'Main Model Only', 'All'], "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
+        'None', "Keep model in VRAM between runs", gr.Radio,
+        {"interactive": True, "choices": ['None', 'Main Model Only', 'All'], "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
     shared.opts.add_option("modelscope_deforum_vae_settings", shared.OptionInfo(
         "GPU (half precision)", "VAE Mode:", gr.Radio, {"interactive": True, "choices": ['GPU (half precision)', 'GPU', 'CPU (Low VRAM)']}, section=section))
     shared.opts.add_option("modelscope_deforum_show_n_videos", shared.OptionInfo(

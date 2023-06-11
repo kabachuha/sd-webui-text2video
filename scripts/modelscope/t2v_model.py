@@ -3,6 +3,18 @@
 # Copyright 2021-2022 The Alibaba Fundamental Vision Team Authors. All rights reserved.
 
 # https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal
+
+# Alibaba's code used under Apache 2.0 license
+# StabilityAI's Stable Diffusion code used under MIT license
+# Automatic1111's WebUI's code used under AGPL v3.0
+
+# All the licenses of the code and its modifications are incorporated into the compatible AGPL v3.0 license
+
+# SD-webui text2video:
+
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# See LICENSE for usage terms.
+
 from ldm.util import instantiate_from_config
 import importlib
 import math
@@ -51,21 +63,9 @@ except:
         gc.collect()
         pass
 
-def has_xformers():
-    try:
-        import xformers
-        return True
-    except ImportError:
-        return False
-
-def has_torch2():
-    try:
-        import torch
-        if torch.__version__.startswith('2'):
-            return True
-    except ImportError:
-        ...
-    return False
+import modules.shared as shared
+from modules.shared import cmd_opts
+can_use_sdp = hasattr(torch.nn.functional, "scaled_dot_product_attention") and callable(getattr(torch.nn.functional, "scaled_dot_product_attention")) # not everyone has torch 2.x to use sdp
 
 from ldm.modules.diffusionmodules.model import Decoder, Encoder
 from ldm.modules.distributions.distributions import DiagonalGaussianDistribution
@@ -327,7 +327,7 @@ class UNetSD(nn.Module):
             fps=None,
             video_mask=None,
             focus_present_mask=None,
-            prob_focus_present=0.,
+            prob_focus_present=0.0,
             mask_last_frame_num=0  # mask last frame num
     ):
         """
@@ -458,7 +458,7 @@ class CrossAttention(nn.Module):
                  context_dim=None,
                  heads=8,
                  dim_head=64,
-                 dropout=0.):
+                 dropout=0.0):
         super().__init__()
         inner_dim = dim_head * heads
         context_dim = default(context_dim, query_dim)
@@ -489,14 +489,19 @@ class CrossAttention(nn.Module):
             max_neg_value = -torch.finfo(x.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h=h)
         
-        if has_torch2():
-            out = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=0.0, is_causal=False, attn_mask=mask
-            )
-        elif has_xformers():
+        if cmd_opts.force_enable_xformers or (cmd_opts.xformers and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
             import xformers
             out = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v), attn_bias=mask,
+            )
+        elif cmd_opts.opt_sdp_no_mem_attention and can_use_sdp:
+            with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=False):
+                out = F.scaled_dot_product_attention(
+                    q, k, v, dropout_p=0.0, attn_mask=mask
+                )
+        elif cmd_opts.opt_sdp_attention and can_use_sdp:
+            out = F.scaled_dot_product_attention(
+                q, k, v, dropout_p=0.0, attn_mask=mask
             )
         else:
 
@@ -530,7 +535,7 @@ class SpatialTransformer(nn.Module):
                  n_heads,
                  d_head,
                  depth=1,
-                 dropout=0.,
+                 dropout=0.0,
                  context_dim=None,
                  disable_self_attn=False,
                  use_linear=False,
@@ -602,7 +607,7 @@ class TemporalTransformer(nn.Module):
                  n_heads,
                  d_head,
                  depth=1,
-                 dropout=0.,
+                 dropout=0.0,
                  context_dim=None,
                  disable_self_attn=False,
                  use_linear=False,
@@ -704,7 +709,7 @@ class BasicTransformerBlock(nn.Module):
                  dim,
                  n_heads,
                  d_head,
-                 dropout=0.,
+                 dropout=0.0,
                  context_dim=None,
                  gated_ff=True,
                  checkpoint=True,
@@ -763,7 +768,7 @@ def zero_module(module):
 
 class FeedForward(nn.Module):
 
-    def __init__(self, dim, dim_out=None, mult=4, glu=False, dropout=0.):
+    def __init__(self, dim, dim_out=None, mult=4, glu=False, dropout=0.0):
         super().__init__()
         inner_dim = int(dim * mult)
         dim_out = default(dim_out, dim)
@@ -1088,15 +1093,20 @@ class AttentionBlock(nn.Module):
 
         # compute attention
 
-        if has_torch2():
-            x = F.scaled_dot_product_attention(
-                q, k, v, dropout_p=0.0, is_causal=False,
-            )
-        elif has_xformers():
+        if cmd_opts.force_enable_xformers or (cmd_opts.xformers and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
             import xformers
             x = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v),
             )
+        elif cmd_opts.opt_sdp_no_mem_attention and can_use_sdp:
+            with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=False):
+                x = F.scaled_dot_product_attention(
+                    q, k, v, dropout_p=0.0,
+                )
+        elif cmd_opts.opt_sdp_attention and can_use_sdp:
+            x = F.scaled_dot_product_attention(
+                    q, k, v, dropout_p=0.0,
+                )
         else:
             attn = torch.matmul(q.transpose(-1, -2) * self.scale, k * self.scale)
             attn = F.softmax(attn, dim=-1)

@@ -1,5 +1,10 @@
 # https://github.com/modelscope/modelscope/tree/master/modelscope/pipelines/multi_modal Apache 2.0
 # Copyright 2021-2022 The Alibaba Fundamental Vision Team Authors. All rights reserved.
+
+# The modified Apache 2.0 code is incorporated into the Apache 2.0-compatible AGPL v3.0 license
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
+
 import datetime
 import json
 import os
@@ -85,12 +90,12 @@ class TextToVideoSynthesis():
         self.sd_model.load_state_dict(
             torch.load(
                 osp.join(self.model_dir, self.config.model["model_args"]["ckpt_unet"]),
-                map_location='cpu' if devices.has_mps() else None, # default to cpu when macos, else default behaviour
+                map_location='cpu' if devices.has_mps() or torch.cuda.is_available() == False else None, # default to cpu when macos, else default behaviour -- TheSloppiestOfJoes: Added a check if CUDA is available, else use CPU
             ),
             strict=True,
         )
         self.sd_model.eval()
-        if not devices.has_mps():
+        if not devices.has_mps() or torch.cuda.is_available() == True:
             self.sd_model.half()
 
         # Initialize diffusion

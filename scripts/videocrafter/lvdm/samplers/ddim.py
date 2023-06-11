@@ -4,6 +4,9 @@ import torch
 import numpy as np
 from tqdm import tqdm
 
+from modules.shared import state
+from modules.sd_samplers_common import InterruptedException
+
 from videocrafter.lvdm.models.modules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like
 
 
@@ -159,8 +162,14 @@ class DDIMSampler(object):
             iterator = tqdm(time_range, desc='DDIM Sampler', total=total_steps)
         else:
             iterator = time_range
+        
+        state.sampling_steps = total_steps
 
         for i, step in enumerate(iterator):
+            state.sampling_step = i
+            if state.interrupted:
+                raise InterruptedException
+
             index = total_steps - i - 1
             ts = torch.full((b,), step, device=device, dtype=torch.long)
 
@@ -191,6 +200,8 @@ class DDIMSampler(object):
             if index % log_every_t == 0 or index == total_steps - 1:
                 intermediates['x_inter'].append(img)
                 intermediates['pred_x0'].append(pred_x0)
+            if state.skipped:
+                break
 
         return img, intermediates
 
@@ -198,7 +209,7 @@ class DDIMSampler(object):
     def p_sample_ddim(self, x, c, t, index, repeat_noise=False, use_original_steps=False, quantize_denoised=False,
                       temperature=1., noise_dropout=0., score_corrector=None, corrector_kwargs=None,
                       unconditional_guidance_scale=1., unconditional_conditioning=None, sample_noise=None,
-                      cond_fn=None,uc_type=None, model_kwargs={}, 
+                      cond_fn=None, uc_type=None, 
                       **kwargs,
                       ):
         b, *_, device = *x.shape, x.device
@@ -207,15 +218,15 @@ class DDIMSampler(object):
         else:
             is_video = False
         if unconditional_conditioning is None or unconditional_guidance_scale == 1.:
-            e_t = self.model.apply_model(x, t, c, **model_kwargs) # unet denoiser
+            e_t = self.model.apply_model(x, t, c, **kwargs) # unet denoiser
         else:
             # with unconditional condition
             if isinstance(c, torch.Tensor):
-                e_t = self.model.apply_model(x, t, c, **model_kwargs)
-                e_t_uncond = self.model.apply_model(x, t, unconditional_conditioning, **model_kwargs)
+                e_t = self.model.apply_model(x, t, c, **kwargs)
+                e_t_uncond = self.model.apply_model(x, t, unconditional_conditioning, **kwargs)
             elif isinstance(c, dict):
-                e_t = self.model.apply_model(x, t, c, **model_kwargs)
-                e_t_uncond = self.model.apply_model(x, t, unconditional_conditioning, **model_kwargs)
+                e_t = self.model.apply_model(x, t, c, **kwargs)
+                e_t_uncond = self.model.apply_model(x, t, unconditional_conditioning, **kwargs)
             else:
                 raise NotImplementedError
             # text cfg

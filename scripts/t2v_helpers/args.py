@@ -1,7 +1,9 @@
+# Copyright (C) 2023 by Artem Khrapov (kabachuha)
+# Read LICENSE for usage terms.
+
 import gradio as gr
 from types import SimpleNamespace
 from t2v_helpers.video_audio_utils import find_ffmpeg_binary
-from modelscope.t2v_model import has_torch2
 import os
 from modules.shared import opts
 
@@ -47,7 +49,7 @@ def setup_common_values(mode, d):
     with gr.Row():
         gr.Markdown('256x256 Benchmarks: 24 frames peak at 5.7 GBs of VRAM and 125 frames peak at 11.5 GBs with Torch2 installed')
     with gr.Row():
-        frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=250 if has_torch2() else 125, step=1, interactive=True, precision=0)
+        frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=250, step=1, interactive=True, precision=0)
         batch_count = gr.Slider(label="Batch count", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=True)
     
     return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
@@ -65,7 +67,7 @@ def setup_text2video_settings_dictionary():
             with gr.Accordion('img2vid', open=False):
                 inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 # TODO: should be tied to the total frame count dynamically
-                inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=250 if has_torch2() else 125, step=1)
+                inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=250, step=1)
                 with gr.Row():
                     gr.Markdown('''`inpainting frames` is the number of frames inpainting is applied to (counting from the beginning)
 
