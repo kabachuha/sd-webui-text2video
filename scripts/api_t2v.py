@@ -13,6 +13,10 @@ for basedir in basedirs:
         if not deforum_scripts_path_fix in sys.path:
             sys.path.extend([deforum_scripts_path_fix])
 
+current_directory = os.path.dirname(os.path.abspath(__file__))
+if current_directory not in sys.path:
+    sys.path.append(current_directory)
+
 import hashlib
 import io
 import json
@@ -53,11 +57,11 @@ def t2v_api(_, app: FastAPI):
             status_code=422,
             content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
         )
-    
+
     @app.get("/t2v/api_version")
     async def t2v_api_version():
         return JSONResponse(content={"version": '1.0'})
-    
+
     @app.get("/t2v/version")
     async def t2v_version():
         return JSONResponse(content={"version": get_t2v_version()})
@@ -74,7 +78,7 @@ def t2v_api(_, app: FastAPI):
                 basedir + '/extensions/sd-webui-text2video/scripts',
                 basedir + '/extensions/sd-webui-modelscope-text2video/scripts',
             ])
-        
+
         locals_args_dict = locals()
         args_dict = T2VArgs()
         video_args_dict = T2VOutputArgs()
@@ -107,7 +111,7 @@ def t2v_api(_, app: FastAPI):
                 img = Image.open(io.BytesIO(img_content))
                 img.save(tmp_inpainting_name)
                 tmp_inpainting = open(tmp_inpainting_name, "r")
-            
+
             if do_vid2vid and vid2vid_input:
                 vid2vid_input_content = await vid2vid_input.read()
                 tmp_vid2vid = open(temp_vid2vid_name, "wb")
