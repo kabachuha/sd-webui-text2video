@@ -103,7 +103,7 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
             def update_max_vid_frames(v2v_frames, sFrame): # Show video
                 return gr.update(value=min(sFrame, v2v_frames-1), maximum=v2v_frames-1, visible=True)
             
-            vid2vid_frames.change(fn=update_max_vid_frames, inputs=[vid2vid_frames, vid2vid_startFrame], outputs=[vid2vid_startFrame])
+            frames_v.change(fn=update_max_vid_frames, inputs=[frames_v, vid2vid_startFrame], outputs=[vid2vid_startFrame])
         
         tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_vid2vid])
         tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_vid2vid])
