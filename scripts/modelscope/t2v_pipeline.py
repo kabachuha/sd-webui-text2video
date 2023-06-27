@@ -18,14 +18,14 @@ import random
 import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
-from scripts.modelscope.t2v_model import UNetSD, AutoencoderKL, GaussianDiffusion, beta_schedule
+from modelscope.t2v_model import UNetSD, AutoencoderKL, GaussianDiffusion, beta_schedule
 from modules import devices
 from modules import prompt_parser
 
 __all__ = ['TextToVideoSynthesis']
 
-from scripts.modelscope.t2v_model import torch_gc
-from scripts.modelscope.clip_hardcode import FrozenOpenCLIPEmbedder
+from modelscope.t2v_model import torch_gc
+from modelscope.clip_hardcode import FrozenOpenCLIPEmbedder
 
 class TextToVideoSynthesis():
     r"""
