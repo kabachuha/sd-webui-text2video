@@ -67,7 +67,7 @@ def setup_text2video_settings_dictionary():
             with gr.Accordion('img2vid', open=False):
                 inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 # TODO: should be tied to the total frame count dynamically
-                inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=frames.maximum, step=1)
+                inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=24, step=1)
                 with gr.Row():
                     gr.Markdown('''`inpainting frames` is the number of frames inpainting is applied to (counting from the beginning)
 
@@ -98,7 +98,7 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
             prompt_v, n_prompt_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
             with gr.Row():
                 strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
-                vid2vid_startFrame=gr.Slider(label='vid2vid start frame',value=d.vid2vid_startFrame, minimum=0, maximum=frames_v.maximum-1)
+                vid2vid_startFrame=gr.Slider(label='vid2vid start frame',value=d.vid2vid_startFrame, minimum=0, maximum=23)
             
             def update_max_vid_frames(v2v_frames, sFrame): # Show video
                 return gr.update(value=min(sFrame, v2v_frames-1), maximum=v2v_frames-1, visible=True)
