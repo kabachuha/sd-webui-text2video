@@ -54,11 +54,30 @@ def setup_common_values(mode, d):
     
     return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
 
+refresh_symbol = '\U0001f504'  # 🔄
+class ToolButton(gr.Button, gr.components.FormComponent):
+    """Small button with single emoji as text, fits inside gradio forms"""
+    def __init__(self, **kwargs):
+        super().__init__(variant="tool", **kwargs)
+
+    def get_block_name(self):
+        return "button"
+
 def setup_text2video_settings_dictionary():
     d = SimpleNamespace(**T2VArgs())
     dv = SimpleNamespace(**T2VOutputArgs())
     with gr.Row(elem_id='model-switcher'):
-        model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
+        with gr.Column():
+            model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
+        with gr.Column():
+            model = gr.Dropdown(label='Model', value="<default>", help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. Supported only for ModelScope derivatives at the moment")
+            refresh_models = ToolButton(value=refresh_symbol)
+
+            def refresh_all_models(model):
+                # TODO: get all folder names in a directory, store this variable as 'model' and then pass to the pipeline handler
+                return gr.update(value=model, visible=True)
+
+            refresh_models.click(refresh_all_models, model, model)
     with gr.Tabs():
         do_vid2vid = gr.State(value=0)
         with gr.Tab('txt2vid') as tab_txt2vid:
@@ -134,7 +153,7 @@ common_values_names = str('''prompt, n_prompt, steps, frames, seed, cfg_scale, w
 v2v_values_names = str('''
 do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame,
 inpainting_image,inpainting_frames, inpainting_weights,
-model_type''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+model_type,model''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 t2v_args_names = common_values_names + [f'{v}_v' for v in common_values_names] + v2v_values_names
 
