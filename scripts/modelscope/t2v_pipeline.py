@@ -23,6 +23,7 @@ from modules import devices, shared
 from modules import prompt_parser
 from samplers.uni_pc.sampler import UniPCSampler
 from samplers.samplers_common import Txt2VideoSampler
+from samplers.samplers_common import available_samplers
 
 __all__ = ['TextToVideoSynthesis']
 
@@ -108,8 +109,7 @@ class TextToVideoSynthesis():
             init_beta=0.00085,
             last_beta=0.0120)
         
-        # Do not add given betas to the DDPM scheduler to avoid edge cases
-        self.sd_model.register_schedule()
+        self.sd_model.register_schedule(given_betas=betas.numpy())
         self.diffusion = Txt2VideoSampler(self.sd_model, shared.device, betas=betas)
         
         # Initialize autoencoder
@@ -211,7 +211,7 @@ class TextToVideoSynthesis():
         strength=0,
         mask=None, 
         is_vid2vid=False,
-        sampler="DDIM"
+        sampler=available_samplers[0].name
     ):
         vars = locals()
         vars.pop('self')
@@ -247,6 +247,7 @@ class TextToVideoSynthesis():
         self.device = device
         self.clip_encoder.to(self.device)
         self.clip_encoder.device = self.device
+        steps = steps - skip_steps
         c, uc = self.preprocess(prompt, n_prompt, steps)
         if self.keep_in_vram != "All":
             self.clip_encoder.to("cpu")
@@ -270,24 +271,24 @@ class TextToVideoSynthesis():
                 seed=seed, 
                 latents=latents
             )
-
             with amp.autocast(enabled=True):
                 self.sd_model.to(self.device)
                 self.diffusion.get_sampler(sampler, return_sampler=False)
-
+            
                 x0 = self.diffusion.sample_loop(
-                    steps=steps - skip_steps,
+                    steps=steps,
                     strength=strength,
                     eta=eta,
-                    conditioning=c[0][0].cond.unsqueeze(0),
-                    unconditional_conditioning=uc[0][0].cond.unsqueeze(0),
+                    conditioning=c,
+                    unconditional_conditioning=uc,
                     batch_size=num_sample,
                     guidance_scale=scale,
                     latents=latents,
                     shape=shape,
                     noise=noise,
                     is_vid2vid=is_vid2vid,
-                    sampler_name=sampler
+                    sampler_name=sampler,
+                    mask=mask
                 )
 
                 self.last_tensor = x0
@@ -456,3 +457,4 @@ def tensor2vid(video, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]):
     images = [(image.numpy() * 255).astype('uint8')
               for image in images]  # f h w c
     return images
+
