@@ -2,7 +2,8 @@ import torch
 import torch.nn.functional as F
 import math
 from einops import rearrange,repeat
-
+from modules.shared import state
+from t2v_helpers.general_utils import reconstruct_conds
 
 class NoiseScheduleVP:
     def __init__(
@@ -296,15 +297,12 @@ def model_wrapper(
             noise = noise_pred_fn(x, t_continuous)
             return noise - guidance_scale * expand_dims(sigma_t, dims=cond_grad.dim()) * cond_grad
         elif guidance_type == "classifier-free":
+            c, uc = reconstruct_conds(condition, unconditional_condition, state.sampling_step)
             if guidance_scale == 1. or unconditional_condition is None:
                 return noise_pred_fn(x, t_continuous, cond=condition)
-            else:
-                #x_in = torch.cat([x] * 2)
-                #t_in = torch.cat([t_continuous] * 2)
-                #c_in = torch.cat([unconditional_condition, condition])
-                
-                noise = noise_pred_fn(x, t_continuous, cond=condition)
-                noise_uncond = noise_pred_fn(x, t_continuous, cond=unconditional_condition)
+            else:   
+                noise = noise_pred_fn(x, t_continuous, cond=c)
+                noise_uncond = noise_pred_fn(x, t_continuous, cond=uc)
 
                 return noise_uncond + guidance_scale * (noise - noise_uncond)
 
