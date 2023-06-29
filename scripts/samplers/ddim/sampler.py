@@ -5,6 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from modules import shared
 from ldm.modules.diffusionmodules.util import make_ddim_sampling_parameters, make_ddim_timesteps, noise_like, extract_into_tensor
+from t2v_helpers.general_utils import reconstruct_conds
 
 class DDIMSampler(object):
     def __init__(self, model, schedule="linear", device=torch.device("cuda"), **kwargs):
@@ -77,22 +78,7 @@ class DDIMSampler(object):
                ucg_schedule=None,
                **kwargs
                ):
-        if conditioning is not None:
-            if isinstance(conditioning, dict):
-                ctmp = conditioning[list(conditioning.keys())[0]]
-                while isinstance(ctmp, list): ctmp = ctmp[0]
-                cbs = ctmp.shape[0]
-                if cbs != batch_size:
-                    print(f"Warning: Got {cbs} conditionings but batch-size is {batch_size}")
-
-            elif isinstance(conditioning, list):
-                for ctmp in conditioning:
-                    if ctmp.shape[0] != batch_size:
-                        print(f"Warning: Got {cbs} conditionings but batch-size is {batch_size}")
-
-            else:
-                if conditioning.shape[0] != batch_size:
-                    print(f"Warning: Got {conditioning.shape[0]} conditionings but batch-size is {batch_size}")
+       
 
         self.make_schedule(ddim_num_steps=S, ddim_eta=eta, verbose=verbose)
         # sampling
@@ -151,26 +137,29 @@ class DDIMSampler(object):
         iterator = tqdm(time_range, desc='DDIM Sampler', total=total_steps, disable=True)
 
         for i, step in enumerate(iterator):
+            c, uc = reconstruct_conds(cond, unconditional_conditioning, step)
+
             index = total_steps - i - 1
             ts = torch.full((b,), step, device=device, dtype=torch.long)
 
-            if mask is not None:
-                assert x0 is not None
-                img_orig = self.model.q_sample(x0, ts)  # TODO: deterministic forward pass?
-                img = img_orig * mask + (1. - mask) * img
+            #if mask is not None:
+            #    assert x0 is not None
+            #    img_orig = self.model.q_sample(x0, ts)  # TODO: deterministic forward pass?
+             #   img = img_orig * mask + (1. - mask) * img
 
             if ucg_schedule is not None:
                 assert len(ucg_schedule) == len(time_range)
                 unconditional_guidance_scale = ucg_schedule[i]
             
-            outs, _ = self.p_sample_ddim(img, cond, ts, index=index, use_original_steps=ddim_use_original_steps,
+            outs, _ = self.p_sample_ddim(img, c, ts, index=index, use_original_steps=ddim_use_original_steps,
                                       quantize_denoised=quantize_denoised, temperature=temperature,
                                       noise_dropout=noise_dropout, score_corrector=score_corrector,
                                       corrector_kwargs=corrector_kwargs,
                                       unconditional_guidance_scale=unconditional_guidance_scale,
-                                      unconditional_conditioning=unconditional_conditioning,
+                                      unconditional_conditioning=uc,
                                       dynamic_threshold=dynamic_threshold)
 
+            img = outs
             if callback: callback(i)
             if img_callback: img_callback(pred_x0, i)
 
@@ -303,13 +292,15 @@ class DDIMSampler(object):
         time_range = np.flip(timesteps)
         total_steps = timesteps.shape[0]
 
-        iterator = tqdm(time_range, desc='Decoding image', total=total_steps)
+        iterator = tqdm(time_range, desc='Decoding image', total=total_steps, disable=True)
         x_dec = x_latent
         for i, step in enumerate(iterator):
+            c, uc = reconstruct_conds(cond, unconditional_conditioning, step)
+
             index = total_steps - i - 1
             ts = torch.full((x_latent.shape[0],), step, device=x_latent.device, dtype=torch.long)
-            x_dec, _ = self.p_sample_ddim(x_dec, cond, ts, index=index, use_original_steps=use_original_steps,
+            x_dec, _ = self.p_sample_ddim(x_dec, c, ts, index=index, use_original_steps=use_original_steps,
                                           unconditional_guidance_scale=unconditional_guidance_scale,
-                                          unconditional_conditioning=unconditional_conditioning)
+                                          unconditional_conditioning=uc)
             if callback: callback(i)
         return x_dec
