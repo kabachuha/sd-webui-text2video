@@ -299,7 +299,7 @@ def model_wrapper(
         elif guidance_type == "classifier-free":
             c, uc = reconstruct_conds(condition, unconditional_condition, state.sampling_step)
             if guidance_scale == 1. or unconditional_condition is None:
-                return noise_pred_fn(x, t_continuous, cond=condition)
+                return noise_pred_fn(x, t_continuous, cond=c)
             else:   
                 noise = noise_pred_fn(x, t_continuous, cond=c)
                 noise_uncond = noise_pred_fn(x, t_continuous, cond=uc)
