@@ -1,5 +1,6 @@
 import torch
 from samplers.ddim.sampler import DDIMSampler
+from samplers.ddim.gaussian_sampler import GaussianDiffusion
 from samplers.uni_pc.sampler import UniPCSampler
 from tqdm import tqdm
 from modules.shared import state
@@ -12,6 +13,17 @@ def get_tensor_shape(batch_size, channels, frames, h, w, latents=None):
     if latents is None:
         return (batch_size, channels, frames, h, w)
     return latents.shape
+
+def inpaint_masking(xt, step, steps, mask, add_noise_cb, noise_cb_args):
+    if mask is not None and step < steps - 1:
+
+        #convert mask to 0,1 valued based on step
+        v = (steps - step - 1) / steps
+        binary_mask = torch.where(mask <= v, torch.zeros_like(mask), torch.ones_like(mask))
+
+        noise_to_add = add_noise_cb(**noise_cb_args)
+        to_inpaint = noise_to_add
+        xt = to_inpaint * (1 - binary_mask) + xt * binary_mask
 
 class SamplerStepCallback(object):
     def __init__(self, sampler_name: str, total_steps: int):
@@ -56,9 +68,10 @@ class SamplerStepCallback(object):
         self.update(step)
 
 class SamplerBase(object):
-    def __init__(self, name: str, Sampler):
+    def __init__(self, name: str, Sampler, frame_inpaint_support=False):
         self.name = name
         self.Sampler = Sampler
+        self.frame_inpaint_support = frame_inpaint_support
 
     def register_buffers_to_model(self, sd_model, betas, device):
         self.alphas = 1. - betas
@@ -70,12 +83,16 @@ class SamplerBase(object):
 
     def init_sampler(self, sd_model, betas, device, **kwargs):
         self.register_buffers_to_model(sd_model, betas, device)
-        return self.Sampler(sd_model, **kwargs)
+        return self.Sampler(sd_model, betas=betas, **kwargs)
         
-available_samplers = [SamplerBase("DDIM", DDIMSampler), SamplerBase("UniPC", UniPCSampler)]   
+available_samplers = [
+    SamplerBase("DDIM_Gaussian", GaussianDiffusion, True),
+    SamplerBase("DDIM", DDIMSampler), 
+    SamplerBase("UniPC", UniPCSampler),
+]   
 
 class Txt2VideoSampler(object):
-    def __init__(self, sd_model, device, betas, sampler_name="UniPC"):
+    def __init__(self, sd_model, device, betas=None, sampler_name="UniPC"):
         self.sd_model = sd_model
         self.device = device
         self.noise_gen = torch.Generator(device='cpu')
@@ -116,6 +133,11 @@ class Txt2VideoSampler(object):
             encoded_latent = self.sampler.stochastic_encode(latent, timestep, noise=noise).to(dtype=latent.dtype)
             self.sampler.sample = self.sampler.decode
         
+        if hasattr(self.sampler, 'add_noise'):
+            denoise_steps = int(strength * steps)
+            timestep = self.sampler.get_time_steps(denoise_steps, latent.shape[0])
+            encoded_latent = self.sampler.add_noise(latent, noise, timestep[0].cpu())
+
         if encoded_latent is None:
             assert "Could not find the appropriate function to encode the input latents"
         
@@ -127,7 +149,10 @@ class Txt2VideoSampler(object):
         for Sampler in available_samplers:
             if sampler_name == Sampler.name:
                 sampler = Sampler.init_sampler(self.sd_model, betas=betas, device=self.device)
-            
+
+                if Sampler.frame_inpaint_support:
+                    setattr(sampler, 'inpaint_masking', inpaint_masking)
+
                 if return_sampler:
                     return sampler
                 else:
@@ -135,7 +160,7 @@ class Txt2VideoSampler(object):
                     return
 
         raise ValueError(f"Sample {sampler_name} does not exist.")
-            
+        
     def sample_loop(
         self, 
         steps, 
@@ -149,6 +174,7 @@ class Txt2VideoSampler(object):
         is_vid2vid=False,
         guidance_scale=1,
         eta=0,
+        mask=None,
         sampler_name="DDIM"
     ):
         denoise_steps = None
@@ -158,7 +184,7 @@ class Txt2VideoSampler(object):
         
         # Create a callback that handles counting each step
         sampler_callback = SamplerStepCallback(sampler_name, steps)
-        
+
         # Predict the noise sample
         x0 = self.sampler.sample(
             S=steps,
@@ -173,10 +199,8 @@ class Txt2VideoSampler(object):
             shape=shape,
             callback=sampler_callback,
             cond=conditioning,
-            eta=eta
+            eta=eta,
+            mask=mask
         )
 
         return x0
-
-
-
