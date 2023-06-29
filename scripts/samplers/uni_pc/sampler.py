@@ -53,23 +53,13 @@ class UniPCSampler(object):
                # this has to come in the same format as the conditioning, # e.g. as encoded tokens, ...
                **kwargs
                ):
-        if conditioning is not None:
-            if isinstance(conditioning, dict):
-                cbs = conditioning[list(conditioning.keys())[0]].shape[0]
-                if cbs != batch_size:
-                    print(f"Warning: Got {cbs} conditionings but batch-size is {batch_size}")
-            else:
-                if conditioning.shape[0] != batch_size:
-                    print(f"Warning: Got {conditioning.shape[0]} conditionings but batch-size is {batch_size}")
-
-        device = self.model.device
 
         # sampling
         B, C, F, H, W = shape
         size = (B, C, F, H, W)
 
         if x_T is None:
-            img = torch.randn(size, device=device)
+            img = torch.randn(size, device=self.model.device)
         else:
             img = x_T
 
@@ -97,4 +87,4 @@ class UniPCSampler(object):
             callback=callback
         )
 
-        return x.to(device)
+        return x.to(self.model.device)
