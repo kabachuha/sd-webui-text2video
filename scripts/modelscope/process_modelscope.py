@@ -51,6 +51,18 @@ def dilate_mask(mask, dilation_amount):
 
     return dilated_mask
 
+def and_masks(mask1, mask2):
+    # Convert PIL images to NumPy arrays
+    mask1_array = np.array(mask1)
+    mask2_array = np.array(mask2)
+
+    # Perform an "and" operation on the masks
+    and_mask_array = np.minimum(mask1_array, mask2_array)
+
+    # Convert the result back to a PIL image
+    and_mask = Image.fromarray(and_mask_array.astype(np.uint8))
+
+    return and_mask
 
 def get_value_at_time(time_map, query_time, default_values={'x': 0, 'y': 0, 'z': 1}):
     if not time_map:
@@ -85,7 +97,7 @@ def get_value_at_time(time_map, query_time, default_values={'x': 0, 'y': 0, 'z':
                             for dim in dims}
             return interp_value
         
-def transform_image(image, x, y, z, width, height):
+def transform_image(image, x, y, z, width, height,base_mask=None):
     # Create a new blank image
     new_image = Image.new('RGB', (width, height))
 
@@ -116,6 +128,14 @@ def transform_image(image, x, y, z, width, height):
 
         # All pixels in the region covered by the cropped image are valid
         mask.paste(Image.new('L', (valid_width, valid_height), 1), (paste_x, paste_y))
+
+        #need to and mask with cropped base_mask
+        if base_mask is not None:
+            cropped_mask = base_mask.crop((left, upper, right, lower))
+            cropped_mask = cropped_mask.resize((valid_width, valid_height))
+            mask2 = Image.new('L', (width, height), 0)
+            mask2.paste(cropped_mask, (paste_x, paste_y))
+            mask = and_masks(mask, mask2)
 
     return new_image, mask  
 
@@ -262,6 +282,11 @@ def process_modelscope(args_dict):
                 zoom_sequence={}
 
             print("Zoom sequence",zoom_sequence)
+
+            if args.inpainting_mask is not None:
+                base_mask = Image.open(args.inpainting_mask).convert("L")
+            else:
+                base_mask = None
             
             for i in range(args.frames):
                 #image = Image.open(args.inpainting_image.name).convert("RGB")
@@ -269,9 +294,9 @@ def process_modelscope(args_dict):
                 #image = image.resize((args.width, args.height), Image.ANTIALIAS)
                 xyz=get_value_at_time(zoom_sequence,i)
                 #print("Zoom",xyz)
-                image,mask=transform_image(image, xyz['x'],xyz['y'],xyz['z'], args.width, args.height)
+                image,mask=transform_image(image, xyz['x'],xyz['y'],xyz['z'], args.width, args.height,base_mask)
                 array = np.array(image)
-                images += [array]
+                images += [array]                
                 #dilate mask
                 mask = dilate_mask(mask, 8)
                 #need to downsample the mask by 8x

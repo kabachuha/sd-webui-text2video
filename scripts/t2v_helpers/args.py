@@ -65,8 +65,8 @@ def setup_text2video_settings_dictionary():
             # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
             prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
             with gr.Accordion('img2vid', open=False):
-                #inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 inpainting_image = gr.Image(label="Inpainting image", interactive=True, type='filepath',elem_id="inpainting_chosen_file")
+                inpainting_mask = gr.Image(label="Inpainting mask", interactive=True, type='filepath',elem_id="inpainting_mask_file")
                 # TODO: should be tied to the total frame count dynamically
                 inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=24, step=1)
                 with gr.Row():
@@ -148,7 +148,7 @@ common_values_names = str('''prompt, n_prompt, steps, frames, seed, cfg_scale, w
 
 v2v_values_names = str('''
 do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame,
-inpainting_image,inpainting_frames, inpainting_weights, zoom_sequence,
+inpainting_image,inpainting_mask,inpainting_frames, inpainting_weights, zoom_sequence,
 model_type''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 t2v_args_names = common_values_names + [f'{v}_v' for v in common_values_names] + v2v_values_names
