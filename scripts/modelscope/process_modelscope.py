@@ -23,11 +23,101 @@ import t2v_helpers.args as t2v_helpers_args
 from modules import shared, sd_hijack, lowvram
 from modules.shared import opts, devices, state
 import os
+import json
+
+from skimage.morphology import binary_dilation, square
 
 pipe = None
 
 def setup_pipeline():
     return TextToVideoSynthesis(ph.models_path + '/ModelScope/t2v')
+
+
+
+
+def dilate_mask(mask, dilation_amount):
+    # Convert PIL image to NumPy array
+    mask_array = np.array(mask)
+
+    # Create a square structuring element of size equal to dilation_amount
+    selem = square(dilation_amount)
+
+    # Dilate the area filled with 0's
+    dilated_mask_array = binary_dilation(mask_array==0, selem)
+
+    # Convert dilated mask back to PIL image
+    # We need to invert it back because binary_dilation expands areas with True (1)
+    dilated_mask = Image.fromarray(np.where(dilated_mask_array, 0, 1).astype(np.uint8))
+
+    return dilated_mask
+
+
+def get_value_at_time(time_map, query_time, default_values={'x': 0, 'y': 0, 'z': 1}):
+    if not time_map:
+        return default_values
+
+    keys = sorted(time_map.keys())
+    
+    # Verify if keys are numerical
+    if not all(isinstance(k, (int, float)) for k in keys):
+        raise ValueError("All keys must be numerical.")
+    
+    # Retrieve dimension keys from default_values
+    dims = default_values.keys()
+    
+    # Case 1: query_time is before the first time
+    if query_time <= keys[0]:
+        return {dim: time_map[keys[0]].get(dim, default_values[dim]) for dim in dims}
+    
+    # Case 3: query_time is after the last time
+    if query_time >= keys[-1]:
+        return {dim: time_map[keys[-1]].get(dim, default_values[dim]) for dim in dims}
+    
+    # Case 2: query_time is in-between times
+    for i in range(len(keys) - 1):
+        current_time = keys[i]
+        next_time = keys[i + 1]
+        if current_time <= query_time < next_time:
+            # Linear interpolation
+            interp_value = {dim: time_map[current_time].get(dim, default_values[dim]) 
+                            + ((query_time - current_time) / (next_time - current_time)) 
+                            * (time_map[next_time].get(dim, default_values[dim]) - time_map[current_time].get(dim, default_values[dim]))
+                            for dim in dims}
+            return interp_value
+        
+def transform_image(image, x, y, z, width, height):
+    # Create a new blank image
+    new_image = Image.new('RGB', (width, height))
+
+    # Define a mask to identify valid and invalid pixels
+    mask = Image.new('L', (width, height), 0)
+
+    # Cut a rectangle from the input image
+    left = max(x, 0)
+    upper = max(y, 0)
+    right = min(x + width * z, image.width)
+    lower = min(y + height * z, image.height)
+
+    # Adjust width and height for the mask according to the valid cropped area
+    valid_width = int((right - left) / z)
+    valid_height = int((lower - upper) / z)
+
+    # Determine paste coordinates in the new image, considering 'z' factor
+    paste_x = max(0, int(-x / z))
+    paste_y = max(0, int(-y / z))
+
+    # Ensure that crop dimensions are positive
+    if valid_width > 0 and valid_height > 0:
+        cropped_image = image.crop((left, upper, right, lower))
+        cropped_image = cropped_image.resize((valid_width, valid_height))
+
+        # Paste the cropped image into the new blank image at the appropriate position
+        new_image.paste(cropped_image, (paste_x, paste_y))
+
+        # All pixels in the region covered by the cropped image are valid
+        mask.paste(Image.new('L', (valid_width, valid_height), 1), (paste_x, paste_y))
+
+    return new_image, mask  
 
 def process_modelscope(args_dict):
     args, video_args = process_args(args_dict)
@@ -155,15 +245,38 @@ def process_modelscope(args_dict):
 
         shared.state.job = f"Batch {batch + 1} out of {args.batch_count}"
         # TODO: move to a separate function
-        if args.inpainting_frames > 0 and hasattr(args.inpainting_image, "name"):
+        #if args.inpainting_frames > 0 and hasattr(args.inpainting_image, "name"):
+        if args.inpainting_frames > 0 and args.inpainting_image is not None:
             keys = T2VAnimKeys(SimpleNamespace(**{'max_frames': args.frames, 'inpainting_weights': args.inpainting_weights}), args.seed, args.inpainting_frames)
             images = []
-            print("Received an image for inpainting", args.inpainting_image.name)
+            image_masks=[]
+            #print("Received an image for inpainting", args.inpainting_image.name)
+            print("Received an image for inpainting", args.inpainting_image)
+            
+            try:
+                zoom_sequence=json.loads(args.zoom_sequence)
+                #convert keys from string to int
+                zoom_sequence={int(k):v for k,v in zoom_sequence.items()}
+            except:
+                print("Error parsing zoom sequence",args.zoom_sequence)
+                zoom_sequence={}
+
+            print("Zoom sequence",zoom_sequence)
+            
             for i in range(args.frames):
-                image = Image.open(args.inpainting_image.name).convert("RGB")
-                image = image.resize((args.width, args.height), Image.ANTIALIAS)
+                #image = Image.open(args.inpainting_image.name).convert("RGB")
+                image = Image.open(args.inpainting_image).convert("RGB")
+                #image = image.resize((args.width, args.height), Image.ANTIALIAS)
+                xyz=get_value_at_time(zoom_sequence,i)
+                #print("Zoom",xyz)
+                image,mask=transform_image(image, xyz['x'],xyz['y'],xyz['z'], args.width, args.height)
                 array = np.array(image)
                 images += [array]
+                #dilate mask
+                mask = dilate_mask(mask, 8)
+                #need to downsample the mask by 8x
+                mask=mask.resize((args.width//8, args.height//8), Image.ANTIALIAS)
+                image_masks+=[mask]
 
             images = np.stack(images)  # f h w c
             batches = 1
@@ -195,7 +308,9 @@ def process_modelscope(args_dict):
             mask_weights = [keys.inpainting_weights_series[frame_idx] for frame_idx in range(args.frames)]
 
             for i in range(args.frames):
-                v = mask_weights[i]
+                v = mask_weights[i]+(1-np.array(image_masks[i]))
+                v=np.clip(v,0,1)
+                #print(i,mask_weights[i],v,np.array(image_masks[i]))
                 mask[:, :, i, :, :] = v
 
             masked_latents = image_latents * (1 - mask) + latent_noise * mask
