@@ -65,7 +65,8 @@ def setup_text2video_settings_dictionary():
             # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
             prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
             with gr.Accordion('img2vid', open=False):
-                inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
+                inpainting_image = gr.Image(label="Inpainting image", interactive=True, type='filepath',elem_id="inpainting_chosen_file")
+                inpainting_mask = gr.Image(label="Inpainting mask", interactive=True, type='filepath',elem_id="inpainting_mask_file")
                 # TODO: should be tied to the total frame count dynamically
                 inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=24, step=1)
                 with gr.Row():
@@ -80,6 +81,20 @@ To *loop it back*, set the weight to 0 for the first and for the last frame
 Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                 with gr.Row():
                     inpainting_weights = gr.Textbox(label="Inpainting weights", value=d.inpainting_weights, interactive=True)
+
+
+                with gr.Row():
+                    gr.Markdown('''`zoom sequence` describes the zoom and translation for input image as a json dictionary
+
+for example,                     
+
+zoom-in `{"0":{"x":0,"y":0,"z":2.0},"12":{"x":128,"y":128,"z":1.0}}` 
+
+zoom-out `{"0": {"x": 0, "y": 0, "z": 2.0}, "12": {"x": -256, "y": -256, "z": 4.0}}`
+
+side-scroll `{"0": {"x": 0, "y": 0, "z": 2.0}, "12":{"x": 512, "y": 0, "z": 2.0}}`''')                    
+                with gr.Row():
+                    zoom_sequence = gr.Textbox(label="Zoom sequence", value=d.zoom_sequence, interactive=True)
                 
                 def update_max_inp_frames(f, i_frames): # Show video
                     return gr.update(value=min(f, i_frames), maximum=f, visible=True)
@@ -133,7 +148,7 @@ common_values_names = str('''prompt, n_prompt, steps, frames, seed, cfg_scale, w
 
 v2v_values_names = str('''
 do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame,
-inpainting_image,inpainting_frames, inpainting_weights,
+inpainting_image,inpainting_mask,inpainting_frames, inpainting_weights, zoom_sequence,
 model_type''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 t2v_args_names = common_values_names + [f'{v}_v' for v in common_values_names] + v2v_values_names
@@ -179,6 +194,7 @@ def T2VArgs():
     strength = 0.75
     vid2vid_startFrame = 0
     inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
+    zoom_sequence = '{}'#json dictionary with zoom sequence {"0":{"x":0,"y":0,"z":2.0},"12":{"x":128,"y":128,"z":1.0}}
     inpainting_frames = 0
     return locals()
 
