@@ -33,6 +33,10 @@ ModelScope:
 
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.2b. The video will be shown below this label when ready</p>"
 
+def enable_sampler_dropdown(model_type):
+    is_visible = model_type == "ModelScope"
+    return gr.update(visible=is_visible)
+
 def setup_common_values(mode, d):
     with gr.Row(elem_id=f'{mode}_prompt_toprow'):
         prompt = gr.Textbox(label='Prompt', lines=3, interactive=True, elem_id=f"{mode}_prompt", placeholder="Enter your prompt here...")
@@ -46,7 +50,7 @@ def setup_common_values(mode, d):
         height = gr.Slider(label='Height', minimum=64, maximum=1024, step=64, value=d.height)
     with gr.Row():
         seed = gr.Number(label='Seed', value = d.seed, Interactive = True, precision=0)
-        eta = gr.Number(label="ETA", value=d.eta, interactive=True)
+        eta = gr.Number(label="ETA (DDIM Only)", value=d.eta, interactive=True)
     with gr.Row():
         gr.Markdown('256x256 Benchmarks: 24 frames peak at 5.7 GBs of VRAM and 125 frames peak at 11.5 GBs with Torch2 installed')
     with gr.Row():
@@ -55,12 +59,15 @@ def setup_common_values(mode, d):
     
     return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
 
+
 def setup_text2video_settings_dictionary():
     d = SimpleNamespace(**T2VArgs())
     dv = SimpleNamespace(**T2VOutputArgs())
     with gr.Row(elem_id='model-switcher'):
-        model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
-        sampler = gr.Dropdown(label="Samplers", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler")
+        model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type', )
+    with gr.Row(elem_id='sampler-dropdown'):
+        sampler = gr.Dropdown(label="Samplers (ModelScope)", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler", visible=model_type.value == "ModelScope")
+        model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
     with gr.Tabs():
         do_vid2vid = gr.State(value=0)
         with gr.Tab('txt2vid') as tab_txt2vid:
