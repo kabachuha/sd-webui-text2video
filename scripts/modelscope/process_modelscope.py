@@ -146,7 +146,7 @@ def process_modelscope(args_dict):
     state.job_count = args.batch_count
 
     for batch in pbar:
-        state.job_no = batch + 1
+        state.job_no = batch
         if state.skipped:
             state.skipped = False
 
