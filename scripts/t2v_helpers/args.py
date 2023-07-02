@@ -10,9 +10,7 @@ import modules.paths as ph
 from t2v_helpers.general_utils import get_model_location
 from modules.shared import opts
 
-welcome_text_videocrafter = '''
-    Download pretrained T2V models via this link https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link, and put the model.ckpt in models/VideoCrafter/model.ckpt.
-    Then use the same GUI pipeline as ModelScope does.
+welcome_text_videocrafter = '''Download pretrained T2V models via <a style="color:SteelBlue" href="https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link">this link</a>, and put the model.ckpt in models/VideoCrafter/model.ckpt. Then use the same GUI pipeline as ModelScope does.
 '''
 
 welcome_text_modelscope = '''Put your models from <a style="color:SteelBlue" href="https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main">https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main</a> to stable-diffusion-webui/models/ModelScope/t2v/. Make sure, you downloaded the file named 'configuration.json' in its raw text form (click on the ⬇️ character to the right, don't save via right-click).
