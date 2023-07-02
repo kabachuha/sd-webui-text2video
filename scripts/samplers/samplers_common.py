@@ -35,7 +35,7 @@ class SamplerStepCallback(object):
     def progress_msg(self, name, total_steps=None):
         total_steps = total_steps if total_steps is not None else self.total_steps
         state.sampling_steps = total_steps
-        return f"Sampling Using {name} for {total_steps} steps."
+        return f"Sampling using {name} for {total_steps} steps."
 
     def set_webui_step(self, step):
         state.sampling_step = step
