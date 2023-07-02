@@ -67,7 +67,7 @@ def t2v_api(_, app: FastAPI):
         return JSONResponse(content={"version": get_t2v_version()})
 
     @app.post("/t2v/run")
-    async def t2v_run(prompt: str, n_prompt: Union[str, None] = None, sampler: Union[str, None] = None, steps: Union[int, None] = None, frames: Union[int, None] = None, seed: Union[int, None] = None, \
+    async def t2v_run(prompt: str, n_prompt: Union[str, None] = None, model: Union[str, None] = None, sampler: Union[str, None] = None, steps: Union[int, None] = None, frames: Union[int, None] = None, seed: Union[int, None] = None, \
                       cfg_scale: Union[int, None] = None, width: Union[int, None] = None, height: Union[int, None] = None, eta: Union[float, None] = None, batch_count: Union[int, None] = None, \
                       do_vid2vid:bool = False, vid2vid_input: Union[UploadFile, None] = None,strength: Union[float, None] = None,vid2vid_startFrame: Union[int, None] = None, \
                       inpainting_image: Union[UploadFile, None] = None, inpainting_frames: Union[int, None] = None, inpainting_weights: Union[str, None] = None, \
@@ -163,6 +163,7 @@ def t2v_api(_, app: FastAPI):
                 d.inpainting_frames,#inpainting_frames
                 d.inpainting_weights,#inpainting_weights
                 "ModelScope",#model_type. Only one has stable support at this moment
+                d.model,
             )
 
             return JSONResponse(content={"mp4s": videodat})
