@@ -85,11 +85,11 @@ def setup_text2video_settings_dictionary():
 
             def refresh_all_models(model):
                 models = []
-                if os.path.isdir(os.path.join(ph.models_dir, 'ModelScope/t2v')):
+                if os.path.isdir(os.path.join(ph.models_path, 'ModelScope/t2v')):
                     models.append('<modelscope>')
-                if os.path.isdir(os.path.join(ph.models_dir, 'VideoCrafter')):
+                if os.path.isdir(os.path.join(ph.models_path, 'VideoCrafter')):
                     models.append('<videocrafter>')
-                models_dir = os.path.join(ph.models_dir, 'text2video/')
+                models_dir = os.path.join(ph.models_path, 'text2video/')
                 for subdir in os.listdir(models_dir):
                     if os.path.isdir(subdir):
                         models.append(subdir)
