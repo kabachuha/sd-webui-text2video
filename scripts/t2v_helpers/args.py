@@ -43,7 +43,9 @@ def setup_common_values(mode, d):
     with gr.Row(elem_id=f'{mode}_n_prompt_toprow'):
         n_prompt = gr.Textbox(label='Negative prompt', lines=2, interactive=True, elem_id=f"{mode}_n_prompt", value=d.n_prompt)
     with gr.Row():
+        sampler = gr.Dropdown(label="Sampling method (ModelScope)", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler", visible=model_type.value == "ModelScope")
         steps = gr.Slider(label='Steps', minimum=1, maximum=100, step=1, value=d.steps)
+    with gr.Row():
         cfg_scale = gr.Slider(label='CFG scale', minimum=1, maximum=100, step=1, value=d.cfg_scale)
     with gr.Row():
         width = gr.Slider(label='Width', minimum=64, maximum=1024, step=64, value=d.width)
@@ -57,7 +59,7 @@ def setup_common_values(mode, d):
         frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=250, step=1, interactive=True, precision=0)
         batch_count = gr.Slider(label="Batch count", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=True)
     
-    return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
+    return prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count
 
 
 def setup_text2video_settings_dictionary():
@@ -65,14 +67,12 @@ def setup_text2video_settings_dictionary():
     dv = SimpleNamespace(**T2VOutputArgs())
     with gr.Row(elem_id='model-switcher'):
         model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type', )
-    with gr.Row(elem_id='sampler-dropdown'):
-        sampler = gr.Dropdown(label="Samplers (ModelScope)", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler", visible=model_type.value == "ModelScope")
-        model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
     with gr.Tabs():
         do_vid2vid = gr.State(value=0)
         with gr.Tab('txt2vid') as tab_txt2vid:
             # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
-            prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
+            prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
+            model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
             with gr.Accordion('img2vid', open=False):
                 inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 # TODO: should be tied to the total frame count dynamically
@@ -99,7 +99,8 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
             with gr.Row():
                 vid2vid_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
             # TODO: here too
-            prompt_v, n_prompt_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
+            prompt_v, n_prompt_v, sampler_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
+            model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler_v])
             with gr.Row():
                 strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
                 vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
@@ -128,12 +129,12 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
 
 t2v_video_args_names = str('skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
-common_values_names = str('''prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+common_values_names = str('''prompt, n_prompt, sampler, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 v2v_values_names = str('''
 do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame,
 inpainting_image,inpainting_frames, inpainting_weights,
-model_type, sampler''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+model_type''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 t2v_args_names = common_values_names + [f'{v}_v' for v in common_values_names] + v2v_values_names
 
