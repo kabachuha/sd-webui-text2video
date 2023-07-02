@@ -208,7 +208,7 @@ def T2VArgs():
     vid2vid_startFrame = 0
     inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
     inpainting_frames = 0
-    sampler = "DDIM"
+    sampler = "DDIM_Gaussian"
     model = "<modelscope>"
     return locals()
 
