@@ -553,17 +553,17 @@ class CrossAttention(nn.Module):
             max_neg_value = -torch.finfo(x.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h=h)
         
-        if cmd_opts.force_enable_xformers or (cmd_opts.xformers and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
+        if getattr(cmd_opts, "force_enable_xformers", False) or (getattr(cmd_opts, "xformers", False) and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
             import xformers
             out = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v), attn_bias=mask,
             )
-        elif cmd_opts.opt_sdp_no_mem_attention and can_use_sdp:
+        elif getattr(cmd_opts, "opt_sdp_no_mem_attention", False) and can_use_sdp:
             with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=False):
                 out = F.scaled_dot_product_attention(
                     q, k, v, dropout_p=0.0, attn_mask=mask
                 )
-        elif cmd_opts.opt_sdp_attention and can_use_sdp:
+        elif getattr(cmd_opts, "opt_sdp_attention", True) and can_use_sdp:
             out = F.scaled_dot_product_attention(
                 q, k, v, dropout_p=0.0, attn_mask=mask
             )
@@ -1157,17 +1157,17 @@ class AttentionBlock(nn.Module):
 
         # compute attention
 
-        if cmd_opts.force_enable_xformers or (cmd_opts.xformers and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
+        if getattr(cmd_opts, "force_enable_xformers", False) or (getattr(cmd_opts, "xformers", False) and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
             import xformers
             x = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v),
             )
-        elif cmd_opts.opt_sdp_no_mem_attention and can_use_sdp:
+        elif getattr(cmd_opts, "opt_sdp_no_mem_attention", False) and can_use_sdp:
             with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=False):
                 x = F.scaled_dot_product_attention(
                     q, k, v, dropout_p=0.0,
                 )
-        elif cmd_opts.opt_sdp_attention and can_use_sdp:
+        elif getattr(cmd_opts, "opt_sdp_attention", True) and can_use_sdp:
             x = F.scaled_dot_product_attention(
                     q, k, v, dropout_p=0.0,
                 )
