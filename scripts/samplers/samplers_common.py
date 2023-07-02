@@ -31,6 +31,7 @@ class SamplerStepCallback(object):
         self.total_steps = total_steps
         self.current_step = 0
         self.progress_bar = tqdm(desc=self.progress_msg(sampler_name, total_steps), total=total_steps)
+        state.sampling_steps = total_steps
 
     def progress_msg(self, name, total_steps=None):
         total_steps = total_steps if total_steps is not None else self.total_steps
