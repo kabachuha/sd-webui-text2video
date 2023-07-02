@@ -6,6 +6,8 @@ from types import SimpleNamespace
 from t2v_helpers.video_audio_utils import find_ffmpeg_binary
 from samplers.samplers_common import available_samplers
 import os
+import modules.paths as ph
+from t2v_helpers.general_utils import get_model_location
 from modules.shared import opts
 
 welcome_text_videocrafter = '''
@@ -62,11 +64,39 @@ def setup_common_values(mode, d):
     return prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count
 
 
+refresh_symbol = '\U0001f504'  # 🔄
+class ToolButton(gr.Button, gr.components.FormComponent):
+    """Small button with single emoji as text, fits inside gradio forms"""
+    def __init__(self, **kwargs):
+        super().__init__(variant="tool", **kwargs)
+
+    def get_block_name(self):
+        return "button"
+
 def setup_text2video_settings_dictionary():
     d = SimpleNamespace(**T2VArgs())
     dv = SimpleNamespace(**T2VOutputArgs())
     with gr.Row(elem_id='model-switcher'):
-        model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type', )
+        with gr.Row(variant='compact'):
+            # TODO: deprecate this in favor of dynamic model type reading
+            model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
+            model = gr.Dropdown(label='Model', value="<modelscope>", help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. <modelscope> and <videocrafter> are the legacy locations")
+            refresh_models = ToolButton(value=refresh_symbol)
+
+            def refresh_all_models(model):
+                models = []
+                if os.path.isdir(os.path.join(ph.models_path, 'ModelScope/t2v')):
+                    models.append('<modelscope>')
+                if os.path.isdir(os.path.join(ph.models_path, 'VideoCrafter/')):
+                    models.append('<videocrafter>')
+                models_dir = os.path.join(ph.models_path, 'text2video/')
+                if os.path.isdir(models_dir):
+                    for subdir in os.listdir(models_dir):
+                        if os.path.isdir(os.path.join(models_dir, subdir)):
+                            models.append(subdir)
+                return gr.update(value=model if model in models else None, choices=models, visible=True)
+
+            refresh_models.click(refresh_all_models, model, model)
     with gr.Tabs():
         do_vid2vid = gr.State(value=0)
         with gr.Tab('txt2vid') as tab_txt2vid:
@@ -134,7 +164,7 @@ common_values_names = str('''prompt, n_prompt, sampler, steps, frames, seed, cfg
 v2v_values_names = str('''
 do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame,
 inpainting_image,inpainting_frames, inpainting_weights,
-model_type''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+model_type,model''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 t2v_args_names = common_values_names + [f'{v}_v' for v in common_values_names] + v2v_values_names
 
@@ -181,10 +211,13 @@ def T2VArgs():
     inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
     inpainting_frames = 0
     sampler = "DDIM"
+    model = "<modelscope>"
     return locals()
 
 def T2VArgs_sanity_check(t2v_args):
     try:
+        if t2v_args.model is not None and not os.path.isdir(get_model_location(t2v_args.model)):
+            raise ValueError(f'Model "{t2v_args.model}" not found in {get_model_location(t2v_args.model)}!')
         if t2v_args.frames < 1:
             raise ValueError('Frames count cannot be lower than 1!')
         if t2v_args.batch_count < 1:

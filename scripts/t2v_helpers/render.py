@@ -22,7 +22,7 @@ def run(*args):
     t2v_helpers_args.i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.2b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else 'None'
     try:
-        print('text2video — The model selected is: ', args_dict['model_type'])
+        print(f'text2video — The model selected is: {args_dict["model"]} ({args_dict["model_type"]}-like)')
         if model_type == 'ModelScope':
             vids_pack = process_modelscope(args_dict)
         elif model_type == 'VideoCrafter (WIP)':
