@@ -13,13 +13,13 @@ from modules.shared import opts
 welcome_text_videocrafter = '''Download pretrained T2V models via <a style="color:SteelBlue" href="https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link">this link</a>, and put the model.ckpt in models/VideoCrafter/model.ckpt. Then use the same GUI pipeline as ModelScope does.
 '''
 
-welcome_text_modelscope = '''Put your models from <a style="color:SteelBlue" href="https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main">https://huggingface.co/damo-vilab/modelscope-damo-text-to-video-synthesis/tree/main</a> to stable-diffusion-webui/models/ModelScope/t2v/. Make sure, you downloaded the file named 'configuration.json' in its raw text form (click on the ⬇️ character to the right, don't save via right-click).
+welcome_text_modelscope = '''Put your models to stable-diffusion-webui/models/text2video. Make sure you have a text file named 'configuration.json' in the downloaded models folders (click on the ⬇️ character to the right, don't save via right-click). Recommended requirements start at 6 GBs of VRAM.
 
-8gbs of VRAM on top of SD should be enough to launch (when the VAE unloading will be fixed, before that orient around ~12 gbs).
+<a style="color:SteelBlue" href="https://github.com/kabachuha/sd-webui-text2video#prominent-fine-tunes">A list of prominent fine-tunes</a> is a good starting point for models search.
 
-Join the development or report issues and feature requests here <a style="color:SteelBlue" href="https://github.com/deforum-art/sd-webui-modelscope-text2video">https://github.com/deforum-art/sd-webui-modelscope-text2video</a>
+Join the development or report issues and feature requests here <a style="color:SteelBlue" href="https://github.com/kabachuha/sd-webui-text2video">https://github.com/kabachuha/sd-webui-text2video</a>
 
-<italic>If you liked this extension, please <a style="color:SteelBlue" href="https://github.com/deforum-art/sd-webui-modelscope-text2video">give it a star on GitHub</a>!</italic> 😊
+<italic>If you liked this extension, please <a style="color:SteelBlue" href="https://github.com/kabachuha/sd-webui-text2video">give it a star on GitHub</a>!</italic> 😊
 
 '''
 
