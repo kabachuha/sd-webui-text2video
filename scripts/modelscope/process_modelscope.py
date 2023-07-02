@@ -136,88 +136,95 @@ def process_modelscope(args_dict):
 
     print('Working in txt2vid mode' if not args.do_vid2vid else 'Working in vid2vid mode')
 
-    # Start the batch count loop
-    pbar = tqdm(range(args.batch_count), leave=False)
-    if args.batch_count == 1:
-        pbar.disable = True
+    print(f'Generating {video_args.stitched_videos + 1} video(s) with {args.frames} frames each')
 
-    vids_to_pack = []
+    for video_number in range(0, video_args.stitched_videos + 1):
+        # Start the batch count loop
+        pbar = tqdm(range(args.batch_count), leave=False)
+        if args.batch_count == 1:
+            pbar.disable = True
 
-    state.job_count = args.batch_count
+        vids_to_pack = []
 
-    for batch in pbar:
-        state.job_no = batch + 1
-        if state.skipped:
-            state.skipped = False
+        state.job_count = args.batch_count
 
-        if state.interrupted:
-            break
+        for batch in pbar:
+            state.job_no = batch + 1
+            if state.skipped:
+                state.skipped = False
 
-        shared.state.job = f"Batch {batch + 1} out of {args.batch_count}"
-        # TODO: move to a separate function
-        if args.inpainting_frames > 0 and hasattr(args.inpainting_image, "name"):
-            keys = T2VAnimKeys(SimpleNamespace(**{'max_frames': args.frames, 'inpainting_weights': args.inpainting_weights}), args.seed, args.inpainting_frames)
-            images = []
-            print("Received an image for inpainting", args.inpainting_image.name)
-            for i in range(args.frames):
-                image = Image.open(args.inpainting_image.name).convert("RGB")
-                image = image.resize((args.width, args.height), Image.ANTIALIAS)
-                array = np.array(image)
-                images += [array]
+            if state.interrupted:
+                break
 
-            images = np.stack(images)  # f h w c
-            batches = 1
-            n_images = np.tile(images[np.newaxis, ...], (batches, 1, 1, 1, 1))  # n f h w c
-            bcfhw = n_images.transpose(0, 4, 1, 2, 3)
-            # convert to 0-1 float
-            bcfhw = bcfhw.astype(np.float32) / 255
-            bfchw = bcfhw.transpose(0, 2, 1, 3, 4)  # b c f h w
+            shared.state.job = f"Batch {batch + 1} out of {args.batch_count}"
+            # TODO: move to a separate function
+            if args.inpainting_frames > 0 and hasattr(args.inpainting_image, "name"):
+                keys = T2VAnimKeys(SimpleNamespace(**{'max_frames': args.frames, 'inpainting_weights': args.inpainting_weights}), args.seed, args.inpainting_frames)
+                images = []
+                print("Received an image for inpainting", args.inpainting_image.name)
+                for i in range(args.frames):
+                    image = Image.open(args.inpainting_image.name).convert("RGB")
+                    image = image.resize((args.width, args.height), Image.ANTIALIAS)
+                    array = np.array(image)
+                    images += [array]
 
-            print(f"Converted the frames to tensor {bfchw.shape}")
+                images = np.stack(images)  # f h w c
+                batches = 1
+                n_images = np.tile(images[np.newaxis, ...], (batches, 1, 1, 1, 1))  # n f h w c
+                bcfhw = n_images.transpose(0, 4, 1, 2, 3)
+                # convert to 0-1 float
+                bcfhw = bcfhw.astype(np.float32) / 255
+                bfchw = bcfhw.transpose(0, 2, 1, 3, 4)  # b c f h w
 
-            vd_out = torch.from_numpy(bcfhw).to("cuda")
+                print(f"Converted the frames to tensor {bfchw.shape}")
 
-            # should be -1,1, not 0,1
-            vd_out = 2 * vd_out - 1
+                vd_out = torch.from_numpy(bcfhw).to("cuda")
 
-            # latents should have shape num_sample, 4, max_frames, latent_h,latent_w
-            # but right now they have shape num_sample=1,4, 1 (only used 1 img), latent_h, latent_w
-            print("Computing latents")
-            image_latents = pipe.compute_latents(vd_out).numpy()
-            # padding_width = [(0, 0), (0, 0), (0, frames-inpainting_frames), (0, 0), (0, 0)]
-            # padded_latents = np.pad(image_latents, pad_width=padding_width, mode='constant', constant_values=0)
+                # should be -1,1, not 0,1
+                vd_out = 2 * vd_out - 1
 
-            latent_h = args.height // 8
-            latent_w = args.width // 8
-            latent_noise = np.random.normal(size=(1, 4, args.frames, latent_h, latent_w))
-            mask = np.ones(shape=(1, 4, args.frames, latent_h, latent_w))
+                # latents should have shape num_sample, 4, max_frames, latent_h,latent_w
+                # but right now they have shape num_sample=1,4, 1 (only used 1 img), latent_h, latent_w
+                print("Computing latents")
+                image_latents = pipe.compute_latents(vd_out).numpy()
+                # padding_width = [(0, 0), (0, 0), (0, frames-inpainting_frames), (0, 0), (0, 0)]
+                # padded_latents = np.pad(image_latents, pad_width=padding_width, mode='constant', constant_values=0)
 
-            mask_weights = [keys.inpainting_weights_series[frame_idx] for frame_idx in range(args.frames)]
+                latent_h = args.height // 8
+                latent_w = args.width // 8
+                latent_noise = np.random.normal(size=(1, 4, args.frames, latent_h, latent_w))
+                mask = np.ones(shape=(1, 4, args.frames, latent_h, latent_w))
 
-            for i in range(args.frames):
-                v = mask_weights[i]
-                mask[:, :, i, :, :] = v
+                mask_weights = [keys.inpainting_weights_series[frame_idx] for frame_idx in range(args.frames)]
 
-            masked_latents = image_latents * (1 - mask) + latent_noise * mask
+                for i in range(args.frames):
+                    v = mask_weights[i]
+                    mask[:, :, i, :, :] = v
 
-            latents = torch.tensor(masked_latents).to(device)
+                masked_latents = image_latents * (1 - mask) + latent_noise * mask
 
-            mask = torch.tensor(mask).to(device)
+                latents = torch.tensor(masked_latents).to(device)
 
-            args.strength = 1
+                mask = torch.tensor(mask).to(device)
 
-        samples, _ = pipe.infer(args.prompt, args.n_prompt, args.steps, args.frames, args.seed + batch if args.seed != -1 else -1, args.cfg_scale,
-                                args.width, args.height, args.eta, cpu_vae, device, latents, skip_steps=skip_steps, mask=mask)
+                args.strength = 1
 
-        if batch > 0:
-            outdir_current = os.path.join(get_outdir(), f"{init_timestring}_{batch}")
-        print(f'text2video finished, saving frames to {outdir_current}')
+            samples, _ = pipe.infer(args.prompt, args.n_prompt, args.steps, args.frames, args.seed + batch if args.seed != -1 else -1, args.cfg_scale,
+                                    args.width, args.height, args.eta, cpu_vae, device, latents, skip_steps=skip_steps, mask=mask)
 
-        # just deleted the folder so we need to make it again
-        os.makedirs(outdir_current, exist_ok=True)
-        for i in range(len(samples)):
-            cv2.imwrite(outdir_current + os.path.sep +
-                        f"{i:06}.png", samples[i])
+            if batch > 0:
+                outdir_current = os.path.join(get_outdir(), f"{init_timestring}_{batch}")
+            print(f'text2video finished, saving frames to {outdir_current}')
+
+            # just deleted the folder so we need to make it again
+            os.makedirs(outdir_current, exist_ok=True)
+            for i in range(len(samples)):
+                cv2.imwrite(outdir_current + os.path.sep +
+                            f"{(video_number * args.frames) + i:06}.png", samples[i])
+            if video_args.stitched_videos > 0 and video_number < video_args.stitched_videos:
+                continue_num = (args.frames - 1) * (video_number + 1)
+                print(f"Continuing from frame {continue_num}")
+                args.inpainting_image = open(f'{outdir_current + os.path.sep}{continue_num:06}.png', 'rb')
 
         # TODO: add params to the GUI
         if not video_args.skip_video_creation:

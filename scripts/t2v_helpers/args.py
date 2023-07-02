@@ -64,6 +64,13 @@ def setup_text2video_settings_dictionary():
         with gr.Tab('txt2vid') as tab_txt2vid:
             # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
             prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
+            gr.Markdown('''`Stitched videos` allows you to generate multiple videos consecutively and combine them into 
+            one video when they're done. Use inpainting frames and inpainting weights to adjust the transition between 
+            videos.
+            
+            Currently only works with ModelScope''')
+            with gr.Row():
+                stitched_videos = gr.Slider(label="Stitched videos", value=d.stitched_videos, minimum=0, maximum=20, step=1, interactive=True)
             with gr.Accordion('img2vid', open=False):
                 inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 # TODO: should be tied to the total frame count dynamically
@@ -127,7 +134,7 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
 
     return locals()
 
-t2v_video_args_names = str('skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+t2v_video_args_names = str('skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, stitched_videos').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 common_values_names = str('''prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
@@ -160,6 +167,8 @@ def process_args(args_dict):
         if f'{name}_v' in args_dict:
             args_dict.pop(f'{name}_v')
 
+    print(f'args_dict: {args_dict}')
+
     args = SimpleNamespace(**pack_anim_args(args_dict))
     video_args = SimpleNamespace(**pack_video_args(args_dict))
     T2VArgs_sanity_check(args)
@@ -177,6 +186,7 @@ def T2VArgs():
     prompt = ""
     n_prompt = "text, watermark, copyright, blurry, nsfw"
     strength = 0.75
+    stitched_videos = 0
     vid2vid_startFrame = 0
     inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
     inpainting_frames = 0
