@@ -33,6 +33,8 @@ Update 2023-04-15: **MEGA-UPDATE**: Torch2/xformers optimizations, possible to m
 
 Update 2023-04-16: WebAPI is available!
 
+Update 2023-07-02: Alternate samplers, model hotswitch.
+
 ## Test examples:
 
 ### ModelScope
@@ -94,6 +96,12 @@ Thanks to https://github.com/ExponentialML/Text-To-Video-Finetuning you can fine
 To utilize a fine-tuned model here, use [this script](https://github.com/ExponentialML/Text-To-Video-Finetuning/pull/52) which will convert the Diffusers-formatted model that repo outputs into the original weights format.
 
 ### Prominent Fine-tunes
+
+**ZeroScope v2**
+
+Trained by @cerspense on high quality YouTube videos. Download the files from the folder named `zs2_XL` at [cerspense/zeroscope_v2_XL](https://huggingface.co/cerspense/zeroscope_v2_XL/tree/main/zs2_XL) and then add the missing `VQGAN_autoencoder.pth` and `configuration.json` from [any other ModelScope model](https://huggingface.co/kabachuha/modelscope-damo-text2video-pruned-weights/tree/main).
+
+https://github.com/kabachuha/sd-webui-text2video/assets/14872007/6fa39221-3608-415e-b8ce-04a2bad11d30
 
 **Potat1**
 
