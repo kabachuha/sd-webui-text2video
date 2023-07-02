@@ -4,6 +4,7 @@
 import gradio as gr
 from types import SimpleNamespace
 from t2v_helpers.video_audio_utils import find_ffmpeg_binary
+from samplers.samplers_common import available_samplers
 import os
 from modules.shared import opts
 
@@ -32,42 +33,50 @@ ModelScope:
 
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.2b. The video will be shown below this label when ready</p>"
 
+def enable_sampler_dropdown(model_type):
+    is_visible = model_type == "ModelScope"
+    return gr.update(visible=is_visible)
+
 def setup_common_values(mode, d):
     with gr.Row(elem_id=f'{mode}_prompt_toprow'):
         prompt = gr.Textbox(label='Prompt', lines=3, interactive=True, elem_id=f"{mode}_prompt", placeholder="Enter your prompt here...")
     with gr.Row(elem_id=f'{mode}_n_prompt_toprow'):
         n_prompt = gr.Textbox(label='Negative prompt', lines=2, interactive=True, elem_id=f"{mode}_n_prompt", value=d.n_prompt)
     with gr.Row():
+        sampler = gr.Dropdown(label="Sampling method (ModelScope)", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler", visible=True)
         steps = gr.Slider(label='Steps', minimum=1, maximum=100, step=1, value=d.steps)
+    with gr.Row():
         cfg_scale = gr.Slider(label='CFG scale', minimum=1, maximum=100, step=1, value=d.cfg_scale)
     with gr.Row():
         width = gr.Slider(label='Width', minimum=64, maximum=1024, step=64, value=d.width)
         height = gr.Slider(label='Height', minimum=64, maximum=1024, step=64, value=d.height)
     with gr.Row():
         seed = gr.Number(label='Seed', value = d.seed, Interactive = True, precision=0)
-        eta = gr.Number(label="ETA", value=d.eta, interactive=True)
+        eta = gr.Number(label="ETA (DDIM Only)", value=d.eta, interactive=True)
     with gr.Row():
         gr.Markdown('256x256 Benchmarks: 24 frames peak at 5.7 GBs of VRAM and 125 frames peak at 11.5 GBs with Torch2 installed')
     with gr.Row():
         frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=250, step=1, interactive=True, precision=0)
         batch_count = gr.Slider(label="Batch count", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=True)
     
-    return prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count
+    return prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count
+
 
 def setup_text2video_settings_dictionary():
     d = SimpleNamespace(**T2VArgs())
     dv = SimpleNamespace(**T2VOutputArgs())
     with gr.Row(elem_id='model-switcher'):
-        model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
+        model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type', )
     with gr.Tabs():
         do_vid2vid = gr.State(value=0)
         with gr.Tab('txt2vid') as tab_txt2vid:
             # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
-            prompt, n_prompt, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
+            prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
+            model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
             with gr.Accordion('img2vid', open=False):
                 inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 # TODO: should be tied to the total frame count dynamically
-                inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=24, step=1)
+                inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=250, step=1)
                 with gr.Row():
                     gr.Markdown('''`inpainting frames` is the number of frames inpainting is applied to (counting from the beginning)
 
@@ -80,11 +89,6 @@ To *loop it back*, set the weight to 0 for the first and for the last frame
 Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                 with gr.Row():
                     inpainting_weights = gr.Textbox(label="Inpainting weights", value=d.inpainting_weights, interactive=True)
-                
-                def update_max_inp_frames(f, i_frames): # Show video
-                    return gr.update(value=min(f, i_frames), maximum=f, visible=True)
-                
-                frames.change(fn=update_max_inp_frames, inputs=[frames, inpainting_frames], outputs=[inpainting_frames])
         with gr.Tab('vid2vid') as tab_vid2vid:
             with gr.Row():
                 gr.HTML('Put your video here')
@@ -95,15 +99,11 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
             with gr.Row():
                 vid2vid_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
             # TODO: here too
-            prompt_v, n_prompt_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
+            prompt_v, n_prompt_v, sampler_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
+            model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler_v])
             with gr.Row():
                 strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
-                vid2vid_startFrame=gr.Slider(label='vid2vid start frame',value=d.vid2vid_startFrame, minimum=0, maximum=23)
-            
-            def update_max_vid_frames(v2v_frames, sFrame): # Show video
-                return gr.update(value=min(sFrame, v2v_frames-1), maximum=v2v_frames-1, visible=True)
-            
-            frames_v.change(fn=update_max_vid_frames, inputs=[frames_v, vid2vid_startFrame], outputs=[vid2vid_startFrame])
+                vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
         
         tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_vid2vid])
         tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_vid2vid])
@@ -129,7 +129,7 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
 
 t2v_video_args_names = str('skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
-common_values_names = str('''prompt, n_prompt, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+common_values_names = str('''prompt, n_prompt, sampler, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 v2v_values_names = str('''
 do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame,
@@ -180,6 +180,7 @@ def T2VArgs():
     vid2vid_startFrame = 0
     inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
     inpainting_frames = 0
+    sampler = "DDIM"
     return locals()
 
 def T2VArgs_sanity_check(t2v_args):
@@ -200,6 +201,8 @@ def T2VArgs_sanity_check(t2v_args):
             raise ValueError('vid2vid start frame cannot be greater than the number of frames!')
         if t2v_args.inpainting_frames < 0 or t2v_args.inpainting_frames > t2v_args.frames:
             raise ValueError('inpainting frames count should lie between 0 and the frames number!')
+        if not any([x.name == t2v_args.sampler for x in available_samplers]):
+            raise ValueError("Sampler does not exist.")
     except Exception as e:
         print(t2v_args)
         raise e

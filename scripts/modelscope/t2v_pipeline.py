@@ -19,8 +19,11 @@ import torch.cuda.amp as amp
 from einops import rearrange
 import cv2
 from modelscope.t2v_model import UNetSD, AutoencoderKL, GaussianDiffusion, beta_schedule
-from modules import devices
+from modules import devices, shared
 from modules import prompt_parser
+from samplers.uni_pc.sampler import UniPCSampler
+from samplers.samplers_common import Txt2VideoSampler
+from samplers.samplers_common import available_samplers
 
 __all__ = ['TextToVideoSynthesis']
 
@@ -86,6 +89,7 @@ class TextToVideoSynthesis():
             num_res_blocks=cfg['unet_res_blocks'],
             attn_scales=cfg['unet_attn_scales'],
             dropout=cfg['unet_dropout'],
+            parameterization=cfg['mean_type'],
             temporal_attention=cfg['temporal_attention'])
         self.sd_model.load_state_dict(
             torch.load(
@@ -97,20 +101,17 @@ class TextToVideoSynthesis():
         self.sd_model.eval()
         if not devices.has_mps() or torch.cuda.is_available() == True:
             self.sd_model.half()
-
+        
         # Initialize diffusion
         betas = beta_schedule(
             'linear_sd',
             cfg['num_timesteps'],
             init_beta=0.00085,
             last_beta=0.0120)
-        self.diffusion = GaussianDiffusion(
-            betas=betas,
-            mean_type=cfg['mean_type'],
-            var_type=cfg['var_type'],
-            loss_type=cfg['loss_type'],
-            rescale_timesteps=False)
-
+        
+        self.sd_model.register_schedule(given_betas=betas.numpy())
+        self.diffusion = Txt2VideoSampler(self.sd_model, shared.device, betas=betas)
+        
         # Initialize autoencoder
         ddconfig = {
             'double_z': True,
@@ -192,7 +193,26 @@ class TextToVideoSynthesis():
         return out
 
     # @torch.compile()
-    def infer(self, prompt, n_prompt, steps, frames, seed, scale, width=256, height=256, eta=0.0, cpu_vae='GPU (half precision)', device=torch.device('cpu'), latents=None, skip_steps=0,strength=0,mask=None):
+    def infer(
+        self, 
+        prompt, 
+        n_prompt, 
+        steps, 
+        frames, 
+        seed, 
+        scale, 
+        width=256, 
+        height=256, 
+        eta=0.0, 
+        cpu_vae='GPU (half precision)', 
+        device=torch.device('cpu'), 
+        latents=None, 
+        skip_steps=0,
+        strength=0,
+        mask=None, 
+        is_vid2vid=False,
+        sampler=available_samplers[0].name
+    ):
         vars = locals()
         vars.pop('self')
         vars.pop('latents')
@@ -227,6 +247,7 @@ class TextToVideoSynthesis():
         self.device = device
         self.clip_encoder.to(self.device)
         self.clip_encoder.device = self.device
+        steps = steps - skip_steps
         c, uc = self.preprocess(prompt, n_prompt, steps)
         if self.keep_in_vram != "All":
             self.clip_encoder.to("cpu")
@@ -236,36 +257,37 @@ class TextToVideoSynthesis():
         latents=latents.half() if 'half precision' in cpu_vae and latents is not None else latents
 
         # synthesis
-        strength = None if strength == 0.0 else strength
+        strength = None if (strength == 0.0 and not is_vid2vid) else strength
         with torch.no_grad():
             num_sample = 1
-            max_frames = frames
-            latent_h, latent_w = height // 8, width // 8
-            self.sd_model.to(self.device)
-            if latents == None:
-                self.noise_gen.manual_seed(seed)
-                latents = torch.randn(num_sample, 4, max_frames, latent_h,
-                                          latent_w, generator=self.noise_gen).to(
-                                              self.device)
-            else:
-                latents.to(self.device)
-
-            print("latents", latents.shape, torch.mean(
-                latents), torch.std(latents))
-
+            channels = 4
+            max_frames= frames
+            latents, noise, shape = self.diffusion.get_noise(
+                num_sample, 
+                channels, 
+                max_frames, 
+                height, 
+                width, 
+                seed=seed, 
+                latents=latents
+            )
             with amp.autocast(enabled=True):
                 self.sd_model.to(self.device)
-                x0 = self.diffusion.ddim_sample_loop(
-                    noise=latents,  # shape: b c f h w
-                    model=self.sd_model,
-                    c=c,
-                    uc=uc,
-                    num_sample=1,
-                    guide_scale=scale,
-                    ddim_timesteps=steps,
+                self.diffusion.get_sampler(sampler, return_sampler=False)
+            
+                x0 = self.diffusion.sample_loop(
+                    steps=steps,
+                    strength=strength,
                     eta=eta,
-                    percentile=strength,
-                    skip_steps=skip_steps,
+                    conditioning=c,
+                    unconditional_conditioning=uc,
+                    batch_size=num_sample,
+                    guidance_scale=scale,
+                    latents=latents,
+                    shape=shape,
+                    noise=noise,
+                    is_vid2vid=is_vid2vid,
+                    sampler_name=sampler,
                     mask=mask
                 )
 
@@ -435,3 +457,4 @@ def tensor2vid(video, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]):
     images = [(image.numpy() * 255).astype('uint8')
               for image in images]  # f h w c
     return images
+

@@ -23,16 +23,19 @@ from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 from einops import rearrange, repeat
 from os import path as osp
 from modules.shared import opts
 
+from functools import partial
 from tqdm import tqdm
 from modules.prompt_parser import reconstruct_cond_batch
 from modules.shared import state
 from modules.sd_samplers_common import InterruptedException
 
 from modules.sd_hijack_optimizations import get_xformers_flash_attention_op
+from ldm.modules.diffusionmodules.util import make_beta_schedule
 
 __all__ = ['UNetSD']
 
@@ -112,7 +115,8 @@ class UNetSD(nn.Module):
                  use_checkpoint=False,
                  use_image_dataset=False,
                  use_fps_condition=False,
-                 use_sim_mask=False):
+                 use_sim_mask=False,
+                 parameterization="eps"):
         embed_dim = dim * 4
         num_heads = num_heads if num_heads else dim // 32
         super(UNetSD, self).__init__()
@@ -135,6 +139,8 @@ class UNetSD(nn.Module):
         self.use_image_dataset = use_image_dataset
         self.use_fps_condition = use_fps_condition
         self.use_sim_mask = use_sim_mask
+        self.parameterization = parameterization
+        self.v_posterior = 0
         use_linear_in_temporal = False
         transformer_depth = 1
         disabled_sa = False
@@ -319,6 +325,64 @@ class UNetSD(nn.Module):
         # zero out the last layer params
         nn.init.zeros_(self.out[-1].weight)
 
+    # Taken from DDPM
+    def register_schedule(self, given_betas=None, beta_schedule="linear", timesteps=1000,
+                        linear_start=1e-4, linear_end=2e-2, cosine_s=8e-3):
+
+        if exists(given_betas):
+            betas = given_betas
+        else:
+            betas = make_beta_schedule(beta_schedule, timesteps, linear_start=linear_start, linear_end=linear_end,
+                                        cosine_s=cosine_s)
+        alphas = 1. - betas
+        alphas_cumprod = np.cumprod(alphas, axis=0)
+        alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
+
+        timesteps, = betas.shape
+        self.num_timesteps = int(timesteps)
+        self.linear_start = linear_start
+        self.linear_end = linear_end
+        assert alphas_cumprod.shape[0] == self.num_timesteps, 'alphas have to be defined for each timestep'
+
+        to_torch = partial(torch.tensor, dtype=torch.float32)
+
+        self.register_buffer('betas', to_torch(betas))
+        self.register_buffer('alphas_cumprod', to_torch(alphas_cumprod))
+        self.register_buffer('alphas_cumprod_prev', to_torch(alphas_cumprod_prev))
+
+        # calculations for diffusion q(x_t | x_{t-1}) and others
+        self.register_buffer('sqrt_alphas_cumprod', to_torch(np.sqrt(alphas_cumprod)))
+        self.register_buffer('sqrt_one_minus_alphas_cumprod', to_torch(np.sqrt(1. - alphas_cumprod)))
+        self.register_buffer('log_one_minus_alphas_cumprod', to_torch(np.log(1. - alphas_cumprod)))
+        self.register_buffer('sqrt_recip_alphas_cumprod', to_torch(np.sqrt(1. / alphas_cumprod)))
+        self.register_buffer('sqrt_recipm1_alphas_cumprod', to_torch(np.sqrt(1. / alphas_cumprod - 1)))
+
+        # calculations for posterior q(x_{t-1} | x_t, x_0)
+        posterior_variance = (1 - self.v_posterior) * betas * (1. - alphas_cumprod_prev) / (
+                1. - alphas_cumprod) + self.v_posterior * betas
+        # above: equal to 1. / (1. / (1. - alpha_cumprod_tm1) + alpha_t / beta_t)
+        self.register_buffer('posterior_variance', to_torch(posterior_variance))
+        # below: log calculation clipped because the posterior variance is 0 at the beginning of the diffusion chain
+        self.register_buffer('posterior_log_variance_clipped', to_torch(np.log(np.maximum(posterior_variance, 1e-20))))
+        self.register_buffer('posterior_mean_coef1', to_torch(
+            betas * np.sqrt(alphas_cumprod_prev) / (1. - alphas_cumprod)))
+        self.register_buffer('posterior_mean_coef2', to_torch(
+            (1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod)))
+
+        if self.parameterization == "eps":
+            lvlb_weights = self.betas ** 2 / (
+                    2 * self.posterior_variance * to_torch(alphas) * (1 - self.alphas_cumprod))
+        elif self.parameterization == "x0":
+            lvlb_weights = 0.5 * np.sqrt(torch.Tensor(alphas_cumprod)) / (2. * 1 - torch.Tensor(alphas_cumprod))
+        elif self.parameterization == "v":
+            lvlb_weights = torch.ones_like(self.betas ** 2 / (
+                    2 * self.posterior_variance * to_torch(alphas) * (1 - self.alphas_cumprod)))
+        else:
+            raise NotImplementedError("mu not supported")
+        lvlb_weights[0] = lvlb_weights[1]
+        self.register_buffer('lvlb_weights', lvlb_weights, persistent=False)
+        assert not torch.isnan(self.lvlb_weights).all()
+
     def forward(
             self,
             x,
@@ -488,7 +552,7 @@ class CrossAttention(nn.Module):
             mask = rearrange(mask, 'b ... -> b (...)')
             max_neg_value = -torch.finfo(x.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h=h)
-
+        
         if getattr(cmd_opts, "force_enable_xformers", False) or (getattr(cmd_opts, "xformers", False) and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
             import xformers
             out = xformers.ops.memory_efficient_attention(
@@ -1266,8 +1330,8 @@ class GaussianDiffusion(object):
         r"""Distribution of p(x_{t-1} | x_t).
         """
         # predict distribution
-        if guide_scale is None:
-            out = model(xt, self._scale_timesteps(t), **model_kwargs)
+        if guide_scale is None or guide_scale == 1:
+            out = model(xt, self._scale_timesteps(t), **model_kwargs[0])
         else:
             # classifier-free guidance
             # (model_kwargs[0]: conditional kwargs; model_kwargs[1]: non-conditional kwargs)

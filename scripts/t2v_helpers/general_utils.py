@@ -1,5 +1,6 @@
 # Copyright (C) 2023 by Artem Khrapov (kabachuha)
 # Read LICENSE for usage terms.
+from modules.prompt_parser import reconstruct_cond_batch
 
 def get_t2v_version():
     from modules import extensions as mext
@@ -10,3 +11,8 @@ def get_t2v_version():
         return "Unknown"
     except:
         return "Unknown"
+
+def reconstruct_conds(cond, uncond, step):
+    c = reconstruct_cond_batch(cond, step)
+    uc = reconstruct_cond_batch(uncond, step)
+    return c, uc
