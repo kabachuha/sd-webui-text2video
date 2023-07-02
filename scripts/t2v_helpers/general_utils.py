@@ -18,11 +18,11 @@ def get_model_location(model_name):
     assert model_name is not None
 
     if model_name == "<modelscope>":
-        return os.path.join(ph.models_path, 'models/ModelScope/t2v')
+        return os.path.join(ph.models_path, 'ModelScope/t2v')
     elif model_name == "<videocrafter>":
-        return os.path.join(ph.models_path, 'models/VideoCrafter')
+        return os.path.join(ph.models_path, 'VideoCrafter')
     else:
-        return os.path.join(ph.models_path, 'models/text2video/', model_name)
+        return os.path.join(ph.models_path, 'text2video/', model_name)
 
 def reconstruct_conds(cond, uncond, step):
     c = reconstruct_cond_batch(cond, step)
