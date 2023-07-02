@@ -7,7 +7,7 @@ from t2v_helpers.video_audio_utils import find_ffmpeg_binary
 from samplers.samplers_common import available_samplers
 import os
 import modules.paths as ph
-from general_utils import get_model_location
+from t2v_helpers.general_utils import get_model_location
 from modules.shared import opts
 
 welcome_text_videocrafter = '''
