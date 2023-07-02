@@ -77,10 +77,9 @@ def setup_text2video_settings_dictionary():
     d = SimpleNamespace(**T2VArgs())
     dv = SimpleNamespace(**T2VOutputArgs())
     with gr.Row(elem_id='model-switcher'):
-        with gr.Column():
+        with gr.Row(variant='compact'):
             # TODO: deprecate this in favor of dynamic model type reading
             model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
-        with gr.Column():
             model = gr.Dropdown(label='Model', value="<modelscope>", help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. <modelscope> and <videocrafter> are the legacy locations")
             refresh_models = ToolButton(value=refresh_symbol)
 
