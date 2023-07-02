@@ -33,6 +33,8 @@ Update 2023-04-15: **MEGA-UPDATE**: Torch2/xformers optimizations, possible to m
 
 Update 2023-04-16: WebAPI is available!
 
+Update 2023-07-02: Alternate samplers, model hotswitch.
+
 ## Test examples:
 
 ### ModelScope
