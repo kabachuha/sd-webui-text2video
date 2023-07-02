@@ -43,7 +43,7 @@ def setup_common_values(mode, d):
     with gr.Row(elem_id=f'{mode}_n_prompt_toprow'):
         n_prompt = gr.Textbox(label='Negative prompt', lines=2, interactive=True, elem_id=f"{mode}_n_prompt", value=d.n_prompt)
     with gr.Row():
-        sampler = gr.Dropdown(label="Sampling method (ModelScope)", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler", visible=model_type.value == "ModelScope")
+        sampler = gr.Dropdown(label="Sampling method (ModelScope)", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler", visible=True)
         steps = gr.Slider(label='Steps', minimum=1, maximum=100, step=1, value=d.steps)
     with gr.Row():
         cfg_scale = gr.Slider(label='CFG scale', minimum=1, maximum=100, step=1, value=d.cfg_scale)
