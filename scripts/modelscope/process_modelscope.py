@@ -15,7 +15,7 @@ import cv2
 import gc
 import modules.paths as ph
 from types import SimpleNamespace
-from t2v_helpers.general_utils import get_t2v_version
+from t2v_helpers.general_utils import get_t2v_version, get_model_location
 import time, math
 from t2v_helpers.video_audio_utils import ffmpeg_stitch_video, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
 from t2v_helpers.args import get_outdir, process_args
@@ -26,8 +26,8 @@ import os
 
 pipe = None
 
-def setup_pipeline():
-    return TextToVideoSynthesis(ph.models_path + '/ModelScope/t2v')
+def setup_pipeline(model_name):
+    return TextToVideoSynthesis(get_model_location(model_name))
 
 def process_modelscope(args_dict):
     args, video_args = process_args(args_dict)
@@ -55,8 +55,13 @@ def process_modelscope(args_dict):
     print('Pipeline setup')
 
     # optionally store pipe in global between runs
-    if pipe is None:
-        pipe = setup_pipeline()
+    # also refresh the model if the user selected a newer one
+    # if args.model is none (e.g. an API call, the model stays as the previous one)
+    if pipe is None and args.model is None: # one more API call hack, falling back to <modelscope> if never used TODO: figure out how to permastore the model name the best way
+        args.model = "<modelscope>"
+        print(f"WARNING: received an API call with an empty model name, defaulting to {args.model} at {get_model_location(args.model)}")
+    if pipe is None or pipe is not None and args.model is not None and get_model_location(args.model) != pipe.model_dir:
+        pipe = setup_pipeline(args.model)
 
     pipe.keep_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else 'None'
 
