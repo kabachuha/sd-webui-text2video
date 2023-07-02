@@ -76,14 +76,23 @@ def setup_text2video_settings_dictionary():
     dv = SimpleNamespace(**T2VOutputArgs())
     with gr.Row(elem_id='model-switcher'):
         with gr.Column():
+            # TODO: deprecate this in favor of dynamic model type reading
             model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
         with gr.Column():
-            model = gr.Dropdown(label='Model', value="<default>", help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. Supported only for ModelScope derivatives at the moment")
+            model = gr.Dropdown(label='Model', value="<modelscope>", help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. <modelscope> and <videocrafter> are the legacy locations")
             refresh_models = ToolButton(value=refresh_symbol)
 
             def refresh_all_models(model):
-                # TODO: get all folder names in a directory, store this variable as 'model' and then pass to the pipeline handler
-                return gr.update(value=model, visible=True)
+                models = []
+                if os.path.isdir(os.path.join(os.getcwd(), 'models/ModelScope/t2v')):
+                    models.append('<modelscope>')
+                if os.path.isdir(os.path.join(os.getcwd(), 'models/VideoCrafter')):
+                    models.append('<videocrafter>')
+                models_dir = os.path.join(os.getcwd(), 'models/text2video/')
+                for subdir in os.listdir(models_dir):
+                    if os.path.isdir(subdir):
+                        models.append(subdir)
+                return gr.update(value=model if model in models else None, choices=models, visible=True)
 
             refresh_models.click(refresh_all_models, model, model)
     with gr.Tabs():
@@ -200,6 +209,7 @@ def T2VArgs():
     inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
     inpainting_frames = 0
     sampler = "DDIM"
+    model = "<modelscope>"
     return locals()
 
 def T2VArgs_sanity_check(t2v_args):
