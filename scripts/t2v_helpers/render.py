@@ -20,9 +20,7 @@ def run(*args):
     num_components = len(component_names)
     affected_args = args[2:] if len(args) > num_components else args
     # TODO: change to i+2 when we will add the progress bar
-    args_dict = {
-        component_names[i]: affected_args[i] for i in range(0, num_components)
-    }
+    args_dict = {component_names[i]: affected_args[i] for i in range(0, num_components)}
     model_type = args_dict['model_type']
     t2v_helpers_args.i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.3b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else 'None'
