@@ -13,7 +13,7 @@ from modules.shared import opts
 welcome_text_videocrafter = '''- Download pretrained T2V models via <a style="color:SteelBlue" href="https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link">this link</a>, and put the model.ckpt in models/VideoCrafter/model.ckpt. Then use the same GUI pipeline as ModelScope does.
 '''
 
-welcome_text_modelscope = '''- Put your models to stable-diffusion-webui/models/text2video. Make sure you have a text file named 'configuration.json' in the downloaded models folders (click on the ⬇️ character to the right, don't save via right-click). Recommended requirements start at 6 GBs of VRAM.
+welcome_text_modelscope = '''- Put your models to stable-diffusion-webui/models/text2video, each full model should have its own folder. A model consists of four parts: `VQGAN_autoencoder.pth`, `configuration.json`, `open_clip_pytorch_model.bin` and `text2video_pytorch_model.pth`. Make sure `configuration.json` is a text JSON file and not a saved HTML webpage (click on the ⬇️ character to the right, don't save via right-click). Recommended requirements start at 6 GBs of VRAM.
 
 <a style="color:SteelBlue" href="https://github.com/kabachuha/sd-webui-text2video#prominent-fine-tunes">A list of prominent fine-tunes</a> is a good starting point for models search.
 
