@@ -11,6 +11,7 @@ from modules import lowvram, devices, sd_hijack
 import logging 
 import gc
 import t2v_helpers.args as t2v_helpers_args
+from t2v_helpers.general_utils import get_model_type
 
 def run(*args):
     dataurl = get_error()
@@ -21,11 +22,11 @@ def run(*args):
     affected_args = args[2:] if len(args) > num_components else args
     # TODO: change to i+2 when we will add the progress bar
     args_dict = {component_names[i]: affected_args[i] for i in range(0, num_components)}
-    model_type = args_dict['model_type']
+    model_type = get_model_type(args_dict['model'])
     t2v_helpers_args.i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.3b </p><video controls loop><source src="{dataurl}" type="video/mp4"></video>'
     keep_pipe_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else 'None'
     try:
-        print(f'text2video — The model selected is: {args_dict["model"]} ({args_dict["model_type"]}-like)')
+        print(f'text2video — The model selected is: {args_dict["model"]} ({model_type}-like)')
         if model_type == 'ModelScope':
             vids_pack = process_modelscope(args_dict)
         elif model_type == 'VideoCrafter (WIP)':

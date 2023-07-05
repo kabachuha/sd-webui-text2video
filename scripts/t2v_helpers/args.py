@@ -7,7 +7,7 @@ from t2v_helpers.video_audio_utils import find_ffmpeg_binary
 from samplers.samplers_common import available_samplers
 import os
 import modules.paths as ph
-from t2v_helpers.general_utils import get_model_location
+from t2v_helpers.general_utils import get_model_location, get_model_type
 from modules.shared import opts
 
 welcome_text_videocrafter = '''- Download pretrained T2V models via <a style="color:SteelBlue" href="https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link">this link</a>, and put the model.ckpt in models/VideoCrafter/model.ckpt. Then use the same GUI pipeline as ModelScope does.
@@ -33,8 +33,9 @@ welcome_text = '''**VideoCrafter (WIP)**:
 
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.2b. The video will be shown below this label when ready</p>"
 
-def enable_sampler_dropdown(model_type):
-    is_visible = model_type == "ModelScope"
+def enable_sampler_dropdown(model):
+    # Get value from model dropdown    
+    is_visible = get_model_type(model) == "ModelScope"
     return gr.update(visible=is_visible)
 
 def setup_common_values(mode, d):
@@ -76,15 +77,13 @@ def setup_text2video_settings_dictionary():
     dv = SimpleNamespace(**T2VOutputArgs())
     with gr.Row(elem_id='model-switcher'):
         with gr.Row(variant='compact'):
-            # TODO: deprecate this in favor of dynamic model type reading
-            model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
-            model = gr.Dropdown(label='Model', value="<modelscope>", help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. <modelscope> and <videocrafter> are the legacy locations")
-            refresh_models = ToolButton(value=refresh_symbol)
-
-            def refresh_all_models(model):
+            
+            # define nested helper functions for binding to dropdown update
+            def get_model_list():
                 models = []
-                if os.path.isdir(os.path.join(ph.models_path, 'ModelScope/t2v')):
-                    models.append('<modelscope>')
+                dir_path = os.path.join(ph.models_path, 'ModelScope/t2v')
+                if os.path.isdir(dir_path):
+                    models = ['<modelscope>/' + f.name for f in os.scandir(dir_path) if f.is_dir()]
                 if os.path.isdir(os.path.join(ph.models_path, 'VideoCrafter/')):
                     models.append('<videocrafter>')
                 models_dir = os.path.join(ph.models_path, 'text2video/')
@@ -92,15 +91,25 @@ def setup_text2video_settings_dictionary():
                     for subdir in os.listdir(models_dir):
                         if os.path.isdir(os.path.join(models_dir, subdir)):
                             models.append(subdir)
-                return gr.update(value=model if model in models else None, choices=models, visible=True)
+                return models                           
+
+            def refresh_all_models(model):
+                models = get_model_list()
+                return gr.update(value=model if model in models else None, choices=models, visible=True) 
+
+            models = get_model_list()
+            assert (models is not None and len(models) > 0), "No models found!"
+            model = gr.Dropdown(label='Model', value=models[0], choices=models, help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. <modelscope> and <videocrafter> are the legacy locations")
+            refresh_models = ToolButton(value=refresh_symbol)
 
             refresh_models.click(refresh_all_models, model, model)
+            
     with gr.Tabs():
         do_vid2vid = gr.State(value=0)
         with gr.Tab('txt2vid') as tab_txt2vid:
             # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
             prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
-            model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
+            model.change(fn=enable_sampler_dropdown, inputs=[model], outputs=[sampler])
             with gr.Accordion('img2vid', open=False):
                 inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 # TODO: should be tied to the total frame count dynamically
@@ -128,7 +137,7 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                 vid2vid_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
             # TODO: here too
             prompt_v, n_prompt_v, sampler_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
-            model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler_v])
+            model.change(fn=enable_sampler_dropdown, inputs=[model], outputs=[sampler_v])
             with gr.Row():
                 strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
                 vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
@@ -161,8 +170,7 @@ common_values_names = str('''prompt, n_prompt, sampler, steps, frames, seed, cfg
 
 v2v_values_names = str('''
 do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame,
-inpainting_image,inpainting_frames, inpainting_weights,
-model_type,model''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+inpainting_image,inpainting_frames, inpainting_weights,model''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 t2v_args_names = common_values_names + [f'{v}_v' for v in common_values_names] + v2v_values_names
 

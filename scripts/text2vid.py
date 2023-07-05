@@ -45,7 +45,7 @@ def on_ui_tabs():
         components = {}
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
-                components = setup_text2video_settings_dictionary()
+                components = setup_text2video_settings_dictionary()            
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(elem_id=f"text2vid_generate_box", variant='compact', elem_classes="generate-box"):
                     interrupt = gr.Button('Interrupt', elem_id=f"text2vid_interrupt", elem_classes="generate-box-interrupt")
