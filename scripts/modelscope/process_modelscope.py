@@ -22,12 +22,72 @@ from t2v_helpers.args import get_outdir, process_args
 import t2v_helpers.args as t2v_helpers_args
 from modules import shared, sd_hijack, lowvram
 from modules.shared import opts, devices, state
+from collections import deque
 import os
+import textwrap
 
 pipe = None
 
 def setup_pipeline(model_name):
     return TextToVideoSynthesis(get_model_location(model_name))
+
+def latents_from_frames(frames, pipe, device, args):
+    in_vid_fps, _, _ = get_quick_vid_info(frames)
+    folder_name = clean_folder_name(Path(frames).stem)
+    outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name)
+    i = 1
+    while os.path.exists(outdir_no_tmp):
+        outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name + '_' + str(i))
+        i += 1
+
+    outdir_v2v = os.path.join(outdir_no_tmp, 'tmp_input_frames')
+    os.makedirs(outdir_v2v, exist_ok=True)
+
+    vid2frames(video_path=frames, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=args.vid2vid_startFrame, extract_to_frame=args.vid2vid_startFrame + args.frames,
+                numeric_files_output=True, out_img_format='png')
+
+    temp_convert_raw_png_path = os.path.join(outdir_v2v, "tmp_vid2vid_folder")
+    duplicate_pngs_from_folder(outdir_v2v, temp_convert_raw_png_path, None, folder_name)
+
+    videogen = []
+    for f in os.listdir(temp_convert_raw_png_path):
+        # double check for old _depth_ files, not really needed probably but keeping it for now
+        if '_depth_' not in f:
+            videogen.append(f)
+
+    videogen.sort(key=lambda x: int(x.split('.')[0]))
+
+    images = []
+    for file in tqdm(videogen, desc="Loading frames"):
+        image = Image.open(os.path.join(temp_convert_raw_png_path, file))
+        image = image.resize((args.width, args.height), Image.ANTIALIAS)
+        array = np.array(image)
+        images += [array]
+
+    # print(images)
+
+    images = np.stack(images)  # f h w c
+    batches = 1
+    n_images = np.tile(images[np.newaxis, ...], (batches, 1, 1, 1, 1))  # n f h w c
+    bcfhw = n_images.transpose(0, 4, 1, 2, 3)
+    # convert to 0-1 float
+    bcfhw = bcfhw.astype(np.float32) / 255
+    bfchw = bcfhw.transpose(0, 2, 1, 3, 4)  # b c f h w
+
+    print(f"Converted the frames to tensor {bfchw.shape}")
+
+    vd_out = torch.from_numpy(bcfhw).to("cuda")
+
+    # should be -1,1, not 0,1
+    vd_out = 2 * vd_out - 1
+
+    # latents should have shape num_sample, 4, max_frames, latent_h,latent_w
+    print("Computing latents")
+    latents = pipe.compute_latents(vd_out).to(device)
+
+    skip_steps = int(math.floor(args.steps * max(0, min(1 - args.strength, 1))))
+
+    return latents, skip_steps
 
 def process_modelscope(args_dict):
     args, video_args = process_args(args_dict)
@@ -70,87 +130,65 @@ def process_modelscope(args_dict):
 
     mask = None
 
+    batch_queue = deque()
+    latents = None
+    skip_steps = 0
+
     if args.do_vid2vid:
         if args.vid2vid_frames is None and args.vid2vid_frames_path == "":
             raise FileNotFoundError("Please upload a video :()")
 
-        # Overrides
-        if args.vid2vid_frames is not None:
-            vid2vid_frames_path = args.vid2vid_frames.name
+        #Log Video file name
+        print(f"vid2vid files: {args.vid2vid_frames}")
 
+        if args.vid2vid_frames is not None:
+            for file in tqdm(args.vid2vid_frames, desc="Loading videos"):
+                name = file.name
+                batch_queue.append((args.prompt, name, args, latents, skip_steps))
+
+            
         print("got a request to *vid2vid* an existing video.")
 
-        in_vid_fps, _, _ = get_quick_vid_info(vid2vid_frames_path)
-        folder_name = clean_folder_name(Path(vid2vid_frames_path).stem)
-        outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name)
-        i = 1
-        while os.path.exists(outdir_no_tmp):
-            outdir_no_tmp = os.path.join(os.getcwd(), 'outputs', 'frame-vid2vid', folder_name + '_' + str(i))
-            i += 1
-
-        outdir_v2v = os.path.join(outdir_no_tmp, 'tmp_input_frames')
-        os.makedirs(outdir_v2v, exist_ok=True)
-
-        vid2frames(video_path=vid2vid_frames_path, video_in_frame_path=outdir_v2v, overwrite=True, extract_from_frame=args.vid2vid_startFrame, extract_to_frame=args.vid2vid_startFrame + args.frames,
-                   numeric_files_output=True, out_img_format='png')
-
-        temp_convert_raw_png_path = os.path.join(outdir_v2v, "tmp_vid2vid_folder")
-        duplicate_pngs_from_folder(outdir_v2v, temp_convert_raw_png_path, None, folder_name)
-
-        videogen = []
-        for f in os.listdir(temp_convert_raw_png_path):
-            # double check for old _depth_ files, not really needed probably but keeping it for now
-            if '_depth_' not in f:
-                videogen.append(f)
-
-        videogen.sort(key=lambda x: int(x.split('.')[0]))
-
-        images = []
-        for file in tqdm(videogen, desc="Loading frames"):
-            image = Image.open(os.path.join(temp_convert_raw_png_path, file))
-            image = image.resize((args.width, args.height), Image.ANTIALIAS)
-            array = np.array(image)
-            images += [array]
-
-        # print(images)
-
-        images = np.stack(images)  # f h w c
-        batches = 1
-        n_images = np.tile(images[np.newaxis, ...], (batches, 1, 1, 1, 1))  # n f h w c
-        bcfhw = n_images.transpose(0, 4, 1, 2, 3)
-        # convert to 0-1 float
-        bcfhw = bcfhw.astype(np.float32) / 255
-        bfchw = bcfhw.transpose(0, 2, 1, 3, 4)  # b c f h w
-
-        print(f"Converted the frames to tensor {bfchw.shape}")
-
-        vd_out = torch.from_numpy(bcfhw).to("cuda")
-
-        # should be -1,1, not 0,1
-        vd_out = 2 * vd_out - 1
-
-        # latents should have shape num_sample, 4, max_frames, latent_h,latent_w
-        print("Computing latents")
-        latents = pipe.compute_latents(vd_out).to(device)
-
-        skip_steps = int(math.floor(args.steps * max(0, min(1 - args.strength, 1))))
     else:
         latents = None
         args.strength = 1
         skip_steps = 0
+        prompts = args.prompt.splitlines()
+        name = None
+        for prompt in prompts:
+            if prompt == "":
+                continue
+            else:
+                for i in range(args.batch_count):
+                    batch_queue.append((prompt, name, args, latents, skip_steps))
+
+
+        
 
     print('Working in txt2vid mode' if not args.do_vid2vid else 'Working in vid2vid mode')
 
+
+    print(f"Batch queue: {batch_queue}")
     # Start the batch count loop
-    pbar = tqdm(range(args.batch_count), leave=False)
-    if args.batch_count == 1:
+    pbar = tqdm(batch_queue, leave=False)
+    if len(batch_queue) == 1:
         pbar.disable = True
 
     vids_to_pack = []
 
-    state.job_count = args.batch_count
+    state.job_count = len(batch_queue)
 
-    for batch in pbar:
+    for batch, batch_data in enumerate(pbar):
+        print(f" Item {batch + 1} out of {len(batch_queue)}")
+        prompt, name, args, latents, skip_steps = batch_data
+        if name is not None:
+            latents, skip_steps = latents_from_frames(name, pipe, device, args)
+            if prompt == "":
+                prompt = os.path.basename(name).split(".")[0]
+
+
+        print(f"Prompt: {prompt}")
+
         state.job_no = batch
         if state.skipped:
             state.skipped = False
@@ -158,7 +196,7 @@ def process_modelscope(args_dict):
         if state.interrupted:
             break
 
-        shared.state.job = f"Batch {batch + 1} out of {args.batch_count}"
+        shared.state.job = f"Batch {batch + 1} out of {len(batch_queue)}"
         # TODO: move to a separate function
         if args.inpainting_frames > 0 and hasattr(args.inpainting_image, "name"):
             keys = T2VAnimKeys(SimpleNamespace(**{'max_frames': args.frames, 'inpainting_weights': args.inpainting_weights}), args.seed, args.inpainting_frames)
@@ -211,7 +249,7 @@ def process_modelscope(args_dict):
 
             args.strength = 1
 
-        samples, _ = pipe.infer(args.prompt, args.n_prompt, args.steps, args.frames, args.seed + batch if args.seed != -1 else -1, args.cfg_scale,
+        samples, _ = pipe.infer(prompt, args.n_prompt, args.steps, args.frames, args.seed + batch if args.seed != -1 else -1, args.cfg_scale,
                                 args.width, args.height, args.eta, cpu_vae, device, latents, strength=args.strength, skip_steps=skip_steps, mask=mask, is_vid2vid=args.do_vid2vid, sampler=args.sampler)
 
         if batch > 0:
@@ -225,14 +263,15 @@ def process_modelscope(args_dict):
                         f"{i:06}.png", samples[i])
 
         # TODO: add params to the GUI
+        prompt_name = textwrap.shorten(prompt, width=125, placeholder="...")
         if not video_args.skip_video_creation:
-            ffmpeg_stitch_video(ffmpeg_location=video_args.ffmpeg_location, fps=video_args.fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
+            ffmpeg_stitch_video(ffmpeg_location=video_args.ffmpeg_location, fps=video_args.fps, outmp4_path=outdir_current + os.path.sep + prompt_name + f".mp4", imgs_path=os.path.join(outdir_current,
                                                                                                                                                                               "%06d.png"),
                                 stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=video_args.add_soundtrack,
                                 audio_path=vid2vid_frames_path if video_args.add_soundtrack == 'Init Video' else video_args.soundtrack_path, crf=video_args.ffmpeg_crf, preset=video_args.ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
 
-        mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
+        mp4 = open(outdir_current + os.path.sep + prompt_name + f".mp4", 'rb').read()
         dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
 
         if max_vids_to_pack == -1 or len(vids_to_pack) < max_vids_to_pack:
