@@ -24,6 +24,7 @@ from modules import shared, sd_hijack, lowvram
 from modules.shared import opts, devices, state
 from collections import deque
 import os
+import textwrap
 
 pipe = None
 
@@ -130,6 +131,8 @@ def process_modelscope(args_dict):
     mask = None
 
     batch_queue = deque()
+    latents = None
+    skip_steps = 0
 
     if args.do_vid2vid:
         if args.vid2vid_frames is None and args.vid2vid_frames_path == "":
@@ -139,11 +142,9 @@ def process_modelscope(args_dict):
         print(f"vid2vid files: {args.vid2vid_frames}")
 
         if args.vid2vid_frames is not None:
-            # latents, skip_steps = latents_from_frames(args.vid2vid_frames.name, pipe, args)
-            # batch_queue.append((args.prompt, latents, skip_steps, args))
-            for file in tqdm(args.vid2vid_frames, desc="Loading frames"):
-                latents, skip_steps = latents_from_frames(file.name, pipe, device, args)
-                batch_queue.append((args.prompt, latents, skip_steps, args))
+            for file in tqdm(args.vid2vid_frames, desc="Loading videos"):
+                name = file.name
+                batch_queue.append((args.prompt, name, args, latents, skip_steps))
 
             
         print("got a request to *vid2vid* an existing video.")
@@ -153,12 +154,13 @@ def process_modelscope(args_dict):
         args.strength = 1
         skip_steps = 0
         prompts = args.prompt.splitlines()
+        name = None
         for prompt in prompts:
             if prompt == "":
                 continue
             else:
                 for i in range(args.batch_count):
-                    batch_queue.append((prompt, latents, skip_steps, args))
+                    batch_queue.append((prompt, name, args, latents, skip_steps))
 
 
         
@@ -178,7 +180,12 @@ def process_modelscope(args_dict):
 
     for batch, batch_data in enumerate(pbar):
         print(f" Item {batch + 1} out of {len(batch_queue)}")
-        prompt, latents, skip_steps, args = batch_data
+        prompt, name, args, latents, skip_steps = batch_data
+        if name is not None:
+            latents, skip_steps = latents_from_frames(name, pipe, device, args)
+            if prompt == "":
+                prompt = os.path.basename(name).split(".")[0]
+
 
         print(f"Prompt: {prompt}")
 
@@ -256,14 +263,15 @@ def process_modelscope(args_dict):
                         f"{i:06}.png", samples[i])
 
         # TODO: add params to the GUI
+        prompt_name = textwrap.shorten(prompt, width=125, placeholder="...")
         if not video_args.skip_video_creation:
-            ffmpeg_stitch_video(ffmpeg_location=video_args.ffmpeg_location, fps=video_args.fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
+            ffmpeg_stitch_video(ffmpeg_location=video_args.ffmpeg_location, fps=video_args.fps, outmp4_path=outdir_current + os.path.sep + prompt_name + f".mp4", imgs_path=os.path.join(outdir_current,
                                                                                                                                                                               "%06d.png"),
                                 stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=video_args.add_soundtrack,
                                 audio_path=vid2vid_frames_path if video_args.add_soundtrack == 'Init Video' else video_args.soundtrack_path, crf=video_args.ffmpeg_crf, preset=video_args.ffmpeg_preset)
         print(f't2v complete, result saved at {outdir_current}')
 
-        mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
+        mp4 = open(outdir_current + os.path.sep + prompt_name + f".mp4", 'rb').read()
         dataurl = "data:video/mp4;base64," + b64encode(mp4).decode()
 
         if max_vids_to_pack == -1 or len(vids_to_pack) < max_vids_to_pack:
