@@ -230,7 +230,6 @@ def process_modelscope(args_dict):
           for key, value in vs.items(): 
             f.write('%s:%s\n' % (key, value))
         print(f'saving args to {args_file}')
-        
 
         # TODO: add params to the GUI
         if not video_args.skip_video_creation:
