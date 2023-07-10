@@ -362,7 +362,7 @@ class TextToVideoSynthesis():
                     vd_out, '(b f) c h w -> b c f h w', b=bs_vd)
         vd_out = vd_out.type(torch.float32).cpu()
 
-        video_path= self.postprocess_video(vd_out)
+        video_path = self.postprocess_video(vd_out)
         if self.keep_in_vram == "None":
             self.sd_model.to("cpu")
         if self.keep_in_vram != "All":
