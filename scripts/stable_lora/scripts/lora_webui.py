@@ -11,7 +11,7 @@ import os
 import json
 
 from modules import images, script_callbacks
-from modules.shared import opts, cmd_opts, state, cmd_opts, sd_model
+from modules.shared import opts, state, cmd_opts, sd_model
 from modules.sd_models import read_state_dict
 from stable_lora.stable_utils.lora_processor import StableLoraProcessor
 from t2v_helpers.extensions_utils import Text2VideoExtension
@@ -73,6 +73,7 @@ class StableLoraScript(Text2VideoExtension, StableLoraProcessor):
                             To train a Stable LoRA file, use the finetune repository by clicking here.
                         </a>"""
                         )
+                        gr.HTML(f"<span> Place your LoRA files in {cmd_opts.lora_dir}")
                         lora_files_selection = gr.Dropdown(
                             label="Available Models",
                             elem_id=GradioInputsIds.lora_file_selection,
