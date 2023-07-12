@@ -22,6 +22,7 @@ from t2v_helpers.args import get_outdir, process_args
 import t2v_helpers.args as t2v_helpers_args
 from modules import shared, sd_hijack, lowvram
 from modules.shared import opts, devices, state
+from stable_lora.scripts.lora_webui import gr_inputs_list, StableLoraScriptInstance
 import os
 
 pipe = None
@@ -29,7 +30,7 @@ pipe = None
 def setup_pipeline(model_name):
     return TextToVideoSynthesis(get_model_location(model_name))
 
-def process_modelscope(args_dict):
+def process_modelscope(args_dict, extra_args=None):
     args, video_args = process_args(args_dict)
 
     global pipe
@@ -62,6 +63,11 @@ def process_modelscope(args_dict):
         print(f"WARNING: received an API call with an empty model name, defaulting to {args.model} at {get_model_location(args.model)}")
     if pipe is None or pipe is not None and args.model is not None and get_model_location(args.model) != pipe.model_dir:
         pipe = setup_pipeline(args.model)
+
+    #TODO Wrap this in a list so that we can process this for future extensions.
+    stable_lora_processor = StableLoraScriptInstance
+    stable_lora_args = stable_lora_processor.process_extension_args(all_args=extra_args) 
+    stable_lora_processor.process(pipe, *stable_lora_args)
 
     pipe.keep_in_vram = opts.data.get("modelscope_deforum_keep_model_in_vram") if opts.data is not None and opts.data.get("modelscope_deforum_keep_model_in_vram") is not None else 'None'
 
