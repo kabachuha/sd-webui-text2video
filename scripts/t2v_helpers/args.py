@@ -102,7 +102,7 @@ def setup_text2video_settings_dictionary():
             prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
             model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
             gr.Markdown('''`Stitch videos` allows you to generate multiple videos consecutively and combine them into 
-                        one video when they're done. Use stitched video denoising strenght to adjust the continuity between videos.
+                        one video when they're done. Use stitched video denoising strength to adjust the continuity between videos.
                         Uses the batch count parameter to determine how many videos to generate and stitch together.
 
                         Currently only works with ModelScope''')
