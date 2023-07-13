@@ -172,7 +172,8 @@ class StableLoraScript(Text2VideoExtension, StableLoraProcessor):
         first_lora_init = not self.is_lora_loaded(p.sd_model)
 
         # If the LoRA is still loaded, unload it.
-        self.handle_lora_start(lora_files, p.sd_model)   
+        unload_args = [p.sd_model, None, use_bias, use_time, use_conv, use_emb, use_linear, None]
+        self.handle_lora_start(lora_files, p.sd_model, unload_args)    
 
         can_use_lora = self.can_use_lora(p.sd_model)
         

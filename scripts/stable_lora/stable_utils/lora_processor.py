@@ -114,12 +114,19 @@ class StableLoraProcessor:
     
         return lora_files_to_load
 
-    def handle_lora_load(self, sd_model, lora_files_list, set_lora_loaded=False):
+    def handle_lora_load(
+        self, 
+        sd_model, 
+        lora_files_list, 
+        set_lora_loaded=False, 
+        unload_args=[]
+    ):
         if not hasattr(sd_model, self.lora_loaded) and set_lora_loaded:
             setattr(sd_model, self.lora_loaded, True)
 
         if self.is_lora_loaded(sd_model) and not set_lora_loaded:
-            self.process_lora(p, lora_files_list, undo_merge=True)
+            unload_args[1], unload_args[-1] = self.undo_merge_preprocess()
+            self.process_lora(*unload_args, undo_merge=True)
             delattr(sd_model, self.lora_loaded)
 
     def handle_alpha_change(self, lora_alpha, model):
@@ -130,9 +137,14 @@ class StableLoraProcessor:
         return (options != self.previous_advanced_options) \
             and self.is_lora_loaded(model)
     
-    def handle_lora_start(self, lora_files, model):
+    def handle_lora_start(self, lora_files, model, unload_args):
         if len(lora_files) == 0 and self.is_lora_loaded(model):
-            self.handle_lora_load(model, lora_files, set_lora_loaded=False)
+            self.handle_lora_load(
+                model, 
+                lora_files, 
+                set_lora_loaded=False, 
+                unload_args=unload_args
+            )
     
             self.log(f"Unloaded previously loaded LoRA files")
             return
