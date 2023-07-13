@@ -11,8 +11,7 @@ import os
 import json
 
 from modules import images, script_callbacks
-from modules.shared import opts, state, cmd_opts, sd_model
-from modules.sd_models import read_state_dict
+from modules.shared import opts, state, cmd_opts
 from stable_lora.stable_utils.lora_processor import StableLoraProcessor
 from t2v_helpers.extensions_utils import Text2VideoExtension
 
@@ -176,11 +175,6 @@ class StableLoraScript(Text2VideoExtension, StableLoraProcessor):
         # If the LoRA is still loaded, unload it.
         self.handle_lora_start(lora_files, p.sd_model)   
 
-        p.sd_model.eval()
-        for param in p.sd_model.parameters():
-            if param.requires_grad:
-                param.requires_grad_(False)     
-
         can_use_lora = self.can_use_lora(p.sd_model)
         
         lora_params_changed = any([alpha_changed, lora_changed, options_changed])
@@ -189,31 +183,32 @@ class StableLoraScript(Text2VideoExtension, StableLoraProcessor):
         if can_use_lora or lora_params_changed:
 
             if len(lora_files) == 0: return
- 
-            lora_alpha = (lora_alpha * use_multiplier) / len(lora_files)
 
-            lora_files_list = self.load_loras_from_list(lora_files)
+            for model in [p.sd_model, p.clip_encoder]:
+                lora_alpha = (lora_alpha * use_multiplier) / len(lora_files)
 
-            args = [p, lora_files_list, use_bias, use_time, use_conv, use_emb, use_linear, lora_alpha]
+                lora_files_list = self.load_loras_from_list(lora_files)
 
-            if lora_params_changed and not first_lora_init:
-                self.log("Resetting weights to reflect changed options.")
+                args = [model, lora_files_list, use_bias, use_time, use_conv, use_emb, use_linear, lora_alpha]
 
-                undo_args = args.copy()
-                undo_args[1], undo_args[-1] = self.undo_merge_preprocess()
+                if lora_params_changed and not first_lora_init:
+                    self.log("Resetting weights to reflect changed options.")
 
-                self.process_lora(*undo_args, undo_merge=True)
+                    undo_args = args.copy()
+                    undo_args[1], undo_args[-1] = self.undo_merge_preprocess()
 
-            self.process_lora(*args, undo_merge=False)
-                
-            self.handle_after_lora_load(
-                p.sd_model, 
-                lora_files,
-                lora_file_names, 
-                advanced_options,
-                alpha_changed,
-                lora_alpha
-            )
+                    self.process_lora(*undo_args, undo_merge=True)
+
+                self.process_lora(*args, undo_merge=False)
+                    
+                self.handle_after_lora_load(
+                    model, 
+                    lora_files,
+                    lora_file_names, 
+                    advanced_options,
+                    alpha_changed,
+                    lora_alpha
+                )
         
         if len(lora_files) > 0 and not all([can_use_lora, lora_params_changed]):
             self.log(f"Using loaded LoRAs: {', '.join(lora_file_names)}")

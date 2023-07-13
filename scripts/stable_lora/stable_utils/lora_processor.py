@@ -4,9 +4,7 @@ import torch
 
 from safetensors.torch import load_file
 from safetensors import safe_open
-from modules.shared import opts, cmd_opts, state, cmd_opts, sd_model
-from modules import sd_hijack
-from modules.sd_models import read_state_dict
+from modules.shared import opts, cmd_opts, state
 
 class StableLoraProcessor:
     def __init__(self):
@@ -182,7 +180,7 @@ class StableLoraProcessor:
                 lora_summary.append(f"{lora_file_name.split('.')[0]}")
         
         if len(lora_summary) > 0:
-            self.log("Using LoRA(s):", *lora_summary)
+            self.log(f"Using {model.__class__.__name__} LoRA(s):", *lora_summary)
 
         if alpha_changed:
             self.log("Alpha changed successfully.")
@@ -196,7 +194,7 @@ class StableLoraProcessor:
     @torch.autocast('cuda')
     def process_lora(
         self, 
-        p, 
+        model, 
         lora_files_list, 
         use_bias, 
         use_time, 
@@ -206,7 +204,7 @@ class StableLoraProcessor:
         lora_alpha, 
         undo_merge=False
     ):
-        for n, m in p.sd_model.named_modules():
+        for n, m in model.named_modules():
             for lora_model in lora_files_list:
                 for k, v in lora_model.items():
                     
