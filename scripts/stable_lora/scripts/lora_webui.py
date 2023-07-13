@@ -201,14 +201,14 @@ class StableLoraScript(Text2VideoExtension, StableLoraProcessor):
 
                 self.process_lora(*args, undo_merge=False)
                     
-                self.handle_after_lora_load(
-                    model, 
-                    lora_files,
-                    lora_file_names, 
-                    advanced_options,
-                    alpha_changed,
-                    lora_alpha
-                )
+            self.handle_after_lora_load(
+                p.sd_model, 
+                lora_files,
+                lora_file_names, 
+                advanced_options,
+                alpha_changed,
+                lora_alpha
+            )
         
         if len(lora_files) > 0 and not all([can_use_lora, lora_params_changed]):
             self.log(f"Using loaded LoRAs: {', '.join(lora_file_names)}")
