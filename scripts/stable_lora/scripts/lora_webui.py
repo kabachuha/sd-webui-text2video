@@ -184,15 +184,16 @@ class StableLoraScript(Text2VideoExtension, StableLoraProcessor):
 
             if len(lora_files) == 0: return
 
-            for model in [p.sd_model, p.clip_encoder]:
+            for i, model in enumerate([p.sd_model, p.clip_encoder]):
                 lora_alpha = (lora_alpha * use_multiplier) / len(lora_files)
 
                 lora_files_list = self.load_loras_from_list(lora_files)
 
                 args = [model, lora_files_list, use_bias, use_time, use_conv, use_emb, use_linear, lora_alpha]
 
-                if lora_params_changed and not first_lora_init:
-                    self.log("Resetting weights to reflect changed options.")
+                if lora_params_changed and not first_lora_init :
+                    if i == 0:
+                        self.log("Resetting weights to reflect changed options.")
 
                     undo_args = args.copy()
                     undo_args[1], undo_args[-1] = self.undo_merge_preprocess()
@@ -206,7 +207,6 @@ class StableLoraScript(Text2VideoExtension, StableLoraProcessor):
                 lora_files,
                 lora_file_names, 
                 advanced_options,
-                alpha_changed,
                 lora_alpha
             )
         

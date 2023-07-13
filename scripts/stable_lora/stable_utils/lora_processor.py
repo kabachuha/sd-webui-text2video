@@ -166,7 +166,6 @@ class StableLoraProcessor:
         lora_files,
         lora_file_names, 
         advanced_options, 
-        alpha_changed,
         lora_alpha
     ):
         lora_summary = []
@@ -181,9 +180,6 @@ class StableLoraProcessor:
         
         if len(lora_summary) > 0:
             self.log(f"Using {model.__class__.__name__} LoRA(s):", *lora_summary)
-
-        if alpha_changed:
-            self.log("Alpha changed successfully.")
 
     def undo_merge_preprocess(self):
         previous_lora_files_list = self.get_loras_to_process(self.previous_lora_file_names)
