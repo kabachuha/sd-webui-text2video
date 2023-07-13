@@ -2,4 +2,3 @@ imageio_ffmpeg
 av
 moviepy
 numexpr
-opencv-python
