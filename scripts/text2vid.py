@@ -25,6 +25,8 @@ from t2v_helpers.render import run
 import t2v_helpers.args as args
 from t2v_helpers.args import setup_text2video_settings_dictionary
 from webui import wrap_gradio_gpu_call
+from stable_lora.scripts.lora_webui import StableLoraScriptInstance
+StableLoraScript = StableLoraScriptInstance
 
 def process(*args):
     # weird PATH stuff
@@ -46,6 +48,7 @@ def on_ui_tabs():
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
                 components = setup_text2video_settings_dictionary()
+                stable_lora_ui = StableLoraScript.ui()
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(elem_id=f"text2vid_generate_box", variant='compact', elem_classes="generate-box"):
                     interrupt = gr.Button('Interrupt', elem_id=f"text2vid_interrupt", elem_classes="generate-box-interrupt")
@@ -91,7 +94,7 @@ def on_ui_tabs():
                 # , extra_outputs=[None, '', '']),
                 fn=wrap_gradio_gpu_call(process),
                 _js="submit_txt2vid",
-                inputs=[dummy_component1, dummy_component2] + [components[name] for name in args.get_component_names()],
+                inputs=[dummy_component1, dummy_component2] + [components[name] for name in args.get_component_names()] + stable_lora_ui,
                 outputs=[
                     dummy_component1, dummy_component2,
                 ],
