@@ -27,7 +27,7 @@ def run(*args):
     try:
         print(f'text2video — The model selected is: {args_dict["model"]} ({args_dict["model_type"]}-like)')
         if model_type == 'ModelScope':
-            vids_pack = process_modelscope(args_dict)
+            vids_pack = process_modelscope(args_dict, args)
         elif model_type == 'VideoCrafter (WIP)':
             vids_pack = process_videocrafter(args_dict)
         else:

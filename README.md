@@ -15,6 +15,13 @@ https://user-images.githubusercontent.com/14872007/232229730-82df36cc-ac8b-46b3-
 
 We will appreciate *any* help with this extension, *especially* pull-requests.
 
+### LoRA Support
+
+Currently, there is support for trained LoRAs using this finetune repository. Please follow instructions there on how to train them.
+https://github.com/ExponentialML/Text-To-Video-Finetuning#updates
+
+After training, simply place them into your default LoRA directory defined by your webui installation.
+
 ### VideoCrafter (WIP, needs more devs to maintain properly as well)
 
 VideoCrafter runs with around 9.2 GBs of VRAM with the settings set on Default.
