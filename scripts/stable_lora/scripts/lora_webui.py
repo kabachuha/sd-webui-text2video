@@ -184,7 +184,7 @@ class StableLoraScript(Text2VideoExtension, StableLoraProcessor):
 
             if len(lora_files) == 0: return
 
-            for i, model in enumerate([p.sd_model, p.clip_encoder]):
+            for i, model in enumerate([p.sd_model, p.clip_encoder.model.transformer]):
                 lora_alpha = (lora_alpha * use_multiplier) / len(lora_files)
 
                 lora_files_list = self.load_loras_from_list(lora_files)
