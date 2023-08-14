@@ -13,9 +13,14 @@ repo = g.get_repo(os.environ['GITHUB_REPOSITORY'])
 # Get the issue number from the event payload
 #issue_number = int(os.environ['ISSUE_NUMBER'])
 
+detox = True
+
 for issue in repo.get_issues():
     print(f"Processing issue №{issue.number}")
     if issue.pull_request:
+        continue
+
+    if detox:
         continue
 
     # Get the issue object
