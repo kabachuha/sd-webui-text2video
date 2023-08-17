@@ -101,6 +101,14 @@ def setup_text2video_settings_dictionary():
             # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
             prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
             model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
+            gr.Markdown('''`Stitch videos` allows you to generate multiple videos consecutively and combine them into 
+                        one video when they're done. Use stitched video denoising strength to adjust the continuity between videos.
+                        Uses the batch count parameter to determine how many videos to generate and stitch together.
+
+                        Currently only works with ModelScope''')
+            with gr.Row():
+                do_stitch_videos = gr.Checkbox(label="Stitch videos", value=d.do_stitch_videos, interactive=True)
+                stitched_video_strength = gr.Slider(label="Stitched video denoising strength", value=d.stitched_video_strength, minimum=0, maximum=1, step=0.01, interactive=True)
             with gr.Accordion('img2vid', open=False):
                 inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 # TODO: should be tied to the total frame count dynamically
@@ -155,7 +163,7 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
 
     return locals()
 
-t2v_video_args_names = str('skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+t2v_video_args_names = str('skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path, do_stitch_videos, stitched_video_strength').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 common_values_names = str('''prompt, n_prompt, sampler, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
@@ -205,6 +213,8 @@ def T2VArgs():
     prompt = ""
     n_prompt = "text, watermark, copyright, blurry, nsfw"
     strength = 0.75
+    do_stitch_videos = False
+    stitched_video_strength = 0.0
     vid2vid_startFrame = 0
     inpainting_weights = '0:(t/max_i_f), "max_i_f":(1)' # linear growth weights (as they used to be in the original variant)
     inpainting_frames = 0

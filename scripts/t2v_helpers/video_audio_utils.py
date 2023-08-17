@@ -119,7 +119,7 @@ def find_ffmpeg_binary():
             return files[0] if files else 'ffmpeg'
         except:
             return 'ffmpeg'
-            
+
 # Stitch images to a h264 mp4 video using ffmpeg
 def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
     start_time = time.time()
@@ -161,20 +161,56 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
         raise Exception(
             f'Error stitching frames to video. Actual runtime error:{e}')
 
+    start_time = time.time()
+
     if add_soundtrack != 'None':
-        audio_add_start_time = time.time()
-        try:
+        ffmpeg_apply_soundtrack(add_soundtrack, audio_path, ffmpeg_location, msg_to_print, outmp4_path, start_time)
+    else:
+        print("\r" + " " * len(msg_to_print), end="", flush=True)
+        print(f"\r{msg_to_print}", flush=True)
+        print(f"\rVideo stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
+
+def ffmpeg_reverse_frames(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, input_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
+    try:
+        cmd = [
+            ffmpeg_location,
+            '-y',
+            '-i', input_path,
+            '-vf', 'reverse',
+            outmp4_path
+        ]
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+    except FileNotFoundError:
+        print("\r" + " " * len(msg_to_print), end="", flush=True)
+        print(f"\r{msg_to_print}", flush=True)
+        raise FileNotFoundError(
+            "FFmpeg not found. Please make sure you have a working ffmpeg path under 'ffmpeg_location' parameter.")
+    except Exception as e:
+        print("\r" + " " * len(msg_to_print), end="", flush=True)
+        print(f"\r{msg_to_print}", flush=True)
+        raise Exception(
+            f'Error stitching frames to video. Actual runtime error:{e}')
+
+def ffmpeg_combine_videos(ffmpeg_location=None, fps=None, outmp4_path=None, input_videos=[], add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
+    print(f"Got a request to combine videos using FFmpeg.\nVideo count:\n{len(input_videos)}\nTo Video:\n{outmp4_path}")
+    msg_to_print = f"Combining *video*..."
+    print(msg_to_print)
+
+    videos = [f'-i \'{video}\'' for video in input_videos]
+
+    try:
+        #convert each file to a .ts file using ffmpeg
+        for i in range(len(input_videos)):
             cmd = [
                 ffmpeg_location,
-                '-i',
-                outmp4_path,
-                '-i',
-                audio_path,
-                '-map', '0:v',
-                '-map', '1:a',
-                '-c:v', 'copy',
-                '-shortest',
-                outmp4_path+'.temp.mp4'
+                '-y',
+                '-i', input_videos[i],
+                '-c', 'copy',
+                '-bsf:v', 'h264_mp4toannexb',
+                '-f', 'mpegts',
+                f'{input_videos[i]}.ts'
             ]
             process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -183,19 +219,73 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
                 print("\r" + " " * len(msg_to_print), end="", flush=True)
                 print(f"\r{msg_to_print}", flush=True)
                 raise RuntimeError(stderr)
-            os.replace(outmp4_path+'.temp.mp4', outmp4_path)
-            print("\r" + " " * len(msg_to_print), end="", flush=True)
-            print(f"\r{msg_to_print}", flush=True)
-            print(f"\rFFmpeg Video+Audio stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
-        except Exception as e:
-            print("\r" + " " * len(msg_to_print), end="", flush=True)
-            print(f"\r{msg_to_print}", flush=True)
-            print(f'\rError adding audio to video. Actual error: {e}', flush=True)
-            print(f"FFMPEG Video (sorry, no audio) stitching \033[33mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
+        # combine all the ts files into one mp4 file
+        cmd = [
+            ffmpeg_location,
+            '-y',
+            '-i', f'concat:{"|".join([f"{video}.ts" for video in input_videos])}',
+            '-c', 'copy',
+            '-bsf:a', 'aac_adtstoasc',
+            outmp4_path
+        ]
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+    except FileNotFoundError:
+        print("\r" + " " * len(msg_to_print), end="", flush=True)
+        print(f"\r{msg_to_print}", flush=True)
+        raise FileNotFoundError(
+            "FFmpeg not found. Please make sure you have a working ffmpeg path under 'ffmpeg_location' parameter.")
+    except Exception as e:
+        print(str(e))
+        #print("\r" + " " * len(msg_to_print), end="", flush=True)
+        #print(f"\r{msg_to_print}", flush=True)
+        raise Exception(
+            f'Error stitching frames to video. Actual runtime error:{e}')
+
+    start_time = time.time()
+
+    if add_soundtrack != 'None':
+        ffmpeg_apply_soundtrack(add_soundtrack, audio_path, ffmpeg_location, msg_to_print, outmp4_path, start_time)
     else:
         print("\r" + " " * len(msg_to_print), end="", flush=True)
         print(f"\r{msg_to_print}", flush=True)
         print(f"\rVideo stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
+
+def ffmpeg_apply_soundtrack(add_soundtrack, audio_path, ffmpeg_location, msg_to_print, outmp4_path, start_time):
+    try:
+        cmd = [
+            ffmpeg_location,
+            '-i',
+            outmp4_path,
+            '-i',
+            audio_path,
+            '-map', '0:v',
+            '-map', '1:a',
+            '-c:v', 'copy',
+            '-shortest',
+            outmp4_path + '.temp.mp4'
+        ]
+        process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        if process.returncode != 0:
+            print("\r" + " " * len(msg_to_print), end="", flush=True)
+            print(f"\r{msg_to_print}", flush=True)
+            raise RuntimeError(stderr)
+        os.replace(outmp4_path + '.temp.mp4', outmp4_path)
+        print("\r" + " " * len(msg_to_print), end="", flush=True)
+        print(f"\r{msg_to_print}", flush=True)
+        print(f"\rFFmpeg Video+Audio stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!",
+              flush=True)
+    except Exception as e:
+        print("\r" + " " * len(msg_to_print), end="", flush=True)
+        print(f"\r{msg_to_print}", flush=True)
+        print(f'\rError adding audio to video. Actual error: {e}', flush=True)
+        print(
+            f"FFMPEG Video (sorry, no audio) stitching \033[33mdone\033[0m in {time.time() - start_time:.2f} seconds!",
+            flush=True)
 
 # quick-retreive frame count, FPS and H/W dimensions of a video (local or URL-based)
 def get_quick_vid_info(vid_path):
