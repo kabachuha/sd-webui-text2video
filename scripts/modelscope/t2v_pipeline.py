@@ -193,15 +193,6 @@ class TextToVideoSynthesis():
         out = latents.type(torch.float32).cpu()
         return out
 
-    def create_infotext(vars:dict):
-        prompt = vars.pop('prompt')
-        n_prompt = vars.pop('n_prompt') if 'n_prompt' in vars else ""
-        generation_params_text = ", ".join([k if k == v else f'{k}: {generation_parameters_copypaste.quote(v)}' for k, v in vars.items() if v is not None])
-
-        negative_prompt_text = "\nNegative prompt: " + n_prompt if len(n_prompt) > 0 else ""
-
-        return f"{prompt}{negative_prompt_text}\n{generation_params_text}".strip()
-
     # @torch.compile()
     def infer(
         self, 
@@ -468,3 +459,11 @@ def tensor2vid(video, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]):
               for image in images]  # f h w c
     return images
 
+def create_infotext(vars:dict):
+    prompt = vars.pop('prompt')
+    n_prompt = vars.pop('n_prompt') if 'n_prompt' in vars else ""
+    generation_params_text = ", ".join([k if k == v else f'{k}: {generation_parameters_copypaste.quote(v)}' for k, v in vars.items() if v is not None])
+
+    negative_prompt_text = "\nNegative prompt: " + n_prompt if len(n_prompt) > 0 else ""
+
+    return f"{prompt}{negative_prompt_text}\n{generation_params_text}".strip()
