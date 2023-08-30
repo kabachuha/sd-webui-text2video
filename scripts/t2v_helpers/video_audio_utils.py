@@ -7,6 +7,7 @@ import os, shutil
 import cv2
 from modules.shared import state
 from pkg_resources import resource_filename
+import requests
 
 def get_frame_name(path):
     name = os.path.basename(path)
@@ -121,7 +122,7 @@ def find_ffmpeg_binary():
             return 'ffmpeg'
             
 # Stitch images to a h264 mp4 video using ffmpeg
-def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
+def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow', metadata=None):
     start_time = time.time()
 
     print(f"Got a request to stitch frames to video using FFmpeg.\nFrames:\n{imgs_path}\nTo Video:\n{outmp4_path}")
@@ -145,8 +146,14 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
             '-crf', str(crf),
             '-preset', preset,
             '-pattern_type', 'sequence',
-            outmp4_path
         ]
+
+        if metadata is not None:
+            for key, value in metadata.items():
+                cmd.append(f'-metadata:{key}={value}')
+
+        cmd.append(outmp4_path)
+
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
@@ -174,8 +181,14 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
                 '-map', '1:a',
                 '-c:v', 'copy',
                 '-shortest',
-                outmp4_path+'.temp.mp4'
             ]
+
+            if metadata is not None:
+                for key, value in metadata.items():
+                    cmd.append(f'-metadata:{key}={value}')
+
+            cmd.append(outmp4_path+'.temp.mp4')
+            
             process = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = process.communicate()
@@ -237,7 +250,7 @@ def duplicate_pngs_from_folder(from_folder, to_folder, img_batch_id, orig_vid_na
                 cv2.imwrite(new_path, image, [cv2.IMWRITE_PNG_COMPRESSION, 0])
     return frames_handled
 
-def add_soundtrack(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow'):
+def add_soundtrack(ffmpeg_location=None, fps=None, outmp4_path=None, stitch_from_frame=0, stitch_to_frame=None, imgs_path=None, add_soundtrack=None, audio_path=None, crf=17, preset='veryslow', metadata=None):
     if add_soundtrack is None:
         return
     msg_to_print = f"Adding soundtrack to *video*..."

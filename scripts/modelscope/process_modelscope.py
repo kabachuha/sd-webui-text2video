@@ -241,10 +241,11 @@ def process_modelscope(args_dict, extra_args=None):
 
         # TODO: add params to the GUI
         if not video_args.skip_video_creation:
+            metadata = { 'parameters': infotext }
             ffmpeg_stitch_video(ffmpeg_location=video_args.ffmpeg_location, fps=video_args.fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
                                                                                                                                                                               "%06d.png"),
                                 stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=video_args.add_soundtrack,
-                                audio_path=vid2vid_frames_path if video_args.add_soundtrack == 'Init Video' else video_args.soundtrack_path, crf=video_args.ffmpeg_crf, preset=video_args.ffmpeg_preset)
+                                audio_path=vid2vid_frames_path if video_args.add_soundtrack == 'Init Video' else video_args.soundtrack_path, crf=video_args.ffmpeg_crf, preset=video_args.ffmpeg_preset, metadata=metadata)
         print(f't2v complete, result saved at {outdir_current}')
 
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
