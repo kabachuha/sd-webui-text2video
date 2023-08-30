@@ -241,7 +241,7 @@ def process_modelscope(args_dict, extra_args=None):
 
         # TODO: add params to the GUI
         if not video_args.skip_video_creation:
-            metadata = { 'parameters': infotext } if opts.data is not None and opts.data.get("modelscope_save_metadata") else None
+            metadata = { 'comment': infotext } if opts.data is not None and opts.data.get("modelscope_save_metadata") else None
             ffmpeg_stitch_video(ffmpeg_location=video_args.ffmpeg_location, fps=video_args.fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
                                                                                                                                                                               "%06d.png"),
                                 stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=video_args.add_soundtrack,
