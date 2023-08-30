@@ -382,7 +382,7 @@ class TextToVideoSynthesis():
         del video_data
         torch_gc()
         last_tensor = self.last_tensor
-        return video_path, last_tensor, self.create_infotext(vars)
+        return video_path, last_tensor, create_infotext(vars)
 
     def cleanup(self):
         pass
