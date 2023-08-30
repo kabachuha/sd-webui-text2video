@@ -21,6 +21,7 @@ import cv2
 from modelscope.t2v_model import UNetSD, AutoencoderKL, GaussianDiffusion, beta_schedule
 from modules import devices, shared
 from modules import prompt_parser
+from modules import generation_parameters_copypaste
 from samplers.uni_pc.sampler import UniPCSampler
 from samplers.samplers_common import Txt2VideoSampler
 from samplers.samplers_common import available_samplers
@@ -381,7 +382,7 @@ class TextToVideoSynthesis():
         del video_data
         torch_gc()
         last_tensor = self.last_tensor
-        return video_path, last_tensor
+        return video_path, last_tensor, create_infotext(vars)
 
     def cleanup(self):
         pass
@@ -458,3 +459,11 @@ def tensor2vid(video, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]):
               for image in images]  # f h w c
     return images
 
+def create_infotext(vars:dict):
+    prompt = vars.pop('prompt')
+    n_prompt = vars.pop('n_prompt') if 'n_prompt' in vars else ""
+    generation_params_text = ", ".join([k if k == v else f'{k}: {generation_parameters_copypaste.quote(v)}' for k, v in vars.items() if v is not None])
+
+    negative_prompt_text = "\nNegative prompt: " + n_prompt if len(n_prompt) > 0 else ""
+
+    return f"{prompt}{negative_prompt_text}\n{generation_params_text}".strip()

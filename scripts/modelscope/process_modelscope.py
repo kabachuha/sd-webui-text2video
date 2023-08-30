@@ -217,9 +217,10 @@ def process_modelscope(args_dict, extra_args=None):
 
             args.strength = 1
 
-        samples, _ = pipe.infer(args.prompt, args.n_prompt, args.steps, args.frames, args.seed + batch if args.seed != -1 else -1, args.cfg_scale,
+        samples, _, infotext = pipe.infer(args.prompt, args.n_prompt, args.steps, args.frames, args.seed + batch if args.seed != -1 else -1, args.cfg_scale,
                                 args.width, args.height, args.eta, cpu_vae, device, latents, strength=args.strength, skip_steps=skip_steps, mask=mask, is_vid2vid=args.do_vid2vid, sampler=args.sampler)
 
+        
         if batch > 0:
             outdir_current = os.path.join(get_outdir(), f"{init_timestring}_{batch}")
         print(f'text2video finished, saving frames to {outdir_current}')
@@ -229,6 +230,14 @@ def process_modelscope(args_dict, extra_args=None):
         for i in range(len(samples)):
             cv2.imwrite(outdir_current + os.path.sep +
                         f"{i:06}.png", samples[i])
+
+        # save settings to a file
+        if opts.data.get("modelscope_save_info_to_file") if opts.data is not None and opts.data.get("modelscope_save_info_to_file") is not None else False:
+
+            args_file = os.path.join(outdir_current,'args.txt')
+            with open(args_file, 'w', encoding='utf-8') as f:
+                print(f'saving args to {args_file}')
+                f.write(infotext)
 
         # TODO: add params to the GUI
         if not video_args.skip_video_creation:

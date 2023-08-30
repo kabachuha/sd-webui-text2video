@@ -110,6 +110,8 @@ def on_ui_settings():
         "GPU (half precision)", "VAE Mode:", gr.Radio, {"interactive": True, "choices": ['GPU (half precision)', 'GPU', 'CPU (Low VRAM)']}, section=section))
     shared.opts.add_option("modelscope_deforum_show_n_videos", shared.OptionInfo(
         -1, "How many videos to show on the right panel on completion (-1 = show all)", gr.Number, {"interactive": True, "visible": True}, section=section))
+    shared.opts.add_option("modelscope_save_info_to_file", shared.OptionInfo(
+        False, "Save generation params to a text file near the video", gr.Checkbox, {'interactive':True, 'visible':True}, section=section))
 
 script_callbacks.on_ui_tabs(on_ui_tabs)
 script_callbacks.on_ui_settings(on_ui_settings)
