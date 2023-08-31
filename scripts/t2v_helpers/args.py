@@ -9,7 +9,7 @@ import os
 import modules.paths as ph
 from t2v_helpers.general_utils import get_model_location
 from modules.shared import opts
-from tinytag import TinyTag
+from mutagen.mp4 import MP4
 
 welcome_text_videocrafter = '''- Download pretrained T2V models via <a style="color:SteelBlue" href="https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link">this link</a>, and put the model.ckpt in models/VideoCrafter/model.ckpt. Then use the same GUI pipeline as ModelScope does.
 '''
@@ -160,7 +160,9 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                     metadata_box = gr.HTML()
                 
                 def get_metadata(file):
-                    return '\n'.join(f"{k} -> {v}" for k, v in vars(TinyTag.get(file.name)).items())
+                    print('Reading metadata')
+                    video = MP4(file.name)
+                    return video["\xa9cmt"]
 
                 metadata_btn.click(get_metadata, inputs=[metadata_file], outputs=[metadata_box])
         with gr.Tab('How to install? Where to get help, how to help?'):

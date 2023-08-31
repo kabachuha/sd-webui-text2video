@@ -2,5 +2,4 @@ imageio_ffmpeg
 av
 moviepy
 numexpr
-tinytag
 mutagen
