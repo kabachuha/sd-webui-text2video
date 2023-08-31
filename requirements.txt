@@ -3,3 +3,4 @@ av
 moviepy
 numexpr
 tinytag
+mutagen

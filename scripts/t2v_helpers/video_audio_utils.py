@@ -8,6 +8,7 @@ import cv2
 from modules.shared import state
 from pkg_resources import resource_filename
 import requests
+from mutagen.mp4 import MP4
 
 def get_frame_name(path):
     name = os.path.basename(path)
@@ -148,10 +149,6 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
             '-pattern_type', 'sequence',
         ]
 
-        if metadata is not None:
-            for key, value in metadata.items():
-                cmd.append(f'-metadata:{key}={value}')
-
         cmd.append(outmp4_path)
 
         process = subprocess.Popen(
@@ -183,10 +180,6 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
                 '-shortest',
             ]
 
-            if metadata is not None:
-                for key, value in metadata.items():
-                    cmd.append(f'-metadata:{key}={value}')
-
             cmd.append(outmp4_path+'.temp.mp4')
             
             process = subprocess.Popen(
@@ -208,6 +201,14 @@ def ffmpeg_stitch_video(ffmpeg_location=None, fps=None, outmp4_path=None, stitch
     else:
         print("\r" + " " * len(msg_to_print), end="", flush=True)
         print(f"\r{msg_to_print}", flush=True)
+
+        # adding metadata
+        if metadata is not None:
+            print('Writing metadata')
+            video = MP4(outmp4_path)
+            video["\xa9cmt"] = metadata
+            video.save()
+
         print(f"\rVideo stitching \033[0;32mdone\033[0m in {time.time() - start_time:.2f} seconds!", flush=True)
 
 # quick-retreive frame count, FPS and H/W dimensions of a video (local or URL-based)
