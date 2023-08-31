@@ -21,7 +21,8 @@ from t2v_helpers.video_audio_utils import ffmpeg_stitch_video, get_quick_vid_inf
 from t2v_helpers.args import get_outdir, process_args
 import t2v_helpers.args as t2v_helpers_args
 from modules import shared, sd_hijack, lowvram
-from modules.shared import opts, devices, state
+from modules.shared import opts, state
+from modules import devices
 from stable_lora.scripts.lora_webui import gr_inputs_list, StableLoraScriptInstance
 import os
 

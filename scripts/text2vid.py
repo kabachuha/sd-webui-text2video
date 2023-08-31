@@ -24,7 +24,7 @@ from modules.shared import cmd_opts, opts
 from t2v_helpers.render import run
 import t2v_helpers.args as args
 from t2v_helpers.args import setup_text2video_settings_dictionary
-from webui import wrap_gradio_gpu_call
+from modules.call_queue import wrap_gradio_gpu_call
 from stable_lora.scripts.lora_webui import StableLoraScriptInstance
 StableLoraScript = StableLoraScriptInstance
 
