@@ -28,7 +28,7 @@ from modules.call_queue import wrap_gradio_gpu_call
 from stable_lora.scripts.lora_webui import StableLoraScriptInstance
 StableLoraScript = StableLoraScriptInstance
 
-def process(*args):
+def process(*argss):
     # weird PATH stuff
     for basedir in basedirs:
         sys.path.extend([
@@ -39,8 +39,8 @@ def process(*args):
     if current_directory not in sys.path:
         sys.path.append(current_directory)
 
-    run(*args)
-    return f'Video ready'
+    run(*argss)
+    return [args.i1_store_t2v]
 
 def on_ui_tabs():
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
@@ -71,32 +71,19 @@ def on_ui_tabs():
                 with gr.Row(visible=False):
                     dummy_component1 = gr.Label("")
                     dummy_component2 = gr.Label("")
-                with gr.Row(variant='compact'):
-                    btn = gr.Button("Click here after the generation to show the video")
                 with gr.Row(variant='compact', elem_id='text2vid_results_panel'):
                     ...
                     # gr.Label("", visible=False)
                 with gr.Row(variant='compact'):
                     i1 = gr.HTML(args.i1_store_t2v, elem_id='deforum_header')
 
-                    def show_vid():  # Show video1
-                        return {
-                            i1: gr.update(value=args.i1_store_t2v, visible=True),
-                            btn: gr.update(value="Update the video", visible=True),
-                        }
-
-                    btn.click(
-                        show_vid,
-                        [],
-                        [i1, btn],
-                    )
             run_button.click(
                 # , extra_outputs=[None, '', '']),
                 fn=wrap_gradio_gpu_call(process),
                 _js="submit_txt2vid",
                 inputs=[dummy_component1, dummy_component2] + [components[name] for name in args.get_component_names()] + stable_lora_ui,
                 outputs=[
-                    dummy_component1, dummy_component2,
+                        i1
                 ],
             )
     return [(deforum_interface, "txt2video", "t2v_interface")]
