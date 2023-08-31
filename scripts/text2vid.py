@@ -112,6 +112,8 @@ def on_ui_settings():
         -1, "How many videos to show on the right panel on completion (-1 = show all)", gr.Number, {"interactive": True, "visible": True}, section=section))
     shared.opts.add_option("modelscope_save_info_to_file", shared.OptionInfo(
         False, "Save generation params to a text file near the video", gr.Checkbox, {'interactive':True, 'visible':True}, section=section))
+    shared.opts.add_option("modelscope_save_metadata", shared.OptionInfo(
+        True, "Save generation params as video metadata", gr.Checkbox, {'interactive':True, 'visible':True}, section=section))
 
 script_callbacks.on_ui_tabs(on_ui_tabs)
 script_callbacks.on_ui_settings(on_ui_settings)

@@ -9,6 +9,7 @@ import os
 import modules.paths as ph
 from t2v_helpers.general_utils import get_model_location
 from modules.shared import opts
+from mutagen.mp4 import MP4
 
 welcome_text_videocrafter = '''- Download pretrained T2V models via <a style="color:SteelBlue" href="https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link">this link</a>, and put the model.ckpt in models/VideoCrafter/model.ckpt. Then use the same GUI pipeline as ModelScope does.
 '''
@@ -150,6 +151,20 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                 ffmpeg_preset = gr.Dropdown(label="Preset", choices=['veryslow', 'slower', 'slow', 'medium', 'fast', 'faster', 'veryfast', 'superfast', 'ultrafast'], interactive=True, value=dv.ffmpeg_preset, type="value")
             with gr.Row(equal_height=True, variant='compact', visible=True) as ffmpeg_location_row:
                 ffmpeg_location = gr.Textbox(label="Location", lines=1, interactive=True, value=dv.ffmpeg_location)
+            with gr.Accordion(label='Metadata viewer', open=False, visible=True):
+                with gr.Row(variant='compact'):
+                    metadata_file = gr.File(label="Video", interactive=True, file_count="single", file_types=["video"], elem_id="metadata_chosen_file")
+                with gr.Row(variant='compact'):
+                    metadata_btn = gr.Button(value='Get metadata')
+                with gr.Row(variant='compact'):
+                    metadata_box = gr.HTML()
+                
+                def get_metadata(file):
+                    print('Reading metadata')
+                    video = MP4(file.name)
+                    return video["\xa9cmt"]
+
+                metadata_btn.click(get_metadata, inputs=[metadata_file], outputs=[metadata_box])
         with gr.Tab('How to install? Where to get help, how to help?'):
             gr.Markdown(welcome_text)
 

@@ -233,7 +233,7 @@ def process_modelscope(args_dict, extra_args=None):
                         f"{i:06}.png", samples[i])
 
         # save settings to a file
-        if opts.data.get("modelscope_save_info_to_file") if opts.data is not None and opts.data.get("modelscope_save_info_to_file") is not None else False:
+        if opts.data is not None and opts.data.get("modelscope_save_info_to_file"):
 
             args_file = os.path.join(outdir_current,'args.txt')
             with open(args_file, 'w', encoding='utf-8') as f:
@@ -242,10 +242,16 @@ def process_modelscope(args_dict, extra_args=None):
 
         # TODO: add params to the GUI
         if not video_args.skip_video_creation:
+            metadata = None
+            if opts.data is not None and opts.data.get("modelscope_save_metadata") is not None:
+                if opts.data.get("modelscope_save_metadata"):
+                    metadata = infotext
+            else:
+                metadata = infotext
             ffmpeg_stitch_video(ffmpeg_location=video_args.ffmpeg_location, fps=video_args.fps, outmp4_path=outdir_current + os.path.sep + f"vid.mp4", imgs_path=os.path.join(outdir_current,
                                                                                                                                                                               "%06d.png"),
                                 stitch_from_frame=0, stitch_to_frame=-1, add_soundtrack=video_args.add_soundtrack,
-                                audio_path=vid2vid_frames_path if video_args.add_soundtrack == 'Init Video' else video_args.soundtrack_path, crf=video_args.ffmpeg_crf, preset=video_args.ffmpeg_preset)
+                                audio_path=vid2vid_frames_path if video_args.add_soundtrack == 'Init Video' else video_args.soundtrack_path, crf=video_args.ffmpeg_crf, preset=video_args.ffmpeg_preset, metadata=metadata)
         print(f't2v complete, result saved at {outdir_current}')
 
         mp4 = open(outdir_current + os.path.sep + f"vid.mp4", 'rb').read()
