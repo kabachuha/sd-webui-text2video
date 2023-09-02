@@ -80,6 +80,7 @@ def setup_text2video_settings_dictionary():
             # TODO: deprecate this in favor of dynamic model type reading
             model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
             model = gr.Dropdown(label='Model', value="<modelscope>", help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. <modelscope> and <videocrafter> are the legacy locations")
+
             refresh_models = ToolButton(value=refresh_symbol)
 
             def refresh_all_models(model):
@@ -95,6 +96,18 @@ def setup_text2video_settings_dictionary():
                             models.append(subdir)
                 return gr.update(value=model if model in models else None, choices=models, visible=True)
 
+            def model_default_vals(model):
+                if model is None:
+                    return 256, 256
+                elif 'modelscope' and '576' in model.lower():
+                    return 576, 320
+                elif 'modelscope' and '448' in model.lower():
+                    return 448, 256
+                elif 'modelscope' and 'xl' in model.lower():
+                    return 1024, 576
+                else:
+                    return 256, 256
+
             refresh_models.click(refresh_all_models, model, model)
     with gr.Tabs():
         do_vid2vid = gr.State(value=0)
@@ -102,6 +115,7 @@ def setup_text2video_settings_dictionary():
             # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
             prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
             model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
+            model.change(model_default_vals, model, [width, height])
             with gr.Accordion('img2vid', open=False):
                 inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 # TODO: should be tied to the total frame count dynamically
@@ -130,13 +144,14 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
             # TODO: here too
             prompt_v, n_prompt_v, sampler_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
             model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler_v])
+            model.change(model_default_vals, model, [width_v, height_v])
+
             with gr.Row():
                 strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
                 vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
         
         tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_vid2vid])
         tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_vid2vid])
-
         with gr.Tab('Output settings'):
             with gr.Row(variant='compact') as fps_out_format_row:
                 fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
