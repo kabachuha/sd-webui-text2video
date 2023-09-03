@@ -260,6 +260,7 @@ def process_modelscope(args_dict, extra_args=None):
         if max_vids_to_pack == -1 or len(vids_to_pack) < max_vids_to_pack:
             vids_to_pack.append((dataurl, infotext))
     t2v_helpers_args.i1_store_t2v = f'<p style=\"font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.2b </p>'
+    t2v_helpers_args.last_seed = args.seed
     for dataurl, infotext in vids_to_pack:
         t2v_helpers_args.i1_store_t2v += f'<video controls loop><source src="{dataurl}" type="video/mp4"></video><br>{infotext}<br>'
     pbar.close()

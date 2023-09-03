@@ -11,6 +11,7 @@ from t2v_helpers.general_utils import get_model_location
 from modules.shared import opts
 from mutagen.mp4 import MP4
 from modules import script_callbacks, shared
+import random
 from modules.call_queue import wrap_gradio_gpu_call
 
 from stable_lora.scripts.lora_webui import StableLoraScriptInstance
@@ -38,6 +39,7 @@ welcome_text = '''**VideoCrafter (WIP)**:
 ''' + welcome_text_modelscope
 
 i1_store_t2v = f"<p style=\"text-align:center;font-weight:bold;margin-bottom:0em\">text2video extension for auto1111 — version 1.2b. The video will be shown below this label when ready</p>"
+last_seed = -1
 
 def enable_sampler_dropdown(model_type):
     is_visible = model_type == "ModelScope"
@@ -70,29 +72,9 @@ def setup_top_parts(mode, d):
         
     return prompt, n_prompt, run_button
 
-def setup_common_values(mode, d):
-
-    with gr.Row():
-        sampler = gr.Dropdown(label="Sampling method (ModelScope)", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler", visible=True)
-        steps = gr.Slider(label='Steps', minimum=1, maximum=100, step=1, value=d.steps)
-    with gr.Row():
-        cfg_scale = gr.Slider(label='CFG scale', minimum=1, maximum=100, step=1, value=d.cfg_scale)
-    with gr.Row():
-        width = gr.Slider(label='Width', minimum=64, maximum=1024, step=64, value=d.width)
-        height = gr.Slider(label='Height', minimum=64, maximum=1024, step=64, value=d.height)
-    with gr.Row():
-        seed = gr.Number(label='Seed', value = d.seed, Interactive = True, precision=0)
-        eta = gr.Number(label="ETA (DDIM Only)", value=d.eta, interactive=True)
-    with gr.Row():
-        gr.Markdown('256x256 Benchmarks: 24 frames peak at 5.7 GBs of VRAM and 125 frames peak at 11.5 GBs with Torch2 installed')
-    with gr.Row():
-        frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=250, step=1, interactive=True, precision=0)
-        batch_count = gr.Slider(label="Batch count", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=True)
-    
-    return sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count
-
-
 refresh_symbol = '\U0001f504'  # 🔄
+random_symbol = '\U0001F3B2'  # 🎲
+reuse_symbol = '\U0000267B'  # ♻️
 class ToolButton(gr.Button, gr.components.FormComponent):
     """Small button with single emoji as text, fits inside gradio forms"""
     def __init__(self, **kwargs):
@@ -100,6 +82,43 @@ class ToolButton(gr.Button, gr.components.FormComponent):
 
     def get_block_name(self):
         return "button"
+
+def setup_common_values(mode, d):
+
+    with gr.Row():
+        sampler = gr.Dropdown(label="Sampling method (ModelScope)", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler", visible=True)
+        steps = gr.Slider(label='Sampling steps', minimum=1, maximum=100, step=1, value=d.steps)
+    with gr.Row(equal_height=False, variant='compact'):
+        with gr.Column(variant='compact', scale=3):
+            with gr.Row():
+                width = gr.Slider(label='Width', minimum=64, maximum=1024, step=64, value=d.width)
+            with gr.Row():
+                height = gr.Slider(label='Height', minimum=64, maximum=1024, step=64, value=d.height)
+            with gr.Row():
+                frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=250, step=1, interactive=True, precision=0)
+        with gr.Column(variant='compact', scale=1):
+            with gr.Row():
+                batch_count = gr.Slider(label="Batch count", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=True)
+            with gr.Row():
+                batch_size = gr.Slider(label="Batch size", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=False)# inactive for now
+            with gr.Row():
+                eta = gr.Number(label="ETA (DDIM Only)", value=d.eta, interactive=True)
+    with gr.Row():
+        cfg_scale = gr.Slider(label='CFG scale', minimum=1, maximum=100, step=1, value=d.cfg_scale)
+    with gr.Row(equal_height=False, variant='compact'):
+        with gr.Column(scale=4, variant='compact'):
+            with gr.Row(variant='compact'):
+                seed = gr.Number(label='Seed', value = d.seed, Interactive = True, precision=0)
+        with gr.Column(scale=1, variant='compact'):
+            with gr.Row(variant='compact'):
+                def random_seed():
+                    return random.randint(0, 2**32 - 1)
+                ToolButton(value=random_symbol).click(random_seed, inputs=[], outputs=[seed])
+                def reuse_seed():
+                    return last_seed
+                ToolButton(value=reuse_symbol).click(reuse_seed, inputs=[], outputs=[seed])
+    
+    return sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count
 
 def setup_model_switcher():
     with gr.Row(elem_id='model-switcher'):
