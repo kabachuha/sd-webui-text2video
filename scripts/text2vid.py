@@ -25,8 +25,6 @@ from t2v_helpers.render import run
 import t2v_helpers.args as args
 from t2v_helpers.args import setup_text2video_settings_dictionary, setup_model_switcher
 from modules.call_queue import wrap_gradio_gpu_call
-from stable_lora.scripts.lora_webui import StableLoraScriptInstance
-StableLoraScript = StableLoraScriptInstance
 
 def process(*argss):
     # weird PATH stuff
@@ -53,14 +51,13 @@ def on_ui_tabs():
         
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             components = setup_text2video_settings_dictionary(model, model_type, process)
-            #stable_lora_ui = StableLoraScript.ui()
 
             components_t2v = {**components, **components['components_t2v']}
             run_button_t2v = components_t2v.pop('run_button')
             run_button_t2v.click(
                 fn=wrap_gradio_gpu_call(process),
                 _js="submit_txt2vid",
-                inputs=[components_t2v['dummy_component1'], components_t2v['dummy_component2']] + [components_t2v[name] for name in args.get_txt2vid_component_names()],# + stable_lora_ui,
+                inputs=[components_t2v['dummy_component1'], components_t2v['dummy_component2']] + [components_t2v[name] for name in args.get_txt2vid_component_names()] + components_t2v['stable_lora_ui'],
                 outputs=[
                         components_t2v['output']
                 ],
@@ -71,7 +68,7 @@ def on_ui_tabs():
             run_button_v2v.click(
                 fn=wrap_gradio_gpu_call(process),
                 _js="submit_txt2vid",
-                inputs=[components_v2v['dummy_component1'], components_v2v['dummy_component2']] + [components_v2v[name] for name in args.get_vid2vid_component_names()],# + stable_lora_ui,
+                inputs=[components_v2v['dummy_component1'], components_v2v['dummy_component2']] + [components_v2v[name] for name in args.get_vid2vid_component_names()] + components_v2v['stable_lora_ui'],
                 outputs=[
                         components_v2v['output']
                 ],

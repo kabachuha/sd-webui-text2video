@@ -13,6 +13,9 @@ from mutagen.mp4 import MP4
 from modules import script_callbacks, shared
 from modules.call_queue import wrap_gradio_gpu_call
 
+from stable_lora.scripts.lora_webui import StableLoraScriptInstance
+StableLoraScript = StableLoraScriptInstance
+
 welcome_text_videocrafter = '''- Download pretrained T2V models via <a style="color:SteelBlue" href="https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link">this link</a>, and put the model.ckpt in models/VideoCrafter/model.ckpt. Then use the same GUI pipeline as ModelScope does.
 '''
 
@@ -135,40 +138,44 @@ def setup_tab(mode, d, model, model_type, process):
     prompt, n_prompt, run_button = setup_top_parts('txt2vid', d)
     with gr.Row(equal_height=False, variant='compact'):
         with gr.Column(scale=1, variant='compact'):
-            if mode == 'vid2vid':
-                with gr.Row():
-                    gr.HTML('Put your video here')
-                    gr.HTML('<strong>Vid2vid for VideoCrafter is to be done!</strong>')
-                
-                vid2vid_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
-                with gr.Row():
-                    gr.HTML('Alternative: enter the relative (to the webui) path to the file')
-                with gr.Row():
-                    vid2vid_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
+            with gr.Tabs():
+                with gr.Tab('Generation'):
+                    if mode == 'vid2vid':
+                        with gr.Row():
+                            gr.HTML('Put your video here')
+                            gr.HTML('<strong>Vid2vid for VideoCrafter is to be done!</strong>')
+                        
+                        vid2vid_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
+                        with gr.Row():
+                            gr.HTML('Alternative: enter the relative (to the webui) path to the file')
+                        with gr.Row():
+                            vid2vid_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
 
-            sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values(mode, d)
-            if mode == 'vid2vid':
-                with gr.Row():
-                    strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
-                    vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
-            model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
-            if mode == 'txt2vid':
-                with gr.Accordion('img2vid', open=False):
-                    inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
-                    # TODO: should be tied to the total frame count dynamically
-                    inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=250, step=1)
-                    with gr.Row():
-                        gr.Markdown('''`inpainting frames` is the number of frames inpainting is applied to (counting from the beginning)
+                    sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values(mode, d)
+                    if mode == 'vid2vid':
+                        with gr.Row():
+                            strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
+                            vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
+                    model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
+                    if mode == 'txt2vid':
+                        with gr.Accordion('img2vid', open=False):
+                            inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
+                            # TODO: should be tied to the total frame count dynamically
+                            inpainting_frames=gr.Slider(label='inpainting frames',value=d.inpainting_frames,minimum=0, maximum=250, step=1)
+                            with gr.Row():
+                                gr.Markdown('''`inpainting frames` is the number of frames inpainting is applied to (counting from the beginning)
 
-        The following parameters are exposed in this keyframe: max frames as `max_f`, inpainting frames as `max_i_f`, current frame number as `t`, seed as `s`
+                The following parameters are exposed in this keyframe: max frames as `max_f`, inpainting frames as `max_i_f`, current frame number as `t`, seed as `s`
 
-        The weigths of `0:(t/max_i_f), "max_i_f":(1)` will *continue* the initial pic
+                The weigths of `0:(t/max_i_f), "max_i_f":(1)` will *continue* the initial pic
 
-        To *loop it back*, set the weight to 0 for the first and for the last frame
+                To *loop it back*, set the weight to 0 for the first and for the last frame
 
-        Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
-                    with gr.Row():
-                        inpainting_weights = gr.Textbox(label="Inpainting weights", value=d.inpainting_weights, interactive=True)
+                Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
+                            with gr.Row():
+                                inpainting_weights = gr.Textbox(label="Inpainting weights", value=d.inpainting_weights, interactive=True)
+                with gr.Tab('Lora'):
+                    stable_lora_ui = StableLoraScript.ui()
         with gr.Column(scale=1, variant='compact'):
             output = gr.HTML(i1_store_t2v, elem_id='deforum_header')
         

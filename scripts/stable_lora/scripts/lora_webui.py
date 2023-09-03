@@ -54,7 +54,7 @@ class StableLoraScript(Text2VideoExtension, StableLoraProcessor):
         self.lora_files = paths_with_metadata.copy()
         REPOSITORY_LINK = "https://github.com/ExponentialML/Text-To-Video-Finetuning"
 
-        with gr.Accordion(label=EXTENSION_TITLE, open=False) as stable_lora_section:
+        with gr.Accordion(label=EXTENSION_TITLE, open=True) as stable_lora_section:
             with gr.Blocks(analytics_enabled=False):
                 with gr.Row():
                     with gr.Column():
