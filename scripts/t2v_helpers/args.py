@@ -72,9 +72,7 @@ class ToolButton(gr.Button, gr.components.FormComponent):
     def get_block_name(self):
         return "button"
 
-def setup_text2video_settings_dictionary():
-    d = SimpleNamespace(**T2VArgs())
-    dv = SimpleNamespace(**T2VOutputArgs())
+def setup_model_switcher():
     with gr.Row(elem_id='model-switcher'):
         with gr.Row(variant='compact'):
             # TODO: deprecate this in favor of dynamic model type reading
@@ -104,6 +102,13 @@ def setup_text2video_settings_dictionary():
                 return gr.update(value=model if model in models else None, choices=models, visible=True)
 
             refresh_models.click(refresh_all_models, model, model)
+    
+    return model, model_type
+
+def setup_text2video_settings_dictionary(model, model_type):
+    d = SimpleNamespace(**T2VArgs())
+    dv = SimpleNamespace(**T2VOutputArgs())
+    
     with gr.Tabs():
         do_vid2vid = gr.State(value=0)
         with gr.Tab('txt2vid') as tab_txt2vid:

@@ -23,7 +23,7 @@ from modules import script_callbacks, shared
 from modules.shared import cmd_opts, opts
 from t2v_helpers.render import run
 import t2v_helpers.args as args
-from t2v_helpers.args import setup_text2video_settings_dictionary
+from t2v_helpers.args import setup_text2video_settings_dictionary, setup_model_switcher
 from modules.call_queue import wrap_gradio_gpu_call
 from stable_lora.scripts.lora_webui import StableLoraScriptInstance
 StableLoraScript = StableLoraScriptInstance
@@ -45,9 +45,14 @@ def process(*argss):
 def on_ui_tabs():
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
         components = {}
+        with gr.Row(elem_id='t2v-model-switcher').style(equal_height=False, variant='compact'):
+            with gr.Column(scale=1, variant='default'):
+                model, model_type = setup_model_switcher()
+            with gr.Column(scale=1, variant='default'):
+                ...
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
-                components = setup_text2video_settings_dictionary()
+                components = setup_text2video_settings_dictionary(model, model_type)
                 stable_lora_ui = StableLoraScript.ui()
             with gr.Column(scale=1, variant='compact'):
                 with gr.Row(elem_id=f"text2vid_generate_box", variant='compact', elem_classes="generate-box"):
