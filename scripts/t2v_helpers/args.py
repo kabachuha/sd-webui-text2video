@@ -79,10 +79,7 @@ def setup_text2video_settings_dictionary():
         with gr.Row(variant='compact'):
             # TODO: deprecate this in favor of dynamic model type reading
             model_type = gr.Radio(label='Model type', choices=['ModelScope', 'VideoCrafter (WIP)'], value='ModelScope', elem_id='model-type')
-            model = gr.Dropdown(label='Model', value="<modelscope>", help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. <modelscope> and <videocrafter> are the legacy locations")
-            refresh_models = ToolButton(value=refresh_symbol)
-
-            def refresh_all_models(model):
+            def get_models():
                 models = []
                 if os.path.isdir(os.path.join(ph.models_path, 'ModelScope/t2v')):
                     models.append('<modelscope>')
@@ -93,6 +90,17 @@ def setup_text2video_settings_dictionary():
                     for subdir in os.listdir(models_dir):
                         if os.path.isdir(os.path.join(models_dir, subdir)):
                             models.append(subdir)
+                return models
+            try:
+                models = get_models()
+            except:
+                models = []
+            models = models if len(models) > 0 else ["<modelscope>"]
+            model = gr.Dropdown(label='Model', value=models[0], choices=models, help="Put the folders with models (configuration, vae, clip, diffusion model) in models/text2video. Each folder matches to a model. <modelscope> and <videocrafter> are the legacy locations")
+            refresh_models = ToolButton(value=refresh_symbol)
+
+            def refresh_all_models(model):
+                models = get_models()
                 return gr.update(value=model if model in models else None, choices=models, visible=True)
 
             refresh_models.click(refresh_all_models, model, model)
