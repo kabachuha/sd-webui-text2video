@@ -50,45 +50,30 @@ def on_ui_tabs():
                 model, model_type = setup_model_switcher()
             with gr.Column(scale=1, variant='default'):
                 ...
+        
         with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
-            with gr.Column(scale=1, variant='panel'):
-                components = setup_text2video_settings_dictionary(model, model_type)
-                stable_lora_ui = StableLoraScript.ui()
-            with gr.Column(scale=1, variant='compact'):
-                with gr.Row(elem_id=f"text2vid_generate_box", variant='compact', elem_classes="generate-box"):
-                    interrupt = gr.Button('Interrupt', elem_id=f"text2vid_interrupt", elem_classes="generate-box-interrupt")
-                    skip = gr.Button('Skip', elem_id=f"text2vid_skip", elem_classes="generate-box-skip")
-                    run_button = gr.Button('Generate', elem_id=f"text2vid_generate", variant='primary')
+            components = setup_text2video_settings_dictionary(model, model_type, process)
+            #stable_lora_ui = StableLoraScript.ui()
 
-                    skip.click(
-                        fn=lambda: shared.state.skip(),
-                        inputs=[],
-                        outputs=[],
-                    )
-
-                    interrupt.click(
-                        fn=lambda: shared.state.interrupt(),
-                        inputs=[],
-                        outputs=[],
-                    )
-                with gr.Row(variant='compact'):
-                    i1 = gr.HTML(args.i1_store_t2v, elem_id='deforum_header')
-                with gr.Row(visible=False):
-                    dummy_component1 = gr.Label("")
-                    dummy_component2 = gr.Label("")
-                with gr.Row(variant='compact', elem_id='text2vid_results_panel'):
-                    ...
-                    # gr.Label("", visible=False)
-                with gr.Row(variant='compact'):
-                    i1 = gr.HTML(args.i1_store_t2v, elem_id='deforum_header')
-
-            run_button.click(
-                # , extra_outputs=[None, '', '']),
+            components_t2v = {**components, **components['components_t2v']}
+            run_button_t2v = components_t2v.pop('run_button')
+            run_button_t2v.click(
                 fn=wrap_gradio_gpu_call(process),
                 _js="submit_txt2vid",
-                inputs=[dummy_component1, dummy_component2] + [components[name] for name in args.get_component_names()] + stable_lora_ui,
+                inputs=[components_t2v['dummy_component1'], components_t2v['dummy_component2']] + [components_t2v[name] for name in args.get_txt2vid_component_names()],# + stable_lora_ui,
                 outputs=[
-                        i1
+                        components_t2v['output']
+                ],
+            )
+
+            components_v2v = {**components, **components['components_v2v']}
+            run_button_v2v = components_v2v.pop('run_button')
+            run_button_v2v.click(
+                fn=wrap_gradio_gpu_call(process),
+                _js="submit_txt2vid",
+                inputs=[components_v2v['dummy_component1'], components_v2v['dummy_component2']] + [components_v2v[name] for name in args.get_vid2vid_component_names()],# + stable_lora_ui,
+                outputs=[
+                        components_v2v['output']
                 ],
             )
     return [(deforum_interface, "txt2video", "t2v_interface")]

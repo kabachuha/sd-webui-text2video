@@ -10,6 +10,8 @@ import modules.paths as ph
 from t2v_helpers.general_utils import get_model_location
 from modules.shared import opts
 from mutagen.mp4 import MP4
+from modules import script_callbacks, shared
+from modules.call_queue import wrap_gradio_gpu_call
 
 welcome_text_videocrafter = '''- Download pretrained T2V models via <a style="color:SteelBlue" href="https://drive.google.com/file/d/13ZZTXyAKM3x0tObRQOQWdtnrI2ARWYf_/view?usp=share_link">this link</a>, and put the model.ckpt in models/VideoCrafter/model.ckpt. Then use the same GUI pipeline as ModelScope does.
 '''
@@ -38,11 +40,34 @@ def enable_sampler_dropdown(model_type):
     is_visible = model_type == "ModelScope"
     return gr.update(visible=is_visible)
 
+def setup_top_parts(mode, d):
+    with gr.Column(scale=3, variant='compact'):
+        with gr.Row(elem_id=f'{mode}_prompt_toprow'):
+            prompt = gr.Textbox(label='Prompt', lines=3, interactive=True, elem_id=f"{mode}_prompt", placeholder="Enter your prompt here...")
+        with gr.Row(elem_id=f'{mode}_n_prompt_toprow'):
+            n_prompt = gr.Textbox(label='Negative prompt', lines=2, interactive=True, elem_id=f"{mode}_n_prompt", value=d.n_prompt)
+    with gr.Column(scale=1, variant='compact'):
+        with gr.Row(elem_id=f"{mode}_generate_box", variant='compact', elem_classes="generate-box"):
+            interrupt = gr.Button('Interrupt', elem_id=f"{mode}_interrupt", elem_classes="generate-box-interrupt")
+            skip = gr.Button('Skip', elem_id=f"{mode}_skip", elem_classes="generate-box-skip")
+            run_button = gr.Button('Generate', elem_id=f"{mode}_generate", variant='primary')
+
+            skip.click(
+                fn=lambda: shared.state.skip(),
+                inputs=[],
+                outputs=[],
+            )
+
+            interrupt.click(
+                fn=lambda: shared.state.interrupt(),
+                inputs=[],
+                outputs=[],
+            )
+    
+    return prompt, n_prompt, run_button
+
 def setup_common_values(mode, d):
-    with gr.Row(elem_id=f'{mode}_prompt_toprow'):
-        prompt = gr.Textbox(label='Prompt', lines=3, interactive=True, elem_id=f"{mode}_prompt", placeholder="Enter your prompt here...")
-    with gr.Row(elem_id=f'{mode}_n_prompt_toprow'):
-        n_prompt = gr.Textbox(label='Negative prompt', lines=2, interactive=True, elem_id=f"{mode}_n_prompt", value=d.n_prompt)
+
     with gr.Row():
         sampler = gr.Dropdown(label="Sampling method (ModelScope)", choices=[x.name for x in available_samplers], value=available_samplers[0].name, elem_id="model-sampler", visible=True)
         steps = gr.Slider(label='Steps', minimum=1, maximum=100, step=1, value=d.steps)
@@ -60,7 +85,7 @@ def setup_common_values(mode, d):
         frames = gr.Slider(label="Frames", value=d.frames, minimum=2, maximum=250, step=1, interactive=True, precision=0)
         batch_count = gr.Slider(label="Batch count", value=d.batch_count, minimum=1, maximum=100, step=1, interactive=True)
     
-    return prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count
+    return sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count
 
 
 refresh_symbol = '\U0001f504'  # 🔄
@@ -105,16 +130,27 @@ def setup_model_switcher():
     
     return model, model_type
 
-def setup_text2video_settings_dictionary(model, model_type):
-    d = SimpleNamespace(**T2VArgs())
-    dv = SimpleNamespace(**T2VOutputArgs())
-    
-    with gr.Tabs():
-        do_vid2vid = gr.State(value=0)
-        with gr.Tab('txt2vid') as tab_txt2vid:
-            # TODO: make it how it's done in Deforum/WebUI, so we won't have to track individual vars
-            prompt, n_prompt, sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values('txt2vid', d)
-            model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
+def setup_tab(mode, d, model, model_type, process):
+    prompt, n_prompt, run_button = setup_top_parts('txt2vid', d)
+    with gr.Column(scale=1, variant='compact'):
+        if mode == 'vid2vid':
+            with gr.Row():
+                gr.HTML('Put your video here')
+                gr.HTML('<strong>Vid2vid for VideoCrafter is to be done!</strong>')
+            
+            vid2vid_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
+            with gr.Row():
+                gr.HTML('Alternative: enter the relative (to the webui) path to the file')
+            with gr.Row():
+                vid2vid_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
+
+        sampler, steps, seed, cfg_scale, width, height, eta, frames, batch_count = setup_common_values(mode, d)
+        if mode == 'vid2vid':
+            with gr.Row():
+                strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
+                vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
+        model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler])
+        if mode == 'txt2vid':
             with gr.Accordion('img2vid', open=False):
                 inpainting_image = gr.File(label="Inpainting image", interactive=True, file_count="single", file_types=["image"], elem_id="inpainting_chosen_file")
                 # TODO: should be tied to the total frame count dynamically
@@ -122,34 +158,38 @@ def setup_text2video_settings_dictionary(model, model_type):
                 with gr.Row():
                     gr.Markdown('''`inpainting frames` is the number of frames inpainting is applied to (counting from the beginning)
 
-The following parameters are exposed in this keyframe: max frames as `max_f`, inpainting frames as `max_i_f`, current frame number as `t`, seed as `s`
+    The following parameters are exposed in this keyframe: max frames as `max_f`, inpainting frames as `max_i_f`, current frame number as `t`, seed as `s`
 
-The weigths of `0:(t/max_i_f), "max_i_f":(1)` will *continue* the initial pic
+    The weigths of `0:(t/max_i_f), "max_i_f":(1)` will *continue* the initial pic
 
-To *loop it back*, set the weight to 0 for the first and for the last frame
+    To *loop it back*, set the weight to 0 for the first and for the last frame
 
-Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
+    Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
                 with gr.Row():
                     inpainting_weights = gr.Textbox(label="Inpainting weights", value=d.inpainting_weights, interactive=True)
-        with gr.Tab('vid2vid') as tab_vid2vid:
-            with gr.Row():
-                gr.HTML('Put your video here')
-                gr.HTML('<strong>Vid2vid for VideoCrafter is to be done!</strong>')
-            vid2vid_frames = gr.File(label="Input video", interactive=True, file_count="single", file_types=["video"], elem_id="vid_to_vid_chosen_file")
-            with gr.Row():
-                gr.HTML('Alternative: enter the relative (to the webui) path to the file')
-            with gr.Row():
-                vid2vid_frames_path = gr.Textbox(label="Input video path", interactive=True, elem_id="vid_to_vid_chosen_path", placeholder='Enter your video path here, or upload in the box above ^')
-            # TODO: here too
-            prompt_v, n_prompt_v, sampler_v, steps_v, seed_v, cfg_scale_v, width_v, height_v, eta_v, frames_v, batch_count_v = setup_common_values('vid2vid', d)
-            model_type.change(fn=enable_sampler_dropdown, inputs=[model_type], outputs=[sampler_v])
-            with gr.Row():
-                strength = gr.Slider(label="denoising strength", value=d.strength, minimum=0, maximum=1, step=0.05, interactive=True)
-                vid2vid_startFrame=gr.Number(label='vid2vid start frame',value=d.vid2vid_startFrame)
-        
-        tab_txt2vid.select(fn=lambda: 0, inputs=[], outputs=[do_vid2vid])
-        tab_vid2vid.select(fn=lambda: 1, inputs=[], outputs=[do_vid2vid])
+    with gr.Column(scale=1, variant='compact'):
+        output = gr.HTML(i1_store_t2v, elem_id='deforum_header')
+    
+    dummy_component1 = gr.Label("", visible=False)
+    dummy_component2 = gr.Label("", visible=False)
+    do_vid2vid = gr.State(value=1 if mode == 'vid2vid' else 0)
 
+    components = locals()
+
+    return components
+
+def setup_text2video_settings_dictionary(model, model_type, process):
+    d = SimpleNamespace(**T2VArgs())
+    dv = SimpleNamespace(**T2VOutputArgs())
+    
+    with gr.Tabs():
+        mode = 'txt2vid'
+        with gr.Tab(mode) as tab_txt2vid:
+            components_t2v = setup_tab(mode, d, model, model_type, process)
+        mode = 'vid2vid'
+        with gr.Tab(mode) as tab_vid2vid:
+            components_v2v = setup_tab(mode, d, model, model_type, process)
+            
         with gr.Tab('Output settings'):
             with gr.Row(variant='compact') as fps_out_format_row:
                 fps = gr.Slider(label="FPS", value=dv.fps, minimum=1, maximum=240, step=1)
@@ -185,19 +225,25 @@ Example: `0:(0), "max_i_f/4":(1), "3*max_i_f/4":(1), "max_i_f-1":(0)` ''')
 
 t2v_video_args_names = str('skip_video_creation, ffmpeg_location, ffmpeg_crf, ffmpeg_preset, fps, add_soundtrack, soundtrack_path').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
-common_values_names = str('''prompt, n_prompt, sampler, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+common_values_names = str('''model_type, model, prompt, n_prompt, sampler, steps, frames, seed, cfg_scale, width, height, eta, batch_count''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
 v2v_values_names = str('''
-do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame,
-inpainting_image,inpainting_frames, inpainting_weights,
-model_type,model''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+do_vid2vid, vid2vid_frames, vid2vid_frames_path, strength,vid2vid_startFrame
+''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
 
-t2v_args_names = common_values_names + [f'{v}_v' for v in common_values_names] + v2v_values_names
+t2v_values_names = str('''
+inpainting_image,inpainting_frames, inpainting_weights
+''').replace("\n", "").replace("\r", "").replace(" ", "").split(',')
+
+t2v_args_names = common_values_names + v2v_values_names
 
 t2v_args_names_cleaned = common_values_names + v2v_values_names
 
-def get_component_names():
+def get_vid2vid_component_names():
     return t2v_video_args_names + t2v_args_names
+
+def get_txt2vid_component_names():
+    return t2v_video_args_names + common_values_names + t2v_values_names
 
 def pack_anim_args(args_dict):
     return {name: args_dict[name] for name in t2v_args_names_cleaned}
@@ -206,16 +252,6 @@ def pack_video_args(args_dict):
     return {name: args_dict[name] for name in t2v_video_args_names}
 
 def process_args(args_dict):
-    if args_dict['do_vid2vid']:
-        # override text2vid data with vid2vid data
-        for name in common_values_names:
-            args_dict[name] = args_dict[f'{name}_v']
-    
-    # deduplicate
-    for name in common_values_names:
-        if f'{name}_v' in args_dict:
-            args_dict.pop(f'{name}_v')
-
     args = SimpleNamespace(**pack_anim_args(args_dict))
     video_args = SimpleNamespace(**pack_video_args(args_dict))
     T2VArgs_sanity_check(args)

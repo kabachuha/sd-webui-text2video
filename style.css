@@ -36,7 +36,7 @@
     border-radius: 0 0.5rem 0.5rem 0;
 }
 
-#text2vid_generate {
+#txt2vid_generate, #vid2vid_generate {
     min-height: 4.5em;
     border-radius: 0.5em;
 }
