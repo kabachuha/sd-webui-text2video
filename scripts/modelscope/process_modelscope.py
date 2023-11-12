@@ -131,7 +131,7 @@ def process_modelscope(args_dict, extra_args=None):
 
         print(f"Converted the frames to tensor {bfchw.shape}")
 
-        vd_out = torch.from_numpy(bcfhw).to("cuda")
+        vd_out = torch.from_numpy(bcfhw).to("cpu")
 
         # should be -1,1, not 0,1
         vd_out = 2 * vd_out - 1
@@ -187,7 +187,7 @@ def process_modelscope(args_dict, extra_args=None):
 
             print(f"Converted the frames to tensor {bfchw.shape}")
 
-            vd_out = torch.from_numpy(bcfhw).to("cuda")
+            vd_out = torch.from_numpy(bcfhw).to("cpu")
 
             # should be -1,1, not 0,1
             vd_out = 2 * vd_out - 1
