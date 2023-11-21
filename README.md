@@ -1,5 +1,7 @@
 # text2video Extension for AUTOMATIC1111's StableDiffusion WebUI
 
+**Warning: as of 2023-11-21 this extension is not maintained. If you'd like to continue devving/remaking it, please contact me on Discord @kabachuha (you can also find me on [camenduru's server's text2video channel](https://discord.gg/TYk6rfT9)) and we'll figure it out**
+
 Auto1111 extension implementing various text2video models, such as ModelScope and VideoCrafter, using only Auto1111 webui dependencies and downloadable models (so no logins required anywhere)
 
 ## Requirements
