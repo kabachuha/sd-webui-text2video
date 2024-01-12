@@ -100,8 +100,8 @@ class TextToVideoSynthesis():
             strict=True,
         )
         self.sd_model.eval()
-        if not devices.has_mps() or torch.cuda.is_available() == True:
-            self.sd_model.half()
+        #if not devices.has_mps() or torch.cuda.is_available() == True:
+        #    self.sd_model.half()
         
         # Initialize diffusion
         betas = beta_schedule(
@@ -145,8 +145,8 @@ class TextToVideoSynthesis():
             self.clip_encoder.to("cpu")
         self.noise_gen = torch.Generator(device='cpu')
 
-    def compute_latents(self, vd_out, cpu_vae='GPU (half precision)', device=torch.device('cuda')):
-        self.device = device
+    def compute_latents(self, vd_out, cpu_vae='CPU', device=torch.device('cpu')):
+        self.device = torch.device('cpu')
         with torch.no_grad():
             bs_vd, c, max_frames, height, width = vd_out.shape
             scale_factor = 0.18215
@@ -205,7 +205,7 @@ class TextToVideoSynthesis():
         width=256, 
         height=256, 
         eta=0.0, 
-        cpu_vae='GPU (half precision)', 
+        cpu_vae='CPU', 
         device=torch.device('cpu'), 
         latents=None, 
         skip_steps=0,
@@ -245,7 +245,7 @@ class TextToVideoSynthesis():
             A generated video (as list of np.arrays).
         """
 
-        self.device = device
+        self.device = torch.device('cpu')
         self.clip_encoder.to(self.device)
         self.clip_encoder.device = self.device
         steps = steps - skip_steps
