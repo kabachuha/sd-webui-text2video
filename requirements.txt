@@ -3,3 +3,4 @@ av
 moviepy
 numexpr
 mutagen
+git+https://github.com/doctorjei/latent-diffusion.git#egg=latent-diffusion

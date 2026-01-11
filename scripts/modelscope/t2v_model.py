@@ -26,16 +26,37 @@ import torch.nn.functional as F
 import numpy as np
 from einops import rearrange, repeat
 from os import path as osp
-from modules.shared import opts
+from modules import shared
 
 from functools import partial
 from tqdm import tqdm
 from modules.prompt_parser import reconstruct_cond_batch
 from modules.shared import state
 from modules.sd_samplers_common import InterruptedException
-
-from modules.sd_hijack_optimizations import get_xformers_flash_attention_op
 from ldm.modules.diffusionmodules.util import make_beta_schedule
+
+try:
+  from modules.sd_hijack_optimizations import get_xformers_flash_attention_op
+except:
+  if shared.cmd_opts.xformers or getattr(shared.cmd_opts, "force_enable_xformers", False):
+      try:
+          import xformers.ops
+          shared.xformers_available = True
+      except Exception:
+          errors.report("Cannot import xformers", exc_info=True)
+
+  def get_xformers_flash_attention_op(q, k, v):
+      if not shared.cmd_opts.xformers_flash_attention:
+          return None
+
+      try:
+          flash_attention_op = xformers.ops.MemoryEfficientAttentionFlashAttentionOp
+          fw, bw = flash_attention_op
+          if fw.supports(xformers.ops.fmha.Inputs(query=q, key=k, value=v, attn_bias=None)):
+              return flash_attention_op
+      except Exception as e:
+          errors.display_once(e, "enabling flash attention")
+      return None
 
 __all__ = ['UNetSD']
 
@@ -66,8 +87,6 @@ except:
         gc.collect()
         pass
 
-import modules.shared as shared
-from modules.shared import cmd_opts
 can_use_sdp = hasattr(torch.nn.functional, "scaled_dot_product_attention") and callable(getattr(torch.nn.functional, "scaled_dot_product_attention")) # not everyone has torch 2.x to use sdp
 
 from ldm.modules.diffusionmodules.model import Decoder, Encoder
@@ -553,17 +572,17 @@ class CrossAttention(nn.Module):
             max_neg_value = -torch.finfo(x.dtype).max
             mask = repeat(mask, 'b j -> (b h) () j', h=h)
         
-        if getattr(cmd_opts, "force_enable_xformers", False) or (getattr(cmd_opts, "xformers", False) and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
+        if getattr(shared.cmd_opts, "force_enable_xformers", False) or (getattr(shared.cmd_opts, "xformers", False) and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
             import xformers
             out = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v), attn_bias=mask,
             )
-        elif getattr(cmd_opts, "opt_sdp_no_mem_attention", False) and can_use_sdp:
+        elif getattr(shared.cmd_opts, "opt_sdp_no_mem_attention", False) and can_use_sdp:
             with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=False):
                 out = F.scaled_dot_product_attention(
                     q, k, v, dropout_p=0.0, attn_mask=mask
                 )
-        elif getattr(cmd_opts, "opt_sdp_attention", True) and can_use_sdp:
+        elif getattr(shared.cmd_opts, "opt_sdp_attention", True) and can_use_sdp:
             out = F.scaled_dot_product_attention(
                 q, k, v, dropout_p=0.0, attn_mask=mask
             )
@@ -1157,17 +1176,17 @@ class AttentionBlock(nn.Module):
 
         # compute attention
 
-        if getattr(cmd_opts, "force_enable_xformers", False) or (getattr(cmd_opts, "xformers", False) and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
+        if getattr(shared.cmd_opts, "force_enable_xformers", False) or (getattr(shared.cmd_opts, "xformers", False) and shared.xformers_available and torch.version.cuda and (6, 0) <= torch.cuda.get_device_capability(shared.device) <= (9, 0)):
             import xformers
             x = xformers.ops.memory_efficient_attention(
                 q, k, v, op=get_xformers_flash_attention_op(q,k,v),
             )
-        elif getattr(cmd_opts, "opt_sdp_no_mem_attention", False) and can_use_sdp:
+        elif getattr(shared.cmd_opts, "opt_sdp_no_mem_attention", False) and can_use_sdp:
             with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=False):
                 x = F.scaled_dot_product_attention(
                     q, k, v, dropout_p=0.0,
                 )
-        elif getattr(cmd_opts, "opt_sdp_attention", True) and can_use_sdp:
+        elif getattr(shared.cmd_opts, "opt_sdp_attention", True) and can_use_sdp:
             x = F.scaled_dot_product_attention(
                     q, k, v, dropout_p=0.0,
                 )

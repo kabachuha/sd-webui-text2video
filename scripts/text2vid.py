@@ -45,7 +45,7 @@ def process(*argss):
 def on_ui_tabs():
     with gr.Blocks(analytics_enabled=False) as deforum_interface:
         components = {}
-        with gr.Row(elem_id='t2v-core').style(equal_height=False, variant='compact'):
+        with gr.Row(elem_id='t2v-core', equal_height=False, variant='compact'):
             with gr.Column(scale=1, variant='panel'):
                 components = setup_text2video_settings_dictionary()
                 stable_lora_ui = StableLoraScript.ui()
@@ -92,7 +92,7 @@ def on_ui_settings():
     section = ('modelscope_deforum', "Text2Video")
     shared.opts.add_option("modelscope_deforum_keep_model_in_vram", shared.OptionInfo(
         'None', "Keep model in VRAM between runs", gr.Radio,
-        {"interactive": True, "choices": ['None', 'Main Model Only', 'All'], "visible": True if not (cmd_opts.lowvram or cmd_opts.medvram) else False}, section=section))
+        {"interactive": True, "choices": ['None', 'Main Model Only', 'All'], "visible": True if not (getattr(cmd_opts, "lowvram", False) or getattr(cmd_opts, "medvram", False)) else False}, section=section))
     shared.opts.add_option("modelscope_deforum_vae_settings", shared.OptionInfo(
         "GPU (half precision)", "VAE Mode:", gr.Radio, {"interactive": True, "choices": ['GPU (half precision)', 'GPU', 'CPU (Low VRAM)']}, section=section))
     shared.opts.add_option("modelscope_deforum_show_n_videos", shared.OptionInfo(

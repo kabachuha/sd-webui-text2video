@@ -20,11 +20,16 @@ import time, math
 from t2v_helpers.video_audio_utils import ffmpeg_stitch_video, get_quick_vid_info, vid2frames, duplicate_pngs_from_folder, clean_folder_name
 from t2v_helpers.args import get_outdir, process_args
 import t2v_helpers.args as t2v_helpers_args
-from modules import shared, sd_hijack, lowvram
+from modules import shared, sd_hijack
 from modules.shared import opts, state
 from modules import devices
 from stable_lora.scripts.lora_webui import gr_inputs_list, StableLoraScriptInstance
 import os
+
+try:
+    from modules import lowvram
+except ImportError:
+    lowvram = None
 
 pipe = None
 
@@ -42,12 +47,14 @@ def process_modelscope(args_dict, extra_args=None):
 
     max_vids_to_pack = opts.data.get("modelscope_deforum_show_n_videos") if opts.data is not None and opts.data.get("modelscope_deforum_show_n_videos") is not None else -1
     cpu_vae = opts.data.get("modelscope_deforum_vae_settings") if opts.data is not None and opts.data.get("modelscope_deforum_vae_settings") is not None else 'GPU (half precision)'
+
     if shared.sd_model is not None:
         sd_hijack.model_hijack.undo_hijack(shared.sd_model)
-        try:
-            lowvram.send_everything_to_cpu()
-        except Exception as e:
-            pass
+        if lowvram:
+          try:
+              lowvram.send_everything_to_cpu()
+          except Exception as e:
+              pass
         # the following command actually frees the GPU vram from the sd.model, no need to do del shared.sd_model 22-05-23
         shared.sd_model = None
     gc.collect()
